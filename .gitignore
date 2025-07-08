@@ -1,0 +1,5 @@
+# Data directories (databases, cache, etc.)
+data/
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc

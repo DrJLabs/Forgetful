@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+description: "Auto-fetch fresh Context7 docs for every coding task involving external libraries, frameworks, CLIs, or SDKs."
+---
+
+## Context7 Auto-Docs Rule
+
+When this rule fires: 
+Immediately upon detecting that the current task imports, configures, upgrades, troubleshoots, or otherwise relies on any external package, framework, SDK, or API (npm/pnpm, pip/conda, cargo, gem, go get, composer, etc.).
+
+Mandatory workflow
+ * Resolve the library ID
+   mcp_context7-local_resolve-library-id
+# params: { "libraryName": "<exact-package-name>" }
+
+ * Retrieve the documentation
+   mcp_context7-local_get-library-docs
+# params:
+#   context7CompatibleLibraryID: "<ID from step 1>"
+#   topic: "<optional subsection, e.g. routing, auth>"
+#   tokens: 10000-15000 max
+
+Perform steps 1-2 again whenever the active task switches to a new library.
+
+Applies to (non-exhaustive)
+ * Front-end and SSR frameworks (React, Vue, Svelte, Next.js, Nuxt, Solid, Angular, Astro…)
+ * CSS/utility frameworks (Tailwind, Bootstrap, MUI, Chakra…)
+ * Back-end & API libs (Express, Fastify, NestJS, Django, FastAPI, Flask, Spring, .NET, Ruby on Rails…)
+ * ORMs / database clients (Prisma, TypeORM, Sequelize, SQLAlchemy, Hibernate…)
+ * Auth, state-management, testing, linting, build, and CLI tools
+ * Cloud/IaC SDKs (AWS CDK, Pulumi, Terraform providers…)
+ * Any other third-party runtime or plugin not in the language’s standard library
+Exclusions
+ * Pure language syntax or standard-library usage
+ * Git, shell, or general OS commands
+ * Plain HTML/CSS not tied to a framework
+Local Context7 MCP server
+ * URL: http://localhost:7070
+ * Health endpoint: /health (expects HTTP 200)
+ * Available tools: resolve-library-id, get-library-docs

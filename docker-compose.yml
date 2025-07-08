@@ -1,0 +1,87 @@
+services:
+  mem0:
+    build:
+      context: ./mem0
+      dockerfile: server/dev.Dockerfile
+    container_name: mem0
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data/mem0/history:/app/history
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    networks: [traefik]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.mem0-oma.rule=Host(`mem0.drjlabs.com`)"
+      - "traefik.http.routers.mem0-oma.entrypoints=websecure"
+      - "traefik.http.routers.mem0-oma.tls=true"
+      - "traefik.http.services.mem0-oma.loadbalancer.server.port=8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4GB
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres-mem0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=mem0
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    command: >
+      postgres -c 'shared_buffers=1GB' -c 'work_mem=128MB'
+    networks: [traefik]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "mem0", "-U", "${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2GB
+
+  neo4j:
+    image: neo4j:5.26.4
+    container_name: neo4j-mem0
+    restart: unless-stopped
+    environment:
+      - NEO4J_AUTH=${NEO4J_AUTH}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+    volumes:
+      - ./data/neo4j:/data
+    networks: [traefik]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O /dev/null http://localhost:7474/ || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.neo4j-oma.rule=Host(`neo4j.drjlabs.com`)"
+      - "traefik.http.routers.neo4j-oma.entrypoints=websecure"
+      - "traefik.http.routers.neo4j-oma.tls=true"
+      - "traefik.http.services.neo4j-oma.loadbalancer.server.port=7474"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2GB
+
+networks:
+  traefik:
+    external: true 

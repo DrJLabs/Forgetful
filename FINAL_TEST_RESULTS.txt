@@ -1,0 +1,63 @@
+🧪 Memory System Test Suite
+==================================================
+Starting comprehensive memory system tests...
+
+✅ PASS mem0_create_memory (9.79s)
+   Memory processing successful, using memory ID: e3e8162b-4824-48ec-98c8-1794c0eee5a0
+
+❌ FAIL openmemory_create_memory (10.77s)
+   Error: argument of type 'NoneType' is not iterable
+
+✅ PASS mem0_get_all_memories (0.09s)
+   Retrieved 2 memories
+
+✅ PASS mem0_get_memory_by_id (0.09s)
+   Retrieved memory: Name is John...
+
+❌ FAIL openmemory_list_memories (0.02s)
+   Failed to list memories: HTTP 500
+
+❌ FAIL openmemory_get_memory_by_id (0.00s)
+   No OpenMemory memories available
+
+✅ PASS mem0_search_memories (1.05s)
+   Found 2 memories matching 'pizza'
+
+✅ PASS openmemory_search_memories (0.01s)
+   Found 0 memories matching 'green tea'
+
+✅ PASS mem0_update_memory (0.48s)
+   Successfully updated memory: {'message': 'Memory updated successfully!'}
+
+❌ FAIL openmemory_update_memory (0.00s)
+   No OpenMemory memories available
+
+✅ PASS mem0_memory_history (0.08s)
+   Retrieved 2 history entries
+
+✅ PASS mem0_delete_memory (0.10s)
+   Successfully deleted memory e3e8162b-4824-48ec-98c8-1794c0eee5a0
+
+❌ FAIL openmemory_delete_memory (0.00s)
+   No OpenMemory memories available
+
+
+==================================================
+TEST SUMMARY
+==================================================
+Total Tests: 13
+Passed: 8
+Failed: 5
+Success Rate: 61.5%
+
+Failed Tests:
+  ❌ openmemory_create_memory: Error: argument of type 'NoneType' is not iterable
+  ❌ openmemory_list_memories: Failed to list memories: HTTP 500
+  ❌ openmemory_get_memory_by_id: No OpenMemory memories available
+  ❌ openmemory_update_memory: No OpenMemory memories available
+  ❌ openmemory_delete_memory: No OpenMemory memories available
+
+Memory System Test Complete!
+
+🧹 Cleaning up test data...
+Cleaned up 0 test memories
