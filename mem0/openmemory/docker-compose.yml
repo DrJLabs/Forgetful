@@ -1,0 +1,53 @@
+services:
+  openmemory-mcp:
+    image: mem0/openmemory-mcp
+    build: api/
+    environment:
+      - USER=${USER:-drj}
+      - API_KEY=${API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - POSTGRES_HOST=postgres-mem0
+      - POSTGRES_DB=mem0
+      - POSTGRES_USER=${POSTGRES_USER:-drj}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-data2f!re}
+      - NEO4J_URL=neo4j://neo4j-mem0:7687
+      - NEO4J_AUTH=${NEO4J_AUTH:-neo4j/data2f!re}
+      - PYTHONWARNINGS=ignore::DeprecationWarning
+    env_file:
+      - api/.env
+    ports:
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - ./api:/usr/src/openmemory
+    command: >
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --workers 4"
+    networks:
+      - traefik
+    external_links:
+      - postgres-mem0:postgres-mem0
+      - neo4j-mem0:neo4j-mem0
+  openmemory-ui:
+    build:
+      context: ui/
+      dockerfile: Dockerfile
+    image: mem0/openmemory-ui:latest
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8765}
+      - NEXT_PUBLIC_USER_ID=${USER:-drj}
+    env_file:
+      - ui/.env
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.openmemory-ui.rule=Host(`memory.drjlabs.com`)"
+      - "traefik.http.routers.openmemory-ui.entrypoints=websecure"
+      - "traefik.http.routers.openmemory-ui.tls=true"
+      - "traefik.http.services.openmemory-ui.loadbalancer.server.port=3000"
+
+networks:
+  traefik:
+    external: true
