@@ -34,21 +34,21 @@
     "@ai-sdk/provider": "1.0.9",
     "@ai-sdk/provider-utils": "2.1.10",
     "ai": "4.1.46",
-    "dotenv": "^16.4.5",
-    "mem0ai": "^2.1.12",
+    "dotenv": "^16.6.1",
+    "mem0ai": "^2.1.36",
     "partial-json": "0.1.7",
-    "zod": "^3.0.0"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^3.2.0",
     "@types/jest": "^29.5.14",
-    "@types/node": "^18.19.46",
+    "@types/node": "^18.19.117",
     "jest": "^29.7.0",
-    "nodemon": "^3.1.7",
-    "ts-jest": "^29.2.5",
+    "nodemon": "^3.1.10",
+    "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
-    "tsup": "^8.3.0",
-    "typescript": "^5.5.4"
+    "tsup": "^8.5.0",
+    "typescript": "^5.8.3"
   },
   "peerDependencies": {
     "zod": "^3.0.0"
@@ -73,6 +73,9 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "sqlite3"
-    ]
+    ],
+    "overrides": {
+      "axios": "^1.10.0"
+    }
   }
 }
