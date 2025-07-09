@@ -23,6 +23,11 @@ class CreateMemoryRequest(BaseModel):
     app: str = "openmemory"
 
 
+class UpdateMemoryRequest(BaseModel):
+    memory_content: str
+    user_id: str
+
+
 class MemoryResponse(BaseModel):
     id: str
     content: str
@@ -141,13 +146,25 @@ async def get_memory(memory_id: str):
     try:
         memory_client = get_memory_client()
         
-        # mem0 doesn't have a direct get_by_id, so we search all and filter
-        # This is not ideal but works for now
-        # In production, you'd want to implement a proper get_by_id in mem0
+        # Use mem0's get method to retrieve the memory
+        memory = memory_client.get(memory_id)
         
-        # For now, return a not found error
-        raise HTTPException(status_code=404, detail="Memory not found - direct ID lookup not implemented")
+        if not memory:
+            raise HTTPException(status_code=404, detail="Memory not found")
         
+        # Transform to expected response format
+        return {
+            "id": memory.get("id", memory_id),
+            "content": memory.get("memory", ""),
+            "text": memory.get("memory", ""),  # Also include as 'text' for compatibility
+            "created_at": memory.get("created_at", datetime.utcnow().isoformat()),
+            "updated_at": memory.get("updated_at", datetime.utcnow().isoformat()),
+            "user_id": memory.get("user_id", ""),
+            "metadata": memory.get("metadata", {})
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error getting memory: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -170,13 +187,13 @@ async def delete_memory(memory_id: str):
 
 
 @router.put("/{memory_id}")
-async def update_memory(memory_id: str, text: str):
+async def update_memory(memory_id: str, request: UpdateMemoryRequest):
     """Update a memory"""
     try:
         memory_client = get_memory_client()
         
-        # Update in mem0
-        result = memory_client.update(memory_id, text)
+        # Update in mem0 - use the memory_content field
+        result = memory_client.update(memory_id, request.memory_content)
         
         return {"message": "Memory updated successfully!", "result": result}
         
