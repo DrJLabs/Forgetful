@@ -100,15 +100,6 @@ mem0/evaluation/
 mem0/examples/
 mem0/uv.lock
 
-# Environment files
-.env
-.env.local
-.env.*.local
-
-# Git files
-.git/
-.gitignore
-
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints/
 

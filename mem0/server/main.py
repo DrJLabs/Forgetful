@@ -227,3 +227,9 @@ def reset_memory():
 def home():
     """Redirect to the OpenAPI documentation."""
     return RedirectResponse(url="/docs")
+
+
+@app.get("/health", summary="Health check endpoint")
+def health_check():
+    """Check if the service is healthy."""
+    return {"status": "healthy", "service": "mem0"}
