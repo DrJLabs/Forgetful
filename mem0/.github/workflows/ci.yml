@@ -44,22 +44,20 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Hatch
-        run: pip install hatch
-      - name: Load cached venv
-        id: cached-hatch-dependencies
-        uses: actions/cache@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Cache dependencies
+        id: cached-uv-dependencies
+        uses: actions/cache@v4
         with:
-          path: .venv
-          key: venv-mem0-${{ runner.os }}-${{ hashFiles('**/pyproject.toml') }}
-      - name: Install GEOS Libraries
-        run: sudo apt-get update && sudo apt-get install -y libgeos-dev
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -e ".[test,graph,vector_stores,llms,extras]"
-          pip install ruff
-        if: steps.cached-hatch-dependencies.outputs.cache-hit != 'true'
+          uv sync --all-extras
+        if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
       - name: Run Linting
         run: make lint
       - name: Run tests and generate coverage report
@@ -78,21 +76,22 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install Hatch
-        run: pip install hatch
-      - name: Load cached venv
-        id: cached-hatch-dependencies
-        uses: actions/cache@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Cache dependencies
+        id: cached-uv-dependencies
+        uses: actions/cache@v4
         with:
-          path: .venv
-          key: venv-embedchain-${{ runner.os }}-${{ hashFiles('**/pyproject.toml') }}
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml', '**/uv.lock') }}
       - name: Install dependencies
-        run: cd embedchain && make install_all
-        if: steps.cached-hatch-dependencies.outputs.cache-hit != 'true'
-      - name: Run Formatting
+        if: steps.cached-uv-dependencies.outputs.cache-hit != 'true'
+        run: uv sync --all-extras
+      - name: Run Ruff format check
         run: |
-          mkdir -p embedchain/.ruff_cache && chmod -R 777 embedchain/.ruff_cache
-          cd embedchain && hatch run format
+          cd embedchain && uv run ruff format --check
       - name: Lint with ruff
         run: cd embedchain && make lint
       - name: Run tests and generate coverage report
