@@ -153,19 +153,31 @@ async def list_memories(
         if sort_field:
             query = query.order_by(sort_field.desc()) if sort_direction == "desc" else query.order_by(sort_field.asc())
 
+    # Add eager loading for categories and app
+    query = query.options(
+        joinedload(Memory.categories),
+        joinedload(Memory.app)
+    ).distinct(Memory.id)
 
     # Get paginated results
-    paginated_results = sqlalchemy_paginate(query, params)
-
-    # Filter results based on permissions
-    filtered_items = []
-    for item in paginated_results.items:
-        if check_memory_access_permissions(db, item, app_id):
-            filtered_items.append(item)
-
-    # Update paginated results with filtered items
-    paginated_results.items = filtered_items
-    paginated_results.total = len(filtered_items)
+    paginated_results = sqlalchemy_paginate(
+        query, 
+        params,
+        transformer=lambda items: [
+            MemoryResponse(
+                id=memory.id,
+                content=memory.content,
+                created_at=memory.created_at,
+                state=memory.state.value,
+                app_id=memory.app_id,
+                app_name=memory.app.name if memory.app else None,
+                categories=[category.name for category in memory.categories],
+                metadata_=memory.metadata_
+            )
+            for memory in items
+            if check_memory_access_permissions(db, memory, app_id)
+        ]
+    )
 
     return paginated_results
 
@@ -292,6 +304,9 @@ async def create_memory(
                     db.commit()
                     db.refresh(memory)
                     return memory
+            
+            # If no ADD events, return the response as is (could be NOOP events)
+            return qdrant_response
     except Exception as qdrant_error:
         logging.warning(f"Qdrant operation failed: {qdrant_error}.")
         # Return a json response with the error
@@ -338,6 +353,17 @@ async def delete_memories(
     for memory_id in request.memory_ids:
         update_memory_state(db, memory_id, MemoryState.deleted, user.id)
     return {"message": f"Successfully deleted {len(request.memory_ids)} memories"}
+
+
+# Delete a single memory
+@router.delete("/{memory_id}")
+async def delete_memory(
+    memory_id: UUID,
+    db: Session = Depends(get_db)
+):
+    memory = get_memory_or_404(db, memory_id)
+    update_memory_state(db, memory_id, MemoryState.deleted, memory.user_id)
+    return {"message": f"Successfully deleted memory {memory_id}"}
 
 
 # Archive memories

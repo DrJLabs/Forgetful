@@ -2,11 +2,11 @@
 ==================================================
 Starting comprehensive memory system tests...
 
-✅ PASS mem0_create_memory (9.79s)
-   Memory processing successful, using memory ID: e3e8162b-4824-48ec-98c8-1794c0eee5a0
+✅ PASS mem0_create_memory (9.57s)
+   Memory processing successful, using memory ID: 9c11fdd6-f0e9-4aac-8721-b4985cbd21b2
 
-❌ FAIL openmemory_create_memory (10.77s)
-   Error: argument of type 'NoneType' is not iterable
+✅ PASS openmemory_create_memory (5.87s)
+   Memory processing successful, using memory ID: 2f76a793-d0fb-4bbf-a1ce-7cba353e5077
 
 ✅ PASS mem0_get_all_memories (0.09s)
    Retrieved 2 memories
@@ -14,48 +14,41 @@ Starting comprehensive memory system tests...
 ✅ PASS mem0_get_memory_by_id (0.09s)
    Retrieved memory: Name is John...
 
-❌ FAIL openmemory_list_memories (0.02s)
-   Failed to list memories: HTTP 500
+✅ PASS openmemory_list_memories (0.01s)
+   Listed 1 memories
 
-❌ FAIL openmemory_get_memory_by_id (0.00s)
-   No OpenMemory memories available
+✅ PASS openmemory_get_memory_by_id (0.01s)
+   Retrieved memory: ...
 
-✅ PASS mem0_search_memories (1.05s)
+✅ PASS mem0_search_memories (1.29s)
    Found 2 memories matching 'pizza'
 
-✅ PASS openmemory_search_memories (0.01s)
-   Found 0 memories matching 'green tea'
+✅ PASS openmemory_search_memories (0.02s)
+   Found 1 memories matching 'green tea'
 
-✅ PASS mem0_update_memory (0.48s)
+✅ PASS mem0_update_memory (0.30s)
    Successfully updated memory: {'message': 'Memory updated successfully!'}
 
-❌ FAIL openmemory_update_memory (0.00s)
-   No OpenMemory memories available
+✅ PASS openmemory_update_memory (0.71s)
+   Successfully updated memory
 
-✅ PASS mem0_memory_history (0.08s)
+✅ PASS mem0_memory_history (0.09s)
    Retrieved 2 history entries
 
-✅ PASS mem0_delete_memory (0.10s)
-   Successfully deleted memory e3e8162b-4824-48ec-98c8-1794c0eee5a0
+✅ PASS mem0_delete_memory (0.11s)
+   Successfully deleted memory 9c11fdd6-f0e9-4aac-8721-b4985cbd21b2
 
-❌ FAIL openmemory_delete_memory (0.00s)
-   No OpenMemory memories available
+✅ PASS openmemory_delete_memory (0.69s)
+   Successfully deleted memory 2f76a793-d0fb-4bbf-a1ce-7cba353e5077
 
 
 ==================================================
 TEST SUMMARY
 ==================================================
 Total Tests: 13
-Passed: 8
-Failed: 5
-Success Rate: 61.5%
-
-Failed Tests:
-  ❌ openmemory_create_memory: Error: argument of type 'NoneType' is not iterable
-  ❌ openmemory_list_memories: Failed to list memories: HTTP 500
-  ❌ openmemory_get_memory_by_id: No OpenMemory memories available
-  ❌ openmemory_update_memory: No OpenMemory memories available
-  ❌ openmemory_delete_memory: No OpenMemory memories available
+Passed: 13
+Failed: 0
+Success Rate: 100.0%
 
 Memory System Test Complete!
 

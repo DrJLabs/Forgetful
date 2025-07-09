@@ -351,6 +351,15 @@ class MemoryTester:
             try:
                 result_data = response.json()
                 
+                # Check if it's an error response
+                if isinstance(result_data, dict) and "error" in result_data:
+                    return TestResult(
+                        test_name="openmemory_create_memory",
+                        passed=False,
+                        message=f"Error: {result_data['error']}",
+                        response_data=result_data
+                    )
+                
                 # Handle the case where memory client returns results/relations format
                 if isinstance(result_data, dict) and "results" in result_data:
                     # Memory was processed but may not have created new entries
@@ -365,7 +374,7 @@ class MemoryTester:
                                 return TestResult(
                                     test_name="openmemory_create_memory",
                                     passed=True,
-                                    message=f"Memory processed, found existing memory with ID: {memory_id}",
+                                    message=f"Memory processing successful, using memory ID: {memory_id}",
                                     response_data=result_data
                                 )
                         except:
