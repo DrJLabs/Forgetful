@@ -126,6 +126,9 @@
     "onlyBuiltDependencies": [
       "esbuild",
       "sqlite3"
-    ]
+    ],
+    "overrides": {
+      "undici@<5.29.0": ">=5.29.0"
+    }
   }
 }
