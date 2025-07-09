@@ -14,20 +14,7 @@ updates:
       - "dependencies"
       - "python"
 
-  # Embedchain Python package
-  - package-ecosystem: "pip"
-    directory: "/mem0/embedchain"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    allow:
-      - dependency-type: "all"
-    reviewers:
-      - "maintainers"
-    labels:
-      - "dependencies"
-      - "python"
-      - "embedchain"
+  # Embedchain Python package - REMOVED (legacy, not maintained)
 
   # OpenMemory API Python package
   - package-ecosystem: "pip"
@@ -103,86 +90,9 @@ updates:
       - "typescript"
       - "openmemory"
 
-  # Community TypeScript package
-  - package-ecosystem: "npm"
-    directory: "/mem0/mem0-ts/src/community"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    allow:
-      - dependency-type: "all"
-    reviewers:
-      - "maintainers"
-    labels:
-      - "dependencies"
-      - "typescript"
-      - "community"
+  # Community TypeScript package - REMOVED (not actively maintained)
 
-  # Example projects
-  - package-ecosystem: "npm"
-    directory: "/mem0/examples/mem0-demo"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    allow:
-      - dependency-type: "all"
-    reviewers:
-      - "maintainers"
-    labels:
-      - "dependencies"
-      - "examples"
-
-  - package-ecosystem: "npm"
-    directory: "/mem0/examples/multimodal-demo"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    allow:
-      - dependency-type: "all"
-    reviewers:
-      - "maintainers"
-    labels:
-      - "dependencies"
-      - "examples"
-
-  - package-ecosystem: "npm"
-    directory: "/mem0/examples/vercel-ai-sdk-chat-app"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    allow:
-      - dependency-type: "all"
-    reviewers:
-      - "maintainers"
-    labels:
-      - "dependencies"
-      - "examples"
-
-  - package-ecosystem: "npm"
-    directory: "/mem0/examples/openai-inbuilt-tools"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    allow:
-      - dependency-type: "all"
-    reviewers:
-      - "maintainers"
-    labels:
-      - "dependencies"
-      - "examples"
-
-  - package-ecosystem: "npm"
-    directory: "/mem0/examples/yt-assistant-chrome"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    allow:
-      - dependency-type: "all"
-    reviewers:
-      - "maintainers"
-    labels:
-      - "dependencies"
-      - "examples"
+  # Example projects - REMOVED (not maintained)
 
   # GitHub Actions
   - package-ecosystem: "github-actions"
