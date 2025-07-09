@@ -15,25 +15,20 @@ To make a contribution, follow these steps:
 
 For more details about pull requests, please read [GitHub's guides](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request).
 
-## Development Setup
 
-We use `uv` for managing development environments. To set up:
+### 📦 Development Environment
+
+We use `hatch` for managing development environments. To set up:
 
 ```bash
-# Install uv (if not already installed)
-pipx install uv
+# Activate environment for specific Python version:
+hatch shell dev_py_3_9   # Python 3.9
+hatch shell dev_py_3_10  # Python 3.10  
+hatch shell dev_py_3_11  # Python 3.11
 
-# Install all dependencies including dev dependencies
-uv sync
-
-# Install with specific optional dependencies
-uv sync --extra graph  # For graph memory features
-uv sync --extra llms   # For LLM integrations
-uv sync --all-extras   # Install all optional dependencies
-
-# Run commands in the virtual environment
-uv run python your_script.py
-uv run pytest tests/
+# The environment will automatically install all dev dependencies
+# Run tests within the activated shell:
+make test
 ```
 
 ### 📌 Pre-commit
@@ -44,20 +39,21 @@ To ensure our standards, make sure to install pre-commit before starting to cont
 pre-commit install
 ```
 
-## Running Tests
+### 🧪 Testing
+
+We use `pytest` to test our code across multiple Python versions. You can run tests using:
 
 ```bash
-# Run all tests
+# Run tests with default Python version
 make test
 
-# Run tests with specific Python version
-make test-py-3.10  # Python 3.10
-make test-py-3.11  # Python 3.11
-make test-py-3.12  # Python 3.12
+# Test specific Python versions:
+make test-py-3.9   # Python 3.9 environment
+make test-py-3.10  # Python 3.10 environment
+make test-py-3.11  # Python 3.11 environment
 
-# Or directly with uv
-uv run pytest tests/
-uv run --python 3.11 pytest tests/
+# When using hatch shells, run tests with:
+make test  # After activating a shell with hatch shell test_XX
 ```
 
 Make sure that all tests pass across all supported Python versions before submitting a pull request.

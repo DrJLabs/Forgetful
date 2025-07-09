@@ -2,35 +2,38 @@
 alwaysApply: true
 ---
 
-### Context7 Auto-Docs Rule 
+## Context7 Auto-Docs Rule
 
-### Mandatory Trigger Conditions
-This rule MUST be applied when ANY of the following occur:
-1. **Explicit technology mentions**: Docker, Kubernetes, npm, pip, etc.
-2. **Configuration discussions**: Any setup, deployment, or infrastructure talk
-3. **Tool recommendations**: Suggesting any external tools or frameworks
-4. **Code examples**: Using any non-standard-library imports or tools
-5. **Architecture discussions**: Mentioning monitoring, logging, databases, etc.
+When this rule fires: 
+Immediately upon detecting that the current task imports, configures, upgrades, troubleshoots, or otherwise relies on any external package, framework, SDK, or API (npm/pnpm, pip/conda, cargo, gem, go get, composer, etc.).
 
-### Enforcement Mechanism
-- **Pre-response check**: Before providing any technical recommendation, ask: "Does this involve external tools/frameworks?"
-- **Tool names trigger**: Any mention of specific tools (Docker, Prometheus, Grafana, etc.) = automatic Context7 lookup
-- **Code imports trigger**: Any `import`, `require`, or dependency reference = automatic Context7 lookup
-- **Infrastructure keywords**: monitoring, deployment, containerization, etc. = automatic Context7 lookup
+Mandatory workflow
+ * Resolve the library ID
+   mcp_context7-local_resolve-library-id
+# params: { "libraryName": "<exact-package-name>" }
 
-### Workflow
-1. **Detect trigger** → immediately pause response
-2. **Resolve library ID** for ALL mentioned technologies
-3. **Fetch documentation** for each (maximum 10,000 tokens)
-4. **Provide recommendations** based on official docs
-5. **Cite Context7 sources** in responses
+ * Retrieve the documentation
+   mcp_context7-local_get-library-docs
+# params:
+#   context7CompatibleLibraryID: "<ID from step 1>"
+#   topic: "<optional subsection, e.g. routing, auth>"
+#   tokens: 10000-15000 max
 
-### Example Triggers
-- "Docker setup" → resolve docker, docker-compose
-- "Add monitoring" → resolve prometheus, grafana, monitoring tools
-- "Database connection" → resolve relevant database libraries
-- "API framework" → resolve express, fastapi, spring, etc.
+Perform steps 1-2 again whenever the active task switches to a new library.
 
-### Failure Handling
-- If Context7 lookup fails, acknowledge the failure and proceed with clear disclaimer
-- Always prefer Context7 docs over general knowledge when available
+Applies to (non-exhaustive)
+ * Front-end and SSR frameworks (React, Vue, Svelte, Next.js, Nuxt, Solid, Angular, Astro…)
+ * CSS/utility frameworks (Tailwind, Bootstrap, MUI, Chakra…)
+ * Back-end & API libs (Express, Fastify, NestJS, Django, FastAPI, Flask, Spring, .NET, Ruby on Rails…)
+ * ORMs / database clients (Prisma, TypeORM, Sequelize, SQLAlchemy, Hibernate…)
+ * Auth, state-management, testing, linting, build, and CLI tools
+ * Cloud/IaC SDKs (AWS CDK, Pulumi, Terraform providers…)
+ * Any other third-party runtime or plugin not in the language’s standard library
+Exclusions
+ * Pure language syntax or standard-library usage
+ * Git, shell, or general OS commands
+ * Plain HTML/CSS not tied to a framework
+Local Context7 MCP server
+ * URL: http://localhost:7070
+ * Health endpoint: /health (expects HTTP 200)
+ * Available tools: resolve-library-id, get-library-docs

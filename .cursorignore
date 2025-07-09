@@ -1,0 +1,119 @@
+# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
+
+# Data and cache directories
+data/
+venv/
+env/
+ENV/
+
+# Node modules and dependencies
+node_modules/
+**/node_modules/
+*.lock
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+.env/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+pyenv/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+db/
+test-db/
+
+# Log files
+*.log
+logs/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing and coverage
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+coverage.xml
+*.cover
+
+# Documentation build
+docs/_build/
+site/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Large directories that shouldn't be indexed
+mem0/openmemory/
+mem0/cookbooks/
+mem0/embedchain/
+mem0/evaluation/
+mem0/examples/
+mem0/uv.lock
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Git files
+.git/
+.gitignore
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Cache directories
+.cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json

@@ -1,0 +1,92 @@
+---
+alwaysApply: false
+---
+# Project Memory Management with Mem0
+
+## MANDATORY: Use External Memory System
+
+For ALL coding tasks and interactions in this project, you MUST utilize the external mem0 memory system running at `http://localhost:8000` to maintain project context and history.
+
+## Memory Operations
+
+### 1. Start of Every Session
+- **Search recent memories**: `POST /search` with query about recent work on this project
+- **Retrieve user preferences**: `GET /memories?user_id={user}` filtering for code style, library preferences
+
+### 2. During Development
+- **Track progress**: After completing any task, create a memory with what was done
+- **Store decisions**: Record any technical decisions, library choices, or architectural patterns
+- **Note blockers**: Document any issues encountered and their solutions
+
+### 3. Memory Structure
+Use structured messages for different memory types:
+
+```json
+// Progress tracking
+{
+  "messages": [
+    {"role": "user", "content": "Working on [feature/file]"},
+    {"role": "assistant", "content": "Completed [specific changes]"}
+  ],
+  "user_id": "default_user",
+  "metadata": {
+    "type": "progress",
+    "project": "[project_name]",
+    "timestamp": "[ISO_date]"
+  }
+}
+
+// Preferences & conventions
+{
+  "messages": [
+    {"role": "user", "content": "Code style preference: [description]"},
+    {"role": "assistant", "content": "Will use [specific convention]"}
+  ],
+  "user_id": "default_user",
+  "metadata": {
+    "type": "preference",
+    "category": "code_style|library|architecture",
+    "project": "[project_name]"
+  }
+}
+```
+
+## Required Actions
+
+1. **Before answering ANY coding question**:
+   - Search memories for relevant context
+   - Check for user preferences and project conventions
+   - Review recent progress to understand current state
+
+2. **After completing ANY task**:
+   - Create a memory documenting what was done
+   - Include specific files changed and why
+   - Note any decisions made
+
+3. **When encountering preferences**:
+   - Store them as long-term memories
+   - Tag with appropriate metadata for easy retrieval
+
+## Example Workflow
+
+```bash
+# Start of session - check recent work
+curl -X POST http://localhost:8000/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "recent work on [project]", "user_id": "default_user"}'
+
+# After task completion - store progress
+curl -X POST http://localhost:8000/memories \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "Add authentication to API"},
+      {"role": "assistant", "content": "Implemented JWT auth in /api/auth.js using jsonwebtoken library"}
+    ],
+    "user_id": "default_user",
+    "metadata": {"type": "progress", "project": "my-app"}
+  }'
+```
+
+## CRITICAL: This is NOT optional
+The mem0 system is the source of truth for project context. Failing to use it means losing important project history and user preferences. Always check memories before making suggestions and always update memories after completing work.

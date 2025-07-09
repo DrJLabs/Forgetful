@@ -8,43 +8,45 @@ PROJECT_NAME := mem0ai
 all: format sort lint
 
 install:
-	uv sync
+	hatch env create
 
 install_all:
-	uv sync --all-extras
+	pip install ruff==0.6.9 groq together boto3 litellm ollama chromadb weaviate weaviate-client sentence_transformers vertexai \
+	            google-generativeai elasticsearch opensearch-py vecs "pinecone<7.0.0" pinecone-text faiss-cpu langchain-community \
+							upstash-vector azure-search-documents langchain-memgraph langchain-neo4j langchain-aws rank-bm25 pymochow pymongo
 
 # Format code with ruff
 format:
-	uv run ruff format
+	hatch run format
 
 # Sort imports with isort
 sort:
-	uv run isort mem0/
+	hatch run isort mem0/
 
 # Lint code with ruff
 lint:
-	uv run ruff check
+	hatch run lint
 
 docs:
 	cd docs && mintlify dev
 
 build:
-	uv build
+	hatch build
 
 publish:
-	uv publish
+	hatch publish
 
 clean:
 	rm -rf dist
 
 test:
-	uv run pytest tests/
+	hatch run test
+
+test-py-3.9:
+	hatch run dev_py_3_9:test
 
 test-py-3.10:
-	uv run --python 3.10 pytest tests/
+	hatch run dev_py_3_10:test
 
 test-py-3.11:
-	uv run --python 3.11 pytest tests/
-
-test-py-3.12:
-	uv run --python 3.12 pytest tests/
+	hatch run dev_py_3_11:test

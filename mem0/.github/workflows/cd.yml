@@ -18,15 +18,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install uv
+      - name: Install Hatch
         run: |
-          pipx install uv
+          pip install hatch
+
       - name: Install dependencies
         run: |
-          uv sync
-      - name: Build package
+          hatch env create
+
+      - name: Build a binary wheel and a source tarball
         run: |
-          uv build
+          hatch build --clean
 
       # TODO: Needs to setup mem0 repo on Test PyPI
       # - name: Publish distribution 📦 to Test PyPI
