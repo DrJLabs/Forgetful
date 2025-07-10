@@ -1,0 +1,596 @@
+name: OpenMemory Quality Assurance
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'openmemory/**'
+      - '.github/workflows/openmemory-tests.yml'
+  pull_request:
+    paths:
+      - 'openmemory/**'
+      - '.github/workflows/openmemory-tests.yml'
+
+env:
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: openmemory_test
+  POSTGRES_HOST: localhost
+  POSTGRES_PORT: 5432
+
+jobs:
+  # Check what components have changed
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      ui: ${{ steps.filter.outputs.ui }}
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'openmemory/api/**'
+            ui:
+              - 'openmemory/ui/**'
+            e2e:
+              - 'openmemory/**'
+
+  # Backend API Testing
+  backend-tests:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true'
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install Python dependencies
+        working-directory: ./openmemory/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432 -U ${{ env.POSTGRES_USER }}; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+      - name: Set up test database
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+        run: |
+          alembic upgrade head
+
+      - name: Run linting
+        working-directory: ./openmemory/api
+        run: |
+          # Install linting tools
+          pip install black flake8 isort mypy
+          
+          # Check code formatting
+          black --check --diff .
+          
+          # Check imports
+          isort --check-only --diff .
+          
+          # Check PEP 8 compliance
+          flake8 .
+          
+          # Check type annotations
+          mypy app/ --ignore-missing-imports
+
+      - name: Run unit tests
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          REDIS_URL: redis://localhost:6379
+          TESTING: true
+        run: |
+          pytest tests/test_models.py -v --cov=app/models --cov-report=xml --cov-report=term
+
+      - name: Run router tests
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          REDIS_URL: redis://localhost:6379
+          TESTING: true
+        run: |
+          pytest tests/test_routers.py -v --cov=app/routers --cov-append --cov-report=xml --cov-report=term
+
+      - name: Run integration tests
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          REDIS_URL: redis://localhost:6379
+          TESTING: true
+        run: |
+          pytest tests/test_integration.py -v --cov=app --cov-append --cov-report=xml --cov-report=term
+
+      - name: Run security tests
+        working-directory: ./openmemory/api
+        run: |
+          # Security vulnerability scanning
+          pip install bandit safety
+          bandit -r app/ -f json -o bandit-report.json || true
+          safety check --json --output safety-report.json || true
+
+      - name: Generate coverage report
+        working-directory: ./openmemory/api
+        run: |
+          pytest --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./openmemory/api/coverage.xml
+          flags: backend
+          name: backend-coverage
+
+      - name: Archive test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: backend-test-results-${{ matrix.python-version }}
+          path: |
+            openmemory/api/coverage.xml
+            openmemory/api/htmlcov/
+            openmemory/api/bandit-report.json
+            openmemory/api/safety-report.json
+
+  # Frontend Testing
+  frontend-tests:
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ui == 'true'
+
+    strategy:
+      matrix:
+        node-version: [18, 20, 21]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: openmemory/ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./openmemory/ui
+        run: |
+          npm ci
+
+      - name: Install testing dependencies
+        working-directory: ./openmemory/ui
+        run: |
+          npm install --save-dev \
+            jest \
+            @testing-library/react \
+            @testing-library/jest-dom \
+            @testing-library/user-event \
+            jest-environment-jsdom \
+            @types/jest
+
+      - name: Run linting
+        working-directory: ./openmemory/ui
+        run: |
+          npm run lint
+
+      - name: Run type checking
+        working-directory: ./openmemory/ui
+        run: |
+          npx tsc --noEmit
+
+      - name: Run unit tests
+        working-directory: ./openmemory/ui
+        run: |
+          npm test -- --coverage --watchAll=false --passWithNoTests
+
+      - name: Run component tests
+        working-directory: ./openmemory/ui
+        run: |
+          npm test -- --coverage --watchAll=false --testPathPattern=components
+
+      - name: Build application
+        working-directory: ./openmemory/ui
+        run: |
+          npm run build
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./openmemory/ui/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+
+      - name: Archive test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: frontend-test-results-${{ matrix.node-version }}
+          path: |
+            openmemory/ui/coverage/
+            openmemory/ui/dist/
+
+  # End-to-End Testing
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, backend-tests, frontend-tests]
+    if: always() && (needs.detect-changes.outputs.e2e == 'true' || needs.detect-changes.outputs.api == 'true' || needs.detect-changes.outputs.ui == 'true')
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: openmemory/ui/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./openmemory/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install frontend dependencies
+        working-directory: ./openmemory/ui
+        run: |
+          npm ci
+
+      - name: Install Playwright
+        working-directory: ./openmemory/ui
+        run: |
+          npm install --save-dev @playwright/test
+          npx playwright install --with-deps
+
+      - name: Set up test database
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+        run: |
+          alembic upgrade head
+
+      - name: Start backend server
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          REDIS_URL: redis://localhost:6379
+        run: |
+          uvicorn main:app --host 0.0.0.0 --port 8000 &
+          echo $! > backend.pid
+          
+          # Wait for backend to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 1; done'
+
+      - name: Build and start frontend
+        working-directory: ./openmemory/ui
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+        run: |
+          npm run build
+          npm start &
+          echo $! > frontend.pid
+          
+          # Wait for frontend to be ready
+          timeout 30 bash -c 'until curl -f http://localhost:3000; do sleep 1; done'
+
+      - name: Run E2E tests
+        working-directory: ./openmemory/ui
+        env:
+          BASE_URL: http://localhost:3000
+          API_URL: http://localhost:8000
+        run: |
+          npx playwright test --reporter=html
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            openmemory/ui/playwright-report/
+            openmemory/ui/test-results/
+
+      - name: Cleanup processes
+        if: always()
+        run: |
+          if [ -f openmemory/api/backend.pid ]; then
+            kill $(cat openmemory/api/backend.pid) || true
+          fi
+          if [ -f openmemory/ui/frontend.pid ]; then
+            kill $(cat openmemory/ui/frontend.pid) || true
+          fi
+
+  # Performance Testing
+  performance-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests]
+    if: needs.backend-tests.result == 'success'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: ./openmemory/api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install locust
+
+      - name: Set up test database
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+        run: |
+          alembic upgrade head
+
+      - name: Start backend server
+        working-directory: ./openmemory/api
+        env:
+          DATABASE_URL: postgresql://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+        run: |
+          uvicorn main:app --host 0.0.0.0 --port 8000 &
+          sleep 10
+
+      - name: Run performance tests
+        working-directory: ./openmemory/api
+        run: |
+          # Run locust performance tests
+          locust -f tests/performance/locustfile.py --headless -u 10 -r 2 -t 60s --host http://localhost:8000 --html performance-report.html
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            openmemory/api/performance-report.html
+
+  # Security Testing
+  security-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install security tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety semgrep
+
+      - name: Run Bandit security linting
+        working-directory: ./openmemory/api
+        run: |
+          bandit -r app/ -f json -o bandit-report.json
+        continue-on-error: true
+
+      - name: Run Safety vulnerability check
+        working-directory: ./openmemory/api
+        run: |
+          safety check --json --output safety-report.json
+        continue-on-error: true
+
+      - name: Run Semgrep security scan
+        run: |
+          semgrep --config=auto --json --output=semgrep-report.json openmemory/
+        continue-on-error: true
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-test-results
+          path: |
+            openmemory/api/bandit-report.json
+            openmemory/api/safety-report.json
+            semgrep-report.json
+
+  # Coverage Report Aggregation
+  coverage-report:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Combine coverage reports
+        run: |
+          echo "## Test Coverage Summary" > coverage-summary.md
+          echo "" >> coverage-summary.md
+          
+          # Process backend coverage
+          if [ -d "backend-test-results-3.11" ]; then
+            echo "### Backend Coverage" >> coverage-summary.md
+            echo "\`\`\`" >> coverage-summary.md
+            # Extract coverage percentage from backend results
+            echo "Coverage information would be extracted here" >> coverage-summary.md
+            echo "\`\`\`" >> coverage-summary.md
+            echo "" >> coverage-summary.md
+          fi
+          
+          # Process frontend coverage
+          if [ -d "frontend-test-results-20" ]; then
+            echo "### Frontend Coverage" >> coverage-summary.md
+            echo "\`\`\`" >> coverage-summary.md
+            # Extract coverage percentage from frontend results
+            echo "Coverage information would be extracted here" >> coverage-summary.md
+            echo "\`\`\`" >> coverage-summary.md
+          fi
+
+      - name: Upload combined coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: combined-coverage-report
+          path: coverage-summary.md
+
+  # Final Quality Gate
+  quality-gate:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, e2e-tests, security-tests]
+    if: always()
+
+    steps:
+      - name: Check test results
+        run: |
+          echo "Backend Tests: ${{ needs.backend-tests.result }}"
+          echo "Frontend Tests: ${{ needs.frontend-tests.result }}"
+          echo "E2E Tests: ${{ needs.e2e-tests.result }}"
+          echo "Security Tests: ${{ needs.security-tests.result }}"
+          
+          # Fail if critical tests failed
+          if [ "${{ needs.backend-tests.result }}" = "failure" ]; then
+            echo "❌ Backend tests failed - blocking deployment"
+            exit 1
+          fi
+          
+          if [ "${{ needs.frontend-tests.result }}" = "failure" ]; then
+            echo "❌ Frontend tests failed - blocking deployment"
+            exit 1
+          fi
+          
+          if [ "${{ needs.e2e-tests.result }}" = "failure" ]; then
+            echo "❌ E2E tests failed - blocking deployment"
+            exit 1
+          fi
+          
+          echo "✅ All critical tests passed - ready for deployment"
+
+      - name: Post success comment
+        if: success() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ All quality assurance tests passed! This PR is ready for review and deployment.'
+            })
+
+      - name: Post failure comment
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Quality assurance tests failed. Please check the test results and fix the issues before merging.'
+            })
