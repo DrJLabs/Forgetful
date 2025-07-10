@@ -1,37 +1,39 @@
 ---
-description:
+description: 
 alwaysApply: true
 ---
 
-### Context7 Auto-Docs Rule 
+# Context7 Auto-Documentation Rule
 
-### Mandatory Trigger Conditions
-This rule MUST be applied when ANY of the following occur:
-1. **Explicit technology mentions**: Docker, Kubernetes, npm, pip, etc.
-2. **Configuration discussions**: Any setup, deployment, or infrastructure talk
-3. **Tool recommendations**: Suggesting any external tools or frameworks
-4. **Code examples**: Using any non-standard-library imports or tools
-5. **Architecture discussions**: Mentioning monitoring, logging, databases, etc.
+## MANDATORY: Use Context7 for ALL External Tools
 
-### Enforcement Mechanism
-- **Pre-response check**: Before providing any technical recommendation, ask: "Does this involve external tools/frameworks?"
-- **Tool names trigger**: Any mention of specific tools (Docker, Prometheus, Grafana, etc.) = automatic Context7 lookup
-- **Code imports trigger**: Any `import`, `require`, or dependency reference = automatic Context7 lookup
-- **Infrastructure keywords**: monitoring, deployment, containerization, etc. = automatic Context7 lookup
+When ANY of these are mentioned:
+- Docker, Kubernetes, containers
+- npm, pip, package managers  
+- Databases (PostgreSQL, MongoDB, etc.)
+- Frameworks (React, Express, FastAPI, etc.)
+- Infrastructure tools (Prometheus, Grafana, etc.)
+- Any `import` or `require` statements
 
-### Workflow
-1. **Detect trigger** → immediately pause response
-2. **Resolve library ID** for ALL mentioned technologies
-3. **Fetch documentation** for each (maximum 10,000 tokens)
-4. **Provide recommendations** based on official docs
-5. **Cite Context7 sources** in responses
+## Workflow:
+1. **STOP** - Do not respond without Context7 lookup
+2. **RESOLVE** library ID for mentioned technology
+3. **FETCH** official documentation  
+4. **RESPOND** with Context7-sourced information
+5. **CITE** Context7 sources in response
 
-### Example Triggers
+## Examples:
 - "Docker setup" → resolve docker, docker-compose
-- "Add monitoring" → resolve prometheus, grafana, monitoring tools
+- "Add monitoring" → resolve prometheus, grafana
 - "Database connection" → resolve relevant database libraries
-- "API framework" → resolve express, fastapi, spring, etc.
+- "API framework" → resolve express, fastapi, spring
 
-### Failure Handling
-- If Context7 lookup fails, acknowledge the failure and proceed with clear disclaimer
-- Always prefer Context7 docs over general knowledge when available
+## Enforcement:
+- Pre-response check: "Does this involve external tools?"
+- Any tool name = automatic Context7 lookup
+- Code imports = automatic Context7 lookup
+- Infrastructure keywords = automatic Context7 lookup
+
+## Failure Handling:
+- If Context7 fails, acknowledge and proceed with disclaimer
+- Always prefer Context7 docs over general knowledge
