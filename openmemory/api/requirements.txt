@@ -18,3 +18,5 @@ anthropic==0.51.0
 ollama==0.4.8
 langchain_neo4j>=0.1.0
 rank-bm25>=0.2.0
+# pgvector for optimal vector storage performance
+pgvector>=0.2.0
