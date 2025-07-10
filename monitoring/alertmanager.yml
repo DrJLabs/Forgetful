@@ -1,0 +1,301 @@
+global:
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@mem0-stack.com'
+  smtp_auth_username: 'alerts@mem0-stack.com'
+  smtp_auth_password: 'password'
+  smtp_require_tls: true
+
+# Templates
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing tree
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 5m
+  repeat_interval: 12h
+  receiver: 'default-receiver'
+  routes:
+    # Critical alerts - immediate notification
+    - matchers:
+        - severity = "critical"
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      group_interval: 1m
+      repeat_interval: 5m
+      continue: true
+
+    # Database alerts - DBA team
+    - matchers:
+        - team = "database"
+      receiver: 'database-team'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+
+    # Backend alerts - Backend team
+    - matchers:
+        - team = "backend"
+      receiver: 'backend-team'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+
+    # Infrastructure alerts - Infrastructure team
+    - matchers:
+        - team = "infrastructure"
+      receiver: 'infrastructure-team'
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+
+    # Business metrics - Product team
+    - matchers:
+        - alertname =~ ".*Memory.*|.*Vector.*"
+      receiver: 'product-team'
+      group_wait: 1m
+      group_interval: 10m
+      repeat_interval: 6h
+
+    # Low priority alerts
+    - matchers:
+        - severity = "info"
+      receiver: 'info-alerts'
+      group_wait: 5m
+      group_interval: 30m
+      repeat_interval: 24h
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning alerts if critical alerts are firing
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ['alertname', 'cluster', 'service']
+
+  # Inhibit database alerts if database is down
+  - source_matchers:
+      - alertname = "DatabaseDown"
+    target_matchers:
+      - team = "database"
+    equal: ['service']
+
+  # Inhibit application alerts if service is down
+  - source_matchers:
+      - alertname = "ServiceDown"
+    target_matchers:
+      - team =~ "backend|frontend"
+    equal: ['service']
+
+# Notification receivers
+receivers:
+  - name: 'default-receiver'
+    webhook_configs:
+      - url: 'http://localhost:9093/api/v1/alerts'
+        send_resolved: true
+        http_config:
+          bearer_token: 'your-webhook-token'
+
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'ops-team@mem0-stack.com'
+        from: 'alerts@mem0-stack.com'
+        subject: '🚨 CRITICAL ALERT: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          **Alert:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Service:** {{ .Labels.service }}
+          **Started:** {{ .StartsAt }}
+          **Runbook:** {{ .Annotations.runbook_url }}
+          **Dashboard:** {{ .Annotations.dashboard_url }}
+          {{ end }}
+        headers:
+          Subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }} - {{ .GroupLabels.service }}'
+          Priority: 'high'
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#alerts-critical'
+        username: 'mem0-alertmanager'
+        icon_emoji: ':rotating_light:'
+        color: 'danger'
+        title: '🚨 CRITICAL ALERT'
+        text: |
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.runbook_url }}|Runbook> | <{{ .Annotations.dashboard_url }}|Dashboard>
+          {{ end }}
+        send_resolved: true
+    webhook_configs:
+      - url: 'http://localhost:8080/webhook/critical'
+        send_resolved: true
+
+  - name: 'database-team'
+    email_configs:
+      - to: 'dba-team@mem0-stack.com'
+        from: 'alerts@mem0-stack.com'
+        subject: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          **Alert:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Service:** {{ .Labels.service }}
+          **Started:** {{ .StartsAt }}
+          **Runbook:** {{ .Annotations.runbook_url }}
+          **Dashboard:** {{ .Annotations.dashboard_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#database-alerts'
+        username: 'mem0-alertmanager'
+        icon_emoji: ':database:'
+        color: 'warning'
+        title: '🗄️ Database Alert'
+        text: |
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.runbook_url }}|Runbook> | <{{ .Annotations.dashboard_url }}|Dashboard>
+          {{ end }}
+
+  - name: 'backend-team'
+    email_configs:
+      - to: 'backend-team@mem0-stack.com'
+        from: 'alerts@mem0-stack.com'
+        subject: '⚙️ Backend Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          **Alert:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Service:** {{ .Labels.service }}
+          **Started:** {{ .StartsAt }}
+          **Runbook:** {{ .Annotations.runbook_url }}
+          **Dashboard:** {{ .Annotations.dashboard_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#backend-alerts'
+        username: 'mem0-alertmanager'
+        icon_emoji: ':gear:'
+        color: 'warning'
+        title: '⚙️ Backend Alert'
+        text: |
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.runbook_url }}|Runbook> | <{{ .Annotations.dashboard_url }}|Dashboard>
+          {{ end }}
+
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infra-team@mem0-stack.com'
+        from: 'alerts@mem0-stack.com'
+        subject: '🏗️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          **Alert:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Service:** {{ .Labels.service }}
+          **Started:** {{ .StartsAt }}
+          **Runbook:** {{ .Annotations.runbook_url }}
+          **Dashboard:** {{ .Annotations.dashboard_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#infrastructure-alerts'
+        username: 'mem0-alertmanager'
+        icon_emoji: ':construction:'
+        color: 'warning'
+        title: '🏗️ Infrastructure Alert'
+        text: |
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.runbook_url }}|Runbook> | <{{ .Annotations.dashboard_url }}|Dashboard>
+          {{ end }}
+
+  - name: 'product-team'
+    email_configs:
+      - to: 'product-team@mem0-stack.com'
+        from: 'alerts@mem0-stack.com'
+        subject: '📊 Business Metrics Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          **Alert:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Service:** {{ .Labels.service }}
+          **Started:** {{ .StartsAt }}
+          **Runbook:** {{ .Annotations.runbook_url }}
+          **Dashboard:** {{ .Annotations.dashboard_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#product-alerts'
+        username: 'mem0-alertmanager'
+        icon_emoji: ':chart_with_upwards_trend:'
+        color: 'good'
+        title: '📊 Business Metrics Alert'
+        text: |
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.runbook_url }}|Runbook> | <{{ .Annotations.dashboard_url }}|Dashboard>
+          {{ end }}
+
+  - name: 'info-alerts'
+    email_configs:
+      - to: 'monitoring@mem0-stack.com'
+        from: 'alerts@mem0-stack.com'
+        subject: 'ℹ️ Info Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          **Alert:** {{ .Annotations.summary }}
+          **Description:** {{ .Annotations.description }}
+          **Service:** {{ .Labels.service }}
+          **Started:** {{ .StartsAt }}
+          **Runbook:** {{ .Annotations.runbook_url }}
+          **Dashboard:** {{ .Annotations.dashboard_url }}
+          {{ end }}
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#monitoring-info'
+        username: 'mem0-alertmanager'
+        icon_emoji: ':information_source:'
+        color: 'good'
+        title: 'ℹ️ Info Alert'
+        text: |
+          {{ range .Alerts }}
+          **{{ .Annotations.summary }}**
+          Service: {{ .Labels.service }}
+          {{ .Annotations.description }}
+          <{{ .Annotations.runbook_url }}|Runbook> | <{{ .Annotations.dashboard_url }}|Dashboard>
+          {{ end }}
+
+# Time intervals for maintenance windows
+time_intervals:
+  - name: 'weekends'
+    time_intervals:
+      - times:
+          - start_time: '00:00'
+            end_time: '23:59'
+        weekdays: ['saturday', 'sunday']
+  
+  - name: 'maintenance-window'
+    time_intervals:
+      - times:
+          - start_time: '02:00'
+            end_time: '04:00'
+        weekdays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+
+# Mute rules for maintenance windows
+mute_time_intervals:
+  - name: 'maintenance-mute'
+    time_intervals: ['maintenance-window']

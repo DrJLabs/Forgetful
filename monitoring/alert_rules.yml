@@ -1,0 +1,337 @@
+groups:
+  # =======================================================================
+  # CRITICAL SERVICE AVAILABILITY ALERTS
+  # =======================================================================
+  
+  - name: mem0-stack-critical
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"mem0-api|openmemory-mcp|openmemory-ui"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+          service: '{{ $labels.job }}'
+        annotations:
+          summary: "Critical service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute. This affects core functionality."
+          runbook_url: "https://docs.mem0-stack.com/runbooks/service-down"
+          dashboard_url: "http://grafana.drjlabs.com/d/overview"
+
+      - alert: DatabaseDown
+        expr: up{job=~"postgres-exporter|neo4j"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infrastructure
+          service: '{{ $labels.job }}'
+        annotations:
+          summary: "Critical database {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 1 minute. This will cause data access failures."
+          runbook_url: "https://docs.mem0-stack.com/runbooks/database-down"
+          dashboard_url: "http://grafana.drjlabs.com/d/database"
+
+      - alert: SystemDown
+        expr: up{job="node-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: infrastructure
+          service: system
+        annotations:
+          summary: "System monitoring is down"
+          description: "Node exporter has been down for more than 2 minutes. System metrics unavailable."
+          runbook_url: "https://docs.mem0-stack.com/runbooks/system-down"
+
+  # =======================================================================
+  # PERFORMANCE DEGRADATION ALERTS
+  # =======================================================================
+  
+  - name: mem0-stack-performance
+    rules:
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=~"mem0-api|openmemory-mcp"}[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: '{{ $labels.job }}'
+        annotations:
+          summary: "High response time on {{ $labels.job }}"
+          description: "95th percentile response time is {{ $value }}s for {{ $labels.job }} (threshold: 2s)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/high-response-time"
+          dashboard_url: "http://grafana.drjlabs.com/d/performance"
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(http_requests_total{job=~"mem0-api|openmemory-mcp",code!~"2.."}[5m]) /
+            rate(http_requests_total{job=~"mem0-api|openmemory-mcp"}[5m])
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: '{{ $labels.job }}'
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is {{ $value }}% for {{ $labels.job }} (threshold: 5%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/high-error-rate"
+          dashboard_url: "http://grafana.drjlabs.com/d/performance"
+
+      - alert: SlowVectorSearch
+        expr: histogram_quantile(0.95, rate(mem0_vector_search_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: mem0-vector-search
+        annotations:
+          summary: "Slow vector search operations"
+          description: "95th percentile vector search time is {{ $value }}s (threshold: 5s)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/slow-vector-search"
+          dashboard_url: "http://grafana.drjlabs.com/d/business-metrics"
+
+      - alert: SlowDatabaseQueries
+        expr: pg_stat_activity_max_tx_duration{job="postgres-exporter"} > 30
+        for: 3m
+        labels:
+          severity: warning
+          team: database
+          service: postgres
+        annotations:
+          summary: "Long running database queries detected"
+          description: "Database queries running for more than {{ $value }}s (threshold: 30s)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/slow-queries"
+          dashboard_url: "http://grafana.drjlabs.com/d/database"
+
+  # =======================================================================
+  # RESOURCE UTILIZATION ALERTS
+  # =======================================================================
+  
+  - name: mem0-stack-resources
+    rules:
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+          service: system
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/high-cpu"
+          dashboard_url: "http://grafana.drjlabs.com/d/system"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+          service: system
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ $value }}% (threshold: 85%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/high-memory"
+          dashboard_url: "http://grafana.drjlabs.com/d/system"
+
+      - alert: HighDiskUsage
+        expr: |
+          (
+            node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay"} -
+            node_filesystem_free_bytes{fstype!="tmpfs",fstype!="overlay"}
+          ) / node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay"} * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          service: system
+        annotations:
+          summary: "High disk usage on {{ $labels.instance }}"
+          description: "Disk usage is {{ $value }}% for {{ $labels.mountpoint }} (threshold: 85%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/high-disk"
+          dashboard_url: "http://grafana.drjlabs.com/d/system"
+
+      - alert: LowDiskSpace
+        expr: |
+          (
+            node_filesystem_free_bytes{fstype!="tmpfs",fstype!="overlay"} /
+            node_filesystem_size_bytes{fstype!="tmpfs",fstype!="overlay"}
+          ) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+          service: system
+        annotations:
+          summary: "Critical disk space on {{ $labels.instance }}"
+          description: "Only {{ $value }}% free space remaining on {{ $labels.mountpoint }} (threshold: 10%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/low-disk-space"
+          dashboard_url: "http://grafana.drjlabs.com/d/system"
+
+  # =======================================================================
+  # DATABASE PERFORMANCE ALERTS
+  # =======================================================================
+  
+  - name: mem0-stack-database
+    rules:
+      - alert: PostgreSQLConnectionsHigh
+        expr: |
+          (
+            pg_stat_database_numbackends{job="postgres-exporter"} /
+            pg_settings_max_connections{job="postgres-exporter"}
+          ) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+          service: postgres
+        annotations:
+          summary: "High PostgreSQL connection usage"
+          description: "PostgreSQL connections at {{ $value }}% (threshold: 80%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/high-db-connections"
+          dashboard_url: "http://grafana.drjlabs.com/d/database"
+
+      - alert: PostgreSQLSlowQueries
+        expr: pg_stat_activity_max_tx_duration{job="postgres-exporter"} > 300
+        for: 2m
+        labels:
+          severity: critical
+          team: database
+          service: postgres
+        annotations:
+          summary: "PostgreSQL extremely slow queries"
+          description: "Query running for {{ $value }}s (threshold: 300s)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/slow-queries"
+          dashboard_url: "http://grafana.drjlabs.com/d/database"
+
+      - alert: Neo4jStoreSize
+        expr: neo4j_store_size_bytes{job="neo4j"} > 10737418240  # 10GB
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+          service: neo4j
+        annotations:
+          summary: "Neo4j store size is large"
+          description: "Neo4j store size is {{ $value | humanize1024 }}B (threshold: 10GB)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/large-store"
+          dashboard_url: "http://grafana.drjlabs.com/d/database"
+
+      - alert: PostgreSQLCacheHitRatio
+        expr: |
+          (
+            rate(pg_stat_database_blks_hit{job="postgres-exporter"}[5m]) /
+            (rate(pg_stat_database_blks_hit{job="postgres-exporter"}[5m]) + rate(pg_stat_database_blks_read{job="postgres-exporter"}[5m]))
+          ) * 100 < 90
+        for: 10m
+        labels:
+          severity: warning
+          team: database
+          service: postgres
+        annotations:
+          summary: "Low PostgreSQL cache hit ratio"
+          description: "Cache hit ratio is {{ $value }}% (threshold: 90%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/low-cache-hit"
+          dashboard_url: "http://grafana.drjlabs.com/d/database"
+
+  # =======================================================================
+  # BUSINESS METRICS ALERTS
+  # =======================================================================
+  
+  - name: mem0-stack-business
+    rules:
+      - alert: MemoryCreationFailures
+        expr: rate(mem0_memory_operations_total{operation="create",status="failed"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: mem0-api
+        annotations:
+          summary: "High memory creation failure rate"
+          description: "Memory creation failures at {{ $value }}/sec (threshold: 0.1/sec)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/memory-creation-failures"
+          dashboard_url: "http://grafana.drjlabs.com/d/business-metrics"
+
+      - alert: NoMemoryOperations
+        expr: rate(mem0_memory_operations_total[30m]) < 0.001
+        for: 30m
+        labels:
+          severity: info
+          team: backend
+          service: mem0-api
+        annotations:
+          summary: "No memory operations detected"
+          description: "No memory operations for 30 minutes (expected: >0.001/sec)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/no-activity"
+          dashboard_url: "http://grafana.drjlabs.com/d/business-metrics"
+
+      - alert: VectorSearchFailures
+        expr: rate(mem0_vector_search_total{status="failed"}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: mem0-vector-search
+        annotations:
+          summary: "High vector search failure rate"
+          description: "Vector search failures at {{ $value }}/sec (threshold: 0.05/sec)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/vector-search-failures"
+          dashboard_url: "http://grafana.drjlabs.com/d/business-metrics"
+
+  # =======================================================================
+  # MONITORING STACK HEALTH
+  # =======================================================================
+  
+  - name: mem0-stack-monitoring
+    rules:
+      - alert: PrometheusConfigReloadFailed
+        expr: prometheus_config_last_reload_successful == 0
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          service: prometheus
+        annotations:
+          summary: "Prometheus config reload failed"
+          description: "Prometheus configuration reload failed"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/prometheus-config-failed"
+
+      - alert: PrometheusNotConnectedToAlertmanager
+        expr: prometheus_notifications_alertmanagers_discovered < 1
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          service: prometheus
+        annotations:
+          summary: "Prometheus not connected to Alertmanager"
+          description: "Prometheus cannot reach Alertmanager for notifications"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/alertmanager-disconnected"
+
+      - alert: AlertmanagerConfigInconsistent
+        expr: count by (service) (count by (service, instance) (alertmanager_config_hash)) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          service: alertmanager
+        annotations:
+          summary: "Alertmanager configurations inconsistent"
+          description: "Alertmanager instances have different configurations"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/alertmanager-config-inconsistent"
+
+      - alert: GrafanaDataSourceError
+        expr: grafana_datasource_request_errors_total > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+          service: grafana
+        annotations:
+          summary: "Grafana data source errors"
+          description: "Grafana experiencing data source errors"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/grafana-datasource-errors"
