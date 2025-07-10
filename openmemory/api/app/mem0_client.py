@@ -40,7 +40,7 @@ config = {
             "dbname": os.getenv("POSTGRES_DB", "mem0"),  # Changed from "database" to "dbname"
             "user": os.getenv("POSTGRES_USER"),
             "password": os.getenv("POSTGRES_PASSWORD"),
-            "collection_name": "mem0_memories",
+            "collection_name": "memories",  # Use the main memories table
             "embedding_model_dims": 1536  # for text-embedding-3-small
         }
     },

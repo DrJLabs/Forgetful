@@ -34,6 +34,9 @@ class MemoryResponse(BaseModel):
     created_at: str
     user_id: str
     metadata: Optional[dict] = {}
+    state: str = "active"
+    categories: List[str] = []
+    app_name: str = "openmemory"
 
 
 class PaginatedMemoryResponse(BaseModel):
@@ -81,7 +84,10 @@ async def list_memories(
                 content=mem.get("memory", ""),
                 created_at=mem.get("created_at", datetime.utcnow().isoformat()),
                 user_id=user_id,
-                metadata=mem.get("metadata", {})
+                metadata=mem.get("metadata", {}),
+                state="active",
+                categories=[],
+                app_name=mem.get("metadata", {}).get("mcp_client", "openmemory")
             ))
         
         total = len(memories)
@@ -209,12 +215,24 @@ async def get_categories(user_id: str):
     return {"categories": [], "total": 0}
 
 
-@router.post("/filter")
-async def filter_memories(
-    user_id: str,
-    search_query: Optional[str] = None,
-    page: int = 1,
+class FilterMemoriesRequest(BaseModel):
+    user_id: str
+    search_query: Optional[str] = None
+    page: int = 1
     size: int = 50
-):
+    app_ids: Optional[List[str]] = None
+    category_ids: Optional[List[str]] = None
+    sort_column: Optional[str] = None
+    sort_direction: Optional[str] = None
+    show_archived: Optional[bool] = False
+
+
+@router.post("/filter")
+async def filter_memories(request: FilterMemoriesRequest):
     """Filter memories - redirects to list_memories"""
-    return await list_memories(user_id=user_id, page=page, size=size, search_query=search_query) 
+    return await list_memories(
+        user_id=request.user_id, 
+        page=request.page, 
+        size=request.size, 
+        search_query=request.search_query
+    ) 

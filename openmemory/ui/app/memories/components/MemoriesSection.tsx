@@ -8,12 +8,14 @@ import { PageSizeSelector } from "./PageSizeSelector";
 import { useMemoriesApi } from "@/hooks/useMemoriesApi";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MemoryTableSkeleton } from "@/skeleton/MemoryTableSkeleton";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 export function MemoriesSection() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { fetchMemories } = useMemoriesApi();
-  const [memories, setMemories] = useState<any[]>([]);
+  const memories = useSelector((state: RootState) => state.memories.memories);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,7 +37,7 @@ export function MemoriesSection() {
           currentPage,
           itemsPerPage
         );
-        setMemories(result.memories);
+        // Remove setMemories - we're using Redux state now
         setTotalItems(result.total);
         setTotalPages(result.pages);
       } catch (error) {
