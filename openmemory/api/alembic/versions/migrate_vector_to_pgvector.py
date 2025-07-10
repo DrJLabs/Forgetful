@@ -1,7 +1,7 @@
 """migrate_vector_to_pgvector
 
 Revision ID: migrate_vector_to_pgvector
-Revises: add_config_table
+Revises: afd00efbd06b
 Create Date: 2025-01-10 10:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import json
 
 # revision identifiers, used by Alembic.
 revision = 'migrate_vector_to_pgvector'
-down_revision = 'add_config_table'
+down_revision = 'afd00efbd06b'
 branch_labels = None
 depends_on = None
 

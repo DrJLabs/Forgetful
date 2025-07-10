@@ -1,0 +1,28 @@
+# Testing Dependencies for OpenMemory API
+# Core testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.1
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+pytest-xdist>=3.3.1
+
+# HTTP testing
+httpx>=0.24.1
+
+# Database testing
+testcontainers>=3.7.1
+factory-boy>=3.3.0
+
+# Mock and fixtures
+freezegun>=1.2.2
+responses>=0.23.0
+
+# Test reporting
+pytest-html>=3.2.0
+allure-pytest>=2.13.0
+
+# Performance testing
+pytest-benchmark>=4.0.0
+
+# Environment testing
+pytest-env>=0.8.2 
