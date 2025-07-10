@@ -1,0 +1,5 @@
+Starting comprehensive test execution...
+[0;34m🔧 Running Backend Tests[0m
+---------------------------
+[1;33m⚠️  Virtual environment not found, creating one...[0m
+./scripts/run_comprehensive_tests.sh: line 58: python: command not found
