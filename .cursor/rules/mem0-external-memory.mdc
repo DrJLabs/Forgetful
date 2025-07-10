@@ -1,6 +1,6 @@
 ---
 description:
-alwaysApply: true
+alwaysApply: false
 ---
 
 # Mem0 MCP Project Memory System

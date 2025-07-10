@@ -157,7 +157,7 @@ class PGVector(VectorStoreBase):
         )
 
         results = self.cur.fetchall()
-        return [OutputData(id=str(r[0]), score=float(r[1]), payload=r[2]) for r in results]
+        return [OutputData(id=str(r[0]), score=float(r[1]) if r[1] is not None else 0.0, payload=r[2]) for r in results]
 
     def delete(self, vector_id):
         """
