@@ -11,6 +11,15 @@ from app.database import Base
 from sqlalchemy.orm import Session
 from app.utils.categorization import get_categories_for_memory
 
+# Import pgvector types for proper vector storage
+try:
+    from pgvector.sqlalchemy import Vector
+    PGVECTOR_AVAILABLE = True
+except ImportError:
+    # Fallback for systems without pgvector
+    PGVECTOR_AVAILABLE = False
+    print("Warning: pgvector not installed. Vector operations will use String storage.")
+
 
 def get_current_utc_time():
     """Get current UTC time"""
@@ -78,7 +87,8 @@ class Memory(Base):
     user_id = Column(UUID, ForeignKey("users.id"), nullable=False, index=True)
     app_id = Column(UUID, ForeignKey("apps.id"), nullable=False, index=True)
     content = Column(String, nullable=False)
-    vector = Column(String)
+    # Updated to use proper pgvector types for optimal performance
+    vector = Column(Vector(1536) if PGVECTOR_AVAILABLE else String, nullable=True)
     metadata_ = Column('metadata', JSON, default=dict)
     state = Column(Enum(MemoryState), default=MemoryState.active, index=True)
     created_at = Column(DateTime, default=get_current_utc_time, index=True)
@@ -96,6 +106,8 @@ class Memory(Base):
         Index('idx_memory_user_state', 'user_id', 'state'),
         Index('idx_memory_app_state', 'app_id', 'state'),
         Index('idx_memory_user_app', 'user_id', 'app_id'),
+        # Vector similarity index will be created by migration script
+        # Index('idx_memory_vector_cosine', 'vector', postgresql_using='ivfflat', postgresql_ops={'vector': 'vector_cosine_ops'}) if PGVECTOR_AVAILABLE else None,
     )
 
 
