@@ -1,0 +1,301 @@
+filebeat.inputs:
+  # Docker container logs
+  - type: docker
+    containers.path: "/var/lib/docker/containers"
+    containers.stream: "all"
+    containers.ids:
+      - "*"
+    exclude_lines: ["^\\s*$", "^\\s*#"]
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+    multiline.negate: true
+    multiline.match: after
+    close_eof: true
+    clean_removed: true
+    scan_frequency: 10s
+    harvester_buffer_size: 16384
+    max_bytes: 10485760
+    json.keys_under_root: false
+    json.add_error_key: true
+    json.message_key: message
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - decode_json_fields:
+          fields: ["message"]
+          target: "json"
+          overwrite_keys: true
+      - add_fields:
+          target: filebeat
+          fields:
+            environment: production
+            cluster: mem0-stack
+            datacenter: local
+      - drop_fields:
+          fields: ["input", "ecs", "agent", "host.os", "host.containerized"]
+
+  # System logs
+  - type: syslog
+    protocol.udp:
+      host: "0.0.0.0:5140"
+    fields:
+      logtype: syslog
+      environment: production
+    fields_under_root: true
+
+  # Application-specific log files
+  - type: log
+    paths:
+      - "/var/log/mem0-stack/*.log"
+      - "/var/log/mem0-stack/**/*.log"
+    fields:
+      logtype: application
+      environment: production
+    fields_under_root: true
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+    multiline.negate: true
+    multiline.match: after
+    scan_frequency: 10s
+    harvester_buffer_size: 16384
+    max_bytes: 10485760
+    close_eof: true
+    close_removed: true
+    clean_removed: true
+    ignore_older: 24h
+    processors:
+      - add_fields:
+          target: app_log
+          fields:
+            source: file
+            cluster: mem0-stack
+
+  # Monitoring logs
+  - type: log
+    paths:
+      - "/var/log/monitoring/*.log"
+    fields:
+      logtype: monitoring
+      environment: production
+    fields_under_root: true
+    processors:
+      - add_fields:
+          target: monitoring_log
+          fields:
+            source: file
+            cluster: mem0-stack
+
+# Global processors
+processors:
+  # Add hostname and timestamp
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+      cache.ttl: 5m
+      geo.name: local
+      geo.location: "40.7128, -74.0060"
+      geo.continent_name: "North America"
+      geo.country_iso_code: "US"
+      geo.region_name: "New York"
+      geo.city_name: "New York"
+  
+  # Add Docker metadata
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+      match_fields: ["container.id"]
+      default_indexers.enabled: true
+      default_matchers.enabled: true
+      cleanup_timeout: 60s
+      
+  # Add process metadata
+  - add_process_metadata:
+      match_pids: ["process.pid", "process.parent.pid"]
+      target: process
+      include_fields: ["process.name", "process.title", "process.executable", "process.args", "process.env"]
+      
+  # Rename fields for consistency
+  - rename:
+      fields:
+        - from: "docker.container.name"
+          to: "container.name"
+        - from: "docker.container.id"
+          to: "container.id"
+        - from: "docker.container.image"
+          to: "container.image"
+        - from: "docker.container.labels"
+          to: "container.labels"
+          
+  # Add service identification
+  - script:
+      lang: javascript
+      source: >
+        function process(event) {
+          var containerName = event.Get("container.name");
+          if (containerName) {
+            if (containerName.startsWith("mem0")) {
+              event.Put("service.name", "mem0-api");
+              event.Put("service.type", "api");
+              event.Put("service.team", "backend");
+            } else if (containerName.startsWith("openmemory-mcp")) {
+              event.Put("service.name", "openmemory-mcp");
+              event.Put("service.type", "api");
+              event.Put("service.team", "backend");
+            } else if (containerName.startsWith("openmemory-ui")) {
+              event.Put("service.name", "openmemory-ui");
+              event.Put("service.type", "frontend");
+              event.Put("service.team", "frontend");
+            } else if (containerName.startsWith("postgres-mem0")) {
+              event.Put("service.name", "postgres");
+              event.Put("service.type", "database");
+              event.Put("service.team", "database");
+            } else if (containerName.startsWith("neo4j-mem0")) {
+              event.Put("service.name", "neo4j");
+              event.Put("service.type", "database");
+              event.Put("service.team", "database");
+            } else if (containerName.startsWith("prometheus-mem0")) {
+              event.Put("service.name", "prometheus");
+              event.Put("service.type", "monitoring");
+              event.Put("service.team", "infrastructure");
+            } else if (containerName.startsWith("grafana-mem0")) {
+              event.Put("service.name", "grafana");
+              event.Put("service.type", "monitoring");
+              event.Put("service.team", "infrastructure");
+            }
+          }
+        }
+  
+  # Drop unwanted fields
+  - drop_fields:
+      fields: ["input", "ecs.version", "agent.hostname", "agent.id", "agent.type", "agent.version", "agent.ephemeral_id"]
+      ignore_missing: true
+      
+  # Add timestamp
+  - timestamp:
+      field: "@timestamp"
+      layouts:
+        - "2006-01-02T15:04:05.000Z"
+        - "2006-01-02T15:04:05Z"
+        - "2006-01-02 15:04:05"
+      test:
+        - "2023-01-01T00:00:00.000Z"
+        - "2023-01-01T00:00:00Z"
+        - "2023-01-01 00:00:00"
+
+# Output configuration
+output.logstash:
+  hosts: ["logstash-mem0:5044"]
+  protocol: "tcp"
+  worker: 2
+  compression_level: 3
+  bulk_max_size: 2048
+  template.name: "mem0-stack"
+  template.pattern: "mem0-stack-*"
+  template.settings:
+    index.number_of_shards: 1
+    index.number_of_replicas: 1
+    index.refresh_interval: "5s"
+    index.max_result_window: 10000
+  timeout: 30s
+  max_retries: 3
+  backoff.init: 1s
+  backoff.max: 60s
+  loadbalance: true
+  pipelining: 0
+
+# Alternative output for testing
+#output.elasticsearch:
+#  hosts: ["elasticsearch-mem0:9200"]
+#  index: "mem0-stack-logs-%{+yyyy.MM.dd}"
+#  template.name: "mem0-stack"
+#  template.pattern: "mem0-stack-*"
+#  template.settings:
+#    index.number_of_shards: 1
+#    index.number_of_replicas: 1
+
+# Alternative output for debugging
+#output.console:
+#  pretty: true
+#  codec.format:
+#    string: '%{[@timestamp]} %{[service.name]} %{[message]}'
+
+# Alternative output for file debugging
+#output.file:
+#  path: "/var/log/filebeat"
+#  filename: "filebeat.log"
+#  rotate_every_kb: 10000
+#  number_of_files: 7
+#  codec.format:
+#    string: '%{[@timestamp]} %{[service.name]} %{[container.name]} %{[message]}'
+
+# Logging configuration
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+  rotateeverybytes: 10485760
+  interval: 24h
+
+# Monitoring configuration
+monitoring.enabled: true
+monitoring.cluster_uuid: "mem0-stack-cluster"
+
+# HTTP endpoint for health checks
+http.enabled: true
+http.port: 5066
+http.host: "0.0.0.0"
+
+# Memory and performance settings
+queue.mem:
+  events: 4096
+  flush.min_events: 512
+  flush.timeout: 5s
+
+# Registry settings
+filebeat.registry.path: "/usr/share/filebeat/data/registry"
+filebeat.registry.file_permissions: 0600
+filebeat.registry.flush: 5s
+
+# Shutdown settings
+filebeat.shutdown_timeout: 10s
+
+# Internal queue settings
+queue.mem.events: 4096
+queue.mem.flush.min_events: 512
+queue.mem.flush.timeout: 5s
+
+# Maximum number of events in flight
+max_procs: 2
+
+# Field reference settings
+fields:
+  datacenter: local
+  environment: production
+  cluster: mem0-stack
+  region: us-east-1
+  availability_zone: us-east-1a
+
+fields_under_root: true
+
+# Tags for filtering
+tags: ["mem0-stack", "production", "logs"]
+
+# Ignore files older than
+ignore_older: 24h
+
+# Close files after
+close_older: 5m
+
+# Scan frequency
+scan_frequency: 10s
+
+# Harvester buffer size
+harvester_buffer_size: 16384
+
+# Max bytes per message
+max_bytes: 10485760
+
+# Clean up removed files
+clean_removed: true
+
+# Close EOF
+close_eof: true
