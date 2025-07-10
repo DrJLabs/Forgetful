@@ -1,39 +1,113 @@
 ---
-description: 
+description: Context7 MCP Documentation System
 alwaysApply: true
 ---
 
-# Context7 Auto-Documentation Rule
+# Context7 MCP Documentation System
 
-## MANDATORY: Use Context7 for ALL External Tools
+## Core Purpose
+Use Context7 MCP tools to automatically fetch up-to-date official documentation for all external tools, frameworks, and technologies mentioned in conversations.
 
-When ANY of these are mentioned:
-- Docker, Kubernetes, containers
-- npm, pip, package managers  
-- Databases (PostgreSQL, MongoDB, etc.)
-- Frameworks (React, Express, FastAPI, etc.)
-- Infrastructure tools (Prometheus, Grafana, etc.)
-- Any `import` or `require` statements
+## MANDATORY WORKFLOW
 
-## Workflow:
-1. **STOP** - Do not respond without Context7 lookup
-2. **RESOLVE** library ID for mentioned technology
-3. **FETCH** official documentation  
-4. **RESPOND** with Context7-sourced information
-5. **CITE** Context7 sources in response
+### 1. Before EVERY Technical Response
+- **ALWAYS** check if external tools/frameworks are mentioned
+- **IMMEDIATELY** call `resolve-library-id` for ANY technology mentioned
+- **THEN** call `get-library-docs` to fetch official documentation
+- Never provide generic advice without Context7 documentation lookup
 
-## Examples:
-- "Docker setup" → resolve docker, docker-compose
-- "Add monitoring" → resolve prometheus, grafana
-- "Database connection" → resolve relevant database libraries
-- "API framework" → resolve express, fastapi, spring
+### 2. Automatic Trigger Conditions
+Context7 lookup is MANDATORY when ANY of these appear:
+- **Container Technologies**: Docker, Kubernetes, Podman, containerd
+- **Package Managers**: npm, pip, yarn, poetry, cargo, composer
+- **Databases**: PostgreSQL, MongoDB, Redis, MySQL, SQLite
+- **Frameworks**: React, Vue, Angular, Express, FastAPI, Spring, Django
+- **Infrastructure**: Prometheus, Grafana, Nginx, Apache, Traefik
+- **Cloud Platforms**: AWS, GCP, Azure, Vercel, Netlify
+- **Build Tools**: Webpack, Vite, Rollup, Parcel, esbuild
+- **Testing**: Jest, Pytest, Mocha, Cypress, Playwright
+- **Any `import`, `require`, or dependency references**
 
-## Enforcement:
-- Pre-response check: "Does this involve external tools?"
-- Any tool name = automatic Context7 lookup
-- Code imports = automatic Context7 lookup
-- Infrastructure keywords = automatic Context7 lookup
+### 3. Context7 Lookup Process
+```
+1. User mentions "Docker setup"
+2. IMMEDIATELY call: resolve-library-id("docker")
+3. THEN call: get-library-docs("/docker/docs", topic="setup")
+4. Provide response based on official Context7 documentation
+5. ALWAYS cite Context7 sources in response
+```
 
-## Failure Handling:
-- If Context7 fails, acknowledge and proceed with disclaimer
-- Always prefer Context7 docs over general knowledge
+## Required Context7 Points
+
+### Technology Mentions
+- Any tool name triggers automatic lookup
+- Framework discussions require official docs
+- Configuration questions need current documentation
+- Installation instructions must use official sources
+
+### Code Examples
+- Import statements trigger Context7 lookup
+- Package.json dependencies need documentation
+- Configuration files require official schemas
+- API usage examples need current docs
+
+### Architecture Discussions
+- Infrastructure components need official docs
+- Deployment strategies require current guides
+- Integration patterns need official examples
+- Performance recommendations need official benchmarks
+
+## Examples
+
+### Good: Docker Setup
+```
+User: "How do I set up Docker?"
+Action: resolve-library-id("docker") → get-library-docs("/docker/docs", topic="setup")
+Response: Based on official Docker documentation [Context7 source]...
+```
+
+### Good: React Component
+```
+User: "Create a React component"
+Action: resolve-library-id("react") → get-library-docs("/react/docs", topic="components")
+Response: According to the official React documentation [Context7 source]...
+```
+
+### Good: Package Installation
+```
+User: "Install express"
+Action: resolve-library-id("express") → get-library-docs("/express/docs", topic="installation")
+Response: Following the official Express.js documentation [Context7 source]...
+```
+
+## Enforcement Rules
+
+1. **NO technical response without Context7 lookup for external tools**
+2. **NO code examples without official documentation reference**
+3. **NO installation instructions without current official sources**
+4. **NO framework advice without fetching latest documentation**
+5. **ALWAYS cite Context7 sources in responses**: [Context7 source]
+
+## Failure Handling
+
+### If Context7 Lookup Fails
+- **Acknowledge the failure**: "Context7 lookup failed for [technology]"
+- **Proceed with clear disclaimer**: "Using general knowledge instead of official docs"
+- **Still attempt to help**: Provide best available information
+- **Suggest manual lookup**: "Please verify with official documentation"
+
+### If No Library Found
+- **Try alternative terms**: "docker" → "docker-compose" → "containers"
+- **Acknowledge limitation**: "Unable to find [technology] in Context7"
+- **Provide generic guidance**: With clear disclaimer about source
+
+## Success Metrics
+
+Context7 integration is working when:
+- ✅ All external tools trigger automatic lookups
+- ✅ Responses include official documentation citations
+- ✅ Installation instructions use current official sources
+- ✅ Code examples follow official patterns
+- ✅ Configuration advice matches official schemas
+
+Remember: Context7 effectiveness depends on consistent automatic lookups! 
