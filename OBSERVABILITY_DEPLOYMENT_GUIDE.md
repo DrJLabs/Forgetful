@@ -92,7 +92,7 @@ chmod +x scripts/start_monitoring.sh
 
 #### **Alerting Rules**
 - **File**: `monitoring/alert_rules.yml`
-- **67 Comprehensive Alert Rules**:
+- **22 Comprehensive Alert Rules**:
   - **Critical Alerts**: Service down, database down, system down
   - **Performance Alerts**: High response time, high error rate, slow queries
   - **Resource Alerts**: High CPU/memory/disk usage, low disk space
@@ -139,7 +139,7 @@ chmod +x scripts/start_monitoring.sh
 - **Historical Analysis**: 30-day metric retention
 
 ### **🚨 Proactive Alerting System**
-- **67 Alert Rules**: Covering all critical scenarios
+- **22 Alert Rules**: Covering core critical scenarios
 - **Smart Routing**: Team-based notification routing
 - **Escalation Procedures**: Automatic escalation for critical issues
 - **Noise Reduction**: Inhibition rules prevent alert storms
@@ -290,7 +290,7 @@ df -h data/elasticsearch/
 ### **Core Configuration Files**
 - `docker-compose.monitoring.yml` - Complete monitoring stack
 - `monitoring/prometheus.yml` - Metrics collection configuration
-- `monitoring/alert_rules.yml` - 67 comprehensive alert rules
+- `monitoring/alert_rules.yml` - 22 comprehensive alert rules
 - `monitoring/alertmanager.yml` - Notification routing and channels
 - `shared/monitoring.py` - Service instrumentation library
 
