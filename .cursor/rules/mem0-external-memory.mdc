@@ -1,182 +1,90 @@
 ---
+description:
 alwaysApply: true
 ---
-# External Memory Integration for Project Context
 
-## MANDATORY BEHAVIOR
-This project uses an external mem0 memory system. You MUST interact with it to maintain accurate project context across sessions.
+# Mem0 MCP Project Memory System
 
-## Memory System Configuration
-- **Service URL**: `http://localhost:8000`
-- **Default User**: Use environment variable `MEM0_USER_ID` or fallback to "default_user"
-- **Project Name**: Extract from current working directory or git repo name
+## Core Purpose
+Use mem0 MCP tools to maintain continuous project context and track all coding progress, solutions, and decisions across sessions.
 
-## Required Memory Interactions
+## MANDATORY WORKFLOW
 
-### 1. Session Initialization (EVERY conversation start)
-```bash
-# Search for recent project-specific activity
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "recent changes and progress in [PROJECT_NAME] project", "user_id": "[USER_ID]"}'
+### 1. Before EVERY Response
+- **ALWAYS** call `search_memory` first to retrieve current project state
+- Check for: working solutions, known issues, project structure, recent changes
+- Never assume you remember context from previous messages
 
-# Retrieve project-specific preferences and general coding preferences
-curl -X GET "http://localhost:8000/memories?user_id=[USER_ID]" | jq '.results[] | select(.metadata.type == "preference" and (.metadata.project == "[PROJECT_NAME]" or .metadata.project == null))'
+### 2. During Work Sessions
+Store these IMMEDIATELY after implementation:
+- **Code Solutions**: Working implementations, bug fixes, optimizations
+- **Project Progress**: Completed features, current tasks, next steps
+- **Technical Decisions**: Architecture choices, library selections, design patterns
+- **Issues & Blockers**: Errors encountered, workarounds applied, open problems
+- **Configuration**: Environment setup, dependencies, deployment details
 
-# Get cross-project knowledge that might be relevant
-curl -X POST http://localhost:8000/search \
-  -H "Content-Type: application/json" \
-  -d '{"query": "libraries and patterns similar to [PROJECT_NAME]", "user_id": "[USER_ID]"}'
+### 3. Memory Storage Format
+```
+add_memories("Project: [project_name] - [category]: [specific detail]")
+```
+Categories: Solution, Progress, Decision, Issue, Config, Architecture
+
+## Required Memory Points
+
+### After Code Changes
+- Store the exact solution that worked
+- Include file paths and key code snippets
+- Note any dependencies or prerequisites
+
+### After Debugging
+- Store the error and its resolution
+- Include root cause analysis
+- Document prevention strategies
+
+### After Feature Completion
+- Store feature summary and implementation approach
+- List all affected files
+- Note any future improvements needed
+
+### Project Milestones
+- Major refactoring completed
+- New integrations added
+- Performance improvements achieved
+- Breaking changes introduced
+
+## Examples
+
+### Good: Solution Storage
+```
+User: "Fixed the memory leak in the React component"
+Action: add_memories("Project: mem0-stack - Solution: Fixed memory leak in /ui/app/memories/components/MemoryList.tsx by properly cleaning up event listeners in useEffect cleanup function")
 ```
 
-### 2. Task Completion (AFTER every code change)
-Create a memory with:
-- What was changed
-- Why it was changed
-- Any decisions made
-- Libraries or patterns used
-
-```json
-{
-  "messages": [
-    {"role": "user", "content": "[Task description]"},
-    {"role": "assistant", "content": "[Detailed completion summary]"}
-  ],
-  "user_id": "[USER_ID]",
-  "metadata": {
-    "type": "progress",
-    "project": "[PROJECT_NAME]",
-    "files_changed": ["file1.js", "file2.py"],
-    "timestamp": "[ISO_DATE]"
-  }
-}
+### Good: Progress Tracking
+```
+User: "Implemented the new API endpoint"
+Action: add_memories("Project: mem0-stack - Progress: Implemented POST /api/memories endpoint with validation, error handling, and PostgreSQL integration. Next: Add rate limiting")
 ```
 
-### 3. Preference Detection (WHENEVER user expresses preferences)
-Store immediately when user mentions:
-- Code style preferences
-- Library choices
-- Architectural decisions
-- Testing approaches
-- Documentation standards
-
-```json
-{
-  "messages": [
-    {"role": "user", "content": "[Preference statement]"},
-    {"role": "assistant", "content": "Noted: [Preference summary]"}
-  ],
-  "user_id": "[USER_ID]",
-  "metadata": {
-    "type": "preference",
-    "category": "code_style|library|architecture|testing|docs",
-    "project": "[PROJECT_NAME]",
-    "permanent": true
-  }
-}
+### Good: Issue Documentation
 ```
-
-## Memory Categories
-
-1. **Progress Memories** (type: "progress")
-   - Task completions
-   - Bug fixes
-   - Feature implementations
-   - Refactoring work
-
-2. **Preference Memories** (type: "preference")
-   - Coding standards
-   - Library preferences
-   - Design patterns
-   - Naming conventions
-
-3. **Context Memories** (type: "context")
-   - Project goals
-   - Technical debt
-   - Known issues
-   - Architecture decisions
-
-## Project Separation & Cross-Talk
-
-### Project Identification
-- **Project Name**: Always include `"project": "[PROJECT_NAME]"` in metadata
-- **Auto-Detection**: Extract from `os.path.basename(os.getcwd())` or git repo name
-- **Consistent Naming**: Use same project name across all memories
-
-### Cross-Project Knowledge Sharing
-- **Beneficial Cross-Talk**: Libraries, patterns, and solutions can be shared between projects
-- **Easy Recognition**: All memories clearly tagged with originating project
-- **Contextual Relevance**: Search finds relevant knowledge regardless of project origin
-- **Preference Inheritance**: Global preferences (no project tag) apply to all projects
-
-### Memory Filtering Examples
-```bash
-# Project-specific memories only
-curl -X GET "http://localhost:8000/memories?user_id=[USER_ID]" | jq '.results[] | select(.metadata.project == "my-project")'
-
-# Cross-project learning (all React knowledge)
-curl -X POST http://localhost:8000/search -d '{"query": "React patterns", "user_id": "[USER_ID]"}'
-
-# Global preferences (apply to all projects)
-curl -X GET "http://localhost:8000/memories?user_id=[USER_ID]" | jq '.results[] | select(.metadata.type == "preference" and .metadata.project == null)'
+User: "Docker compose keeps failing"
+Action: add_memories("Project: mem0-stack - Issue: Docker compose fails with port 5432 conflict. Solution: Stop local postgres or change port mapping in docker-compose.yml to 5433:5432")
 ```
 
 ## Enforcement Rules
 
-1. **NEVER** suggest code without first checking memories for:
-   - Recent related changes
-   - Established patterns
-   - User preferences
+1. **NO coding response without memory search first**
+2. **NO completed task without storing the solution**
+3. **NO debugging session without documenting the fix**
+4. **NO architectural decision without recording rationale**
+5. **Always cite relevant memories when using them**: [[memory:ID]]
 
-2. **ALWAYS** create memories for:
-   - Completed tasks (no matter how small)
-   - Technical decisions
-   - Problem solutions
-   - New patterns introduced
+## Memory Lifecycle
 
-3. **SEARCH** memories when:
-   - Starting any new task
-   - User asks about project state
-   - Suggesting approaches
-   - Debugging issues
+- **Create**: When implementing new solutions
+- **Update**: When solutions evolve or improve
+- **Search**: BEFORE every response
+- **Delete**: Only outdated/incorrect information
 
-## Integration Example
-
-```python
-# At conversation start
-import requests
-import os
-
-MEM0_URL = "http://localhost:8000"
-USER_ID = os.getenv("MEM0_USER_ID", "default_user")
-PROJECT = os.path.basename(os.getcwd())
-
-# Check recent work
-response = requests.post(f"{MEM0_URL}/search", json={
-    "query": f"recent work on {PROJECT}",
-    "user_id": USER_ID
-})
-recent_work = response.json()
-
-# After completing task
-requests.post(f"{MEM0_URL}/memories", json={
-    "messages": [
-        {"role": "user", "content": "Add user authentication"},
-        {"role": "assistant", "content": "Implemented JWT authentication with refresh tokens in auth.py"}
-    ],
-    "user_id": USER_ID,
-    "metadata": {
-        "type": "progress",
-        "project": PROJECT,
-        "files_changed": ["auth.py", "models.py"],
-        "timestamp": datetime.now().isoformat()
-    }
-})
-```
-
-## CRITICAL: Non-Negotiable Requirements
-1. Memory system is the SOURCE OF TRUTH for project context
-2. Ignoring memories = losing critical project knowledge
-3. Every coding session MUST start with memory retrieval
-4. Every task completion MUST update memories
-5. User preferences MUST be stored and followed
+Remember: Your effectiveness depends on maintaining comprehensive project memory!
