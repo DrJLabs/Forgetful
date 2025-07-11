@@ -26,8 +26,6 @@ import datetime
 from app.utils.permissions import check_memory_access_permissions
 
 # Agent 4 Integration - Structured Logging and Error Handling
-import sys
-sys.path.append('/workspace')
 from shared.logging_system import get_logger, CorrelationContextManager, performance_logger
 from shared.errors import (
     ExternalServiceError, ValidationError, handle_error, 
