@@ -14,6 +14,51 @@ from mem0.configs.coding_config import CodingMemoryConfig
 logger = logging.getLogger(__name__)
 
 
+def _safe_datetime_now(reference_time: Optional[datetime] = None) -> datetime:
+    """
+    Safely get current datetime with proper timezone handling.
+    
+    Args:
+        reference_time: Optional reference datetime to match timezone
+        
+    Returns:
+        Current datetime with proper timezone handling
+    """
+    if reference_time is None:
+        return datetime.now()
+    
+    # Handle timezone-aware reference time
+    if reference_time.tzinfo is not None:
+        return datetime.now(reference_time.tzinfo)
+    
+    # Handle timezone-naive reference time - return naive datetime
+    return datetime.now()
+
+
+def _safe_datetime_diff(dt1: datetime, dt2: datetime) -> timedelta:
+    """
+    Safely calculate difference between two datetimes, handling timezone mismatches.
+    
+    Args:
+        dt1: First datetime
+        dt2: Second datetime
+        
+    Returns:
+        Time difference as timedelta
+    """
+    # If both are naive or both are aware, calculate normally
+    if (dt1.tzinfo is None) == (dt2.tzinfo is None):
+        return dt1 - dt2
+    
+    # If one is aware and other is naive, convert naive to aware (UTC)
+    if dt1.tzinfo is None:
+        dt1 = dt1.replace(tzinfo=dt2.tzinfo)
+    elif dt2.tzinfo is None:
+        dt2 = dt2.replace(tzinfo=dt1.tzinfo)
+    
+    return dt1 - dt2
+
+
 class EnhancedConfidenceScorer:
     """
     Enhanced confidence scoring system for autonomous AI memory storage.
@@ -258,7 +303,10 @@ class EnhancedConfidenceScorer:
         """
         try:
             last_time = datetime.fromisoformat(last_accessed.replace('Z', '+00:00'))
-            time_diff = (datetime.now(last_time.tzinfo) - last_time).total_seconds()
+            time_diff = _safe_datetime_diff(
+                _safe_datetime_now(last_time),
+                last_time
+            ).total_seconds()
             
             # Exponential decay with half-life of 1 day
             decay_factor = math.exp(-time_diff / 86400)  # 86400 seconds in a day
@@ -276,7 +324,10 @@ class EnhancedConfidenceScorer:
         
         try:
             created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-            age_days = (datetime.now(created_time.tzinfo) - created_time).days
+            age_days = _safe_datetime_diff(
+                _safe_datetime_now(created_time),
+                created_time
+            ).days
             
             # Memories lose relevance over time, but level off
             if age_days <= 1:
@@ -536,7 +587,10 @@ class ContextAwareConfidenceScorer:
             if created_at:
                 try:
                     created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    age_days = (datetime.now(created_time.tzinfo) - created_time).days
+                    age_days = _safe_datetime_diff(
+                        _safe_datetime_now(created_time),
+                        created_time
+                    ).days
                     if age_days > 30:
                         adjusted -= profile['penalize_outdated']
                 except Exception:
