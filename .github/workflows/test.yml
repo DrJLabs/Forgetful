@@ -7,6 +7,7 @@ on:
     branches: [ "main", "develop" ]
   schedule:
     - cron: '0 2 * * *'  # Daily at 2 AM
+  workflow_dispatch:  # Enable manual workflow triggering
 
 env:
   PYTHONPATH: ${{ github.workspace }}
