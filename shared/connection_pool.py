@@ -23,8 +23,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import logging
 
-import sys
-sys.path.append('/workspace')
 from shared.logging_system import get_logger, performance_logger
 from shared.config import Config
 

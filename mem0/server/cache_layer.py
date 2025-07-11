@@ -17,8 +17,6 @@ from typing import List, Dict, Optional, Any
 from functools import wraps
 import msgpack
 
-import sys
-sys.path.append('/workspace')
 from shared.caching import MultiLayerCache, MultiLayerCacheConfig
 from shared.logging_system import get_logger, performance_logger
 

@@ -12,8 +12,6 @@ from sqlalchemy import or_, func
 from app.utils.memory import get_memory_client
 
 # Agent 4 Integration - Structured Logging and Error Handling
-import sys
-sys.path.append('/workspace')
 from shared.logging_system import api_logger, CorrelationContextManager, performance_logger
 from shared.errors import (
     ValidationError, NotFoundError, ExternalServiceError, 

@@ -38,8 +38,6 @@ from app.database import SessionLocal
 from app.models import Config as ConfigModel
 
 # Agent 4 Integration - Structured Logging and Error Handling
-import sys
-sys.path.append('/workspace')
 from shared.logging_system import get_logger, performance_logger
 from shared.errors import ExternalServiceError, handle_error
 from shared.resilience import retry, RetryPolicy, circuit_breaker, CircuitBreakerConfig
