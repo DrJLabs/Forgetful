@@ -191,6 +191,10 @@ class BatchProcessor:
         if not self.is_running:
             raise RuntimeError(f"Batch processor '{self.name}' is not running")
         
+        # Create future and assign callback BEFORE adding to batch to prevent race condition
+        future = asyncio.Future()
+        request.callback = future  # Fix: Assign future object, not future.set_result method
+        
         # Add to priority queue
         should_flush = False
         async with self._lock:
@@ -204,10 +208,6 @@ class BatchProcessor:
         # Flush outside the lock to avoid deadlock
         if should_flush:
             await self._flush_batches()
-        
-        # Create future for result
-        future = asyncio.Future()
-        request.callback = future.set_result
         
         # Wait for result with timeout
         try:
@@ -300,17 +300,11 @@ class BatchProcessor:
                 if request.callback:
                     if isinstance(result, Exception):
                         # Handle Future callback for exceptions
-                        if hasattr(request.callback, 'set_exception'):
-                            request.callback.set_exception(result)
-                        else:
-                            request.callback(result)
+                        request.callback.set_exception(result)
                         self.metrics.record_request_failed()
                     else:
                         # Handle Future callback for successful results
-                        if hasattr(request.callback, 'set_result'):
-                            request.callback.set_result(result)
-                        else:
-                            request.callback(result)
+                        request.callback.set_result(result)
             
             # Record metrics
             processing_time = time.time() - start_time
@@ -325,10 +319,7 @@ class BatchProcessor:
             for request in batch:
                 if request.callback:
                     # Handle Future callback for errors
-                    if hasattr(request.callback, 'set_exception'):
-                        request.callback.set_exception(e)
-                    else:
-                        request.callback(e)
+                    request.callback.set_exception(e)
                     self.metrics.record_request_failed()
     
     async def _process_with_retries(self, batch: List[BatchRequest]) -> List[Any]:
