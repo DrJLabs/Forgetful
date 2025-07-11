@@ -90,7 +90,7 @@ jsonschema>=4.19.0
 orjson>=3.9.0
 
 # Documentation Testing
-doctest>=1.0.0
+# doctest is built into Python stdlib
 sphinx>=7.0.0
 
 # Container Testing
