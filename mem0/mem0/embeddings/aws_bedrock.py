@@ -5,7 +5,9 @@ from typing import Literal, Optional
 try:
     import boto3
 except ImportError:
-    raise ImportError("The 'boto3' library is required. Please install it using 'pip install boto3'.")
+    raise ImportError(
+        "The 'boto3' library is required. Please install it using 'pip install boto3'."
+    )
 
 import numpy as np
 
@@ -87,7 +89,9 @@ class AWSBedrockEmbedding(EmbeddingBase):
         except Exception as e:
             raise ValueError(f"Error getting embedding from AWS Bedrock: {e}")
 
-    def embed(self, text, memory_action: Optional[Literal["add", "search", "update"]] = None):
+    def embed(
+        self, text, memory_action: Optional[Literal["add", "search", "update"]] = None
+    ):
         """
         Get the embedding for the given text using AWS Bedrock.
 

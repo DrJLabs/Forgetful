@@ -13,13 +13,18 @@ def mock_litellm():
 
 
 def test_generate_response_with_unsupported_model(mock_litellm):
-    config = BaseLlmConfig(model="unsupported-model", temperature=0.7, max_tokens=100, top_p=1)
+    config = BaseLlmConfig(
+        model="unsupported-model", temperature=0.7, max_tokens=100, top_p=1
+    )
     llm = litellm.LiteLLM(config)
     messages = [{"role": "user", "content": "Hello"}]
 
     mock_litellm.supports_function_calling.return_value = False
 
-    with pytest.raises(ValueError, match="Model 'unsupported-model' in litellm does not support function calling."):
+    with pytest.raises(
+        ValueError,
+        match="Model 'unsupported-model' in litellm does not support function calling.",
+    ):
         llm.generate_response(messages)
 
 
@@ -32,7 +37,9 @@ def test_generate_response_without_tools(mock_litellm):
     ]
 
     mock_response = Mock()
-    mock_response.choices = [Mock(message=Mock(content="I'm doing well, thank you for asking!"))]
+    mock_response.choices = [
+        Mock(message=Mock(content="I'm doing well, thank you for asking!"))
+    ]
     mock_litellm.completion.return_value = mock_response
     mock_litellm.supports_function_calling.return_value = True
 
@@ -59,7 +66,12 @@ def test_generate_response_with_tools(mock_litellm):
                 "description": "Add a memory",
                 "parameters": {
                     "type": "object",
-                    "properties": {"data": {"type": "string", "description": "Data to add to memory"}},
+                    "properties": {
+                        "data": {
+                            "type": "string",
+                            "description": "Data to add to memory",
+                        }
+                    },
                     "required": ["data"],
                 },
             },
@@ -82,7 +94,13 @@ def test_generate_response_with_tools(mock_litellm):
     response = llm.generate_response(messages, tools=tools)
 
     mock_litellm.completion.assert_called_once_with(
-        model="gpt-4o", messages=messages, temperature=0.7, max_tokens=100, top_p=1, tools=tools, tool_choice="auto"
+        model="gpt-4o",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=100,
+        top_p=1,
+        tools=tools,
+        tool_choice="auto",
     )
 
     assert response["content"] == "I've added the memory for you."

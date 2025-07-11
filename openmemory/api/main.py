@@ -3,7 +3,12 @@ import os
 from fastapi import FastAPI
 from app.database import engine, Base, SessionLocal
 from app.mcp_server import setup_mcp_server
-from app.routers import mem0_memories as memories_router, apps_router, stats_router, config_router
+from app.routers import (
+    mem0_memories as memories_router,
+    apps_router,
+    stats_router,
+    config_router,
+)
 from fastapi_pagination import add_pagination
 from fastapi.middleware.cors import CORSMiddleware
 from app.models import User, App
@@ -37,13 +42,12 @@ if os.getenv("TESTING") != "true":
                     id=uuid4(),
                     user_id=USER_ID,
                     name="Default User",
-                    created_at=datetime.datetime.now(datetime.UTC)
+                    created_at=datetime.datetime.now(datetime.UTC),
                 )
                 db.add(user)
                 db.commit()
         finally:
             db.close()
-
 
     def create_default_app():
         db = SessionLocal()
@@ -53,10 +57,11 @@ if os.getenv("TESTING") != "true":
                 return
 
             # Check if app already exists
-            existing_app = db.query(App).filter(
-                App.name == DEFAULT_APP_ID,
-                App.owner_id == user.id
-            ).first()
+            existing_app = (
+                db.query(App)
+                .filter(App.name == DEFAULT_APP_ID, App.owner_id == user.id)
+                .first()
+            )
 
             if existing_app:
                 return

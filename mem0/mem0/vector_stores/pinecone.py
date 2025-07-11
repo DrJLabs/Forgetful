@@ -82,7 +82,9 @@ class PineconeDB(VectorStoreBase):
                 logger.info("Initializing BM25Encoder for sparse vectors...")
                 self.sparse_encoder = BM25Encoder.default()
             except ImportError:
-                logger.warning("pinecone-text not installed. Hybrid search will be disabled.")
+                logger.warning(
+                    "pinecone-text not installed. Hybrid search will be disabled."
+                )
                 self.hybrid_search = False
 
         self.create_col(embedding_model_dims, metric)
@@ -98,7 +100,9 @@ class PineconeDB(VectorStoreBase):
         existing_indexes = self.list_cols().names()
 
         if self.collection_name in existing_indexes:
-            logger.debug(f"Index {self.collection_name} already exists. Skipping creation.")
+            logger.debug(
+                f"Index {self.collection_name} already exists. Skipping creation."
+            )
             self.index = self.client.Index(self.collection_name)
             return
 
@@ -132,7 +136,9 @@ class PineconeDB(VectorStoreBase):
             payloads (list, optional): List of payloads corresponding to vectors. Defaults to None.
             ids (list, optional): List of IDs corresponding to vectors. Defaults to None.
         """
-        logger.info(f"Inserting {len(vectors)} vectors into index {self.collection_name}")
+        logger.info(
+            f"Inserting {len(vectors)} vectors into index {self.collection_name}"
+        )
         items = []
 
         for idx, vector in enumerate(vectors):
@@ -201,7 +207,11 @@ class PineconeDB(VectorStoreBase):
         return pinecone_filter
 
     def search(
-        self, query: str, vectors: List[float], limit: int = 5, filters: Optional[Dict] = None
+        self,
+        query: str,
+        vectors: List[float],
+        limit: int = 5,
+        filters: Optional[Dict] = None,
     ) -> List[OutputData]:
         """
         Search for similar vectors.
@@ -247,7 +257,12 @@ class PineconeDB(VectorStoreBase):
         """
         self.index.delete(ids=[str(vector_id)])
 
-    def update(self, vector_id: Union[str, int], vector: Optional[List[float]] = None, payload: Optional[Dict] = None):
+    def update(
+        self,
+        vector_id: Union[str, int],
+        vector: Optional[List[float]] = None,
+        payload: Optional[Dict] = None,
+    ):
         """
         Update a vector and its payload.
 
@@ -317,7 +332,9 @@ class PineconeDB(VectorStoreBase):
         """
         return self.client.describe_index(self.collection_name)
 
-    def list(self, filters: Optional[Dict] = None, limit: int = 100) -> List[OutputData]:
+    def list(
+        self, filters: Optional[Dict] = None, limit: int = 100
+    ) -> List[OutputData]:
         """
         List vectors in an index with optional filtering.
 

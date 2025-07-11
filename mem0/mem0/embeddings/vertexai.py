@@ -31,7 +31,9 @@ class VertexAIEmbedding(EmbeddingBase):
 
         self.model = TextEmbeddingModel.from_pretrained(self.config.model)
 
-    def embed(self, text, memory_action: Optional[Literal["add", "search", "update"]] = None):
+    def embed(
+        self, text, memory_action: Optional[Literal["add", "search", "update"]] = None
+    ):
         """
         Get the embedding for the given text using Vertex AI.
 
@@ -49,6 +51,8 @@ class VertexAIEmbedding(EmbeddingBase):
             embedding_type = self.embedding_types[memory_action]
 
         text_input = TextEmbeddingInput(text=text, task_type=embedding_type)
-        embeddings = self.model.get_embeddings(texts=[text_input], output_dimensionality=self.config.embedding_dims)
+        embeddings = self.model.get_embeddings(
+            texts=[text_input], output_dimensionality=self.config.embedding_dims
+        )
 
         return embeddings[0].values

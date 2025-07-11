@@ -5,12 +5,16 @@ from mem0.memory.utils import format_entities
 try:
     from langchain_memgraph.graphs.memgraph import Memgraph
 except ImportError:
-    raise ImportError("langchain_memgraph is not installed. Please install it using pip install langchain-memgraph")
+    raise ImportError(
+        "langchain_memgraph is not installed. Please install it using pip install langchain-memgraph"
+    )
 
 try:
     from rank_bm25 import BM25Okapi
 except ImportError:
-    raise ImportError("rank_bm25 is not installed. Please install it using pip install rank-bm25")
+    raise ImportError(
+        "rank_bm25 is not installed. Please install it using pip install rank-bm25"
+    )
 
 from mem0.graphs.tools import (
     DELETE_MEMORY_STRUCT_TOOL_GRAPH,
@@ -70,9 +74,15 @@ class MemoryGraph:
             filters (dict): A dictionary containing filters to be applied during the addition.
         """
         entity_type_map = self._retrieve_nodes_from_data(data, filters)
-        to_be_added = self._establish_nodes_relations_from_data(data, filters, entity_type_map)
-        search_output = self._search_graph_db(node_list=list(entity_type_map.keys()), filters=filters)
-        to_be_deleted = self._get_delete_entities_from_search_output(search_output, data, filters)
+        to_be_added = self._establish_nodes_relations_from_data(
+            data, filters, entity_type_map
+        )
+        search_output = self._search_graph_db(
+            node_list=list(entity_type_map.keys()), filters=filters
+        )
+        to_be_deleted = self._get_delete_entities_from_search_output(
+            search_output, data, filters
+        )
 
         # TODO: Batch queries with APOC plugin
         # TODO: Add more filter support
@@ -96,13 +106,16 @@ class MemoryGraph:
                 - "entities": List of related graph data based on the query.
         """
         entity_type_map = self._retrieve_nodes_from_data(query, filters)
-        search_output = self._search_graph_db(node_list=list(entity_type_map.keys()), filters=filters)
+        search_output = self._search_graph_db(
+            node_list=list(entity_type_map.keys()), filters=filters
+        )
 
         if not search_output:
             return []
 
         search_outputs_sequence = [
-            [item["source"], item["relationship"], item["destination"]] for item in search_output
+            [item["source"], item["relationship"], item["destination"]]
+            for item in search_output
         ]
         bm25 = BM25Okapi(search_outputs_sequence)
 
@@ -111,7 +124,9 @@ class MemoryGraph:
 
         search_results = []
         for item in reranked_results:
-            search_results.append({"source": item[0], "relationship": item[1], "destination": item[2]})
+            search_results.append(
+                {"source": item[0], "relationship": item[1], "destination": item[2]}
+            )
 
         logger.info(f"Returned {len(search_results)} search results")
 
@@ -154,7 +169,11 @@ class MemoryGraph:
             RETURN n.name AS source, type(r) AS relationship, m.name AS target
             LIMIT $limit
             """
-            params = {"user_id": filters["user_id"], "agent_id": filters["agent_id"], "limit": limit}
+            params = {
+                "user_id": filters["user_id"],
+                "agent_id": filters["agent_id"],
+                "limit": limit,
+            }
         else:
             query = """
             MATCH (n:Entity {user_id: $user_id})-[r]->(m:Entity {user_id: $user_id})
@@ -208,8 +227,13 @@ class MemoryGraph:
                 f"Error in search tool: {e}, llm_provider={self.llm_provider}, search_results={search_results}"
             )
 
-        entity_type_map = {k.lower().replace(" ", "_"): v.lower().replace(" ", "_") for k, v in entity_type_map.items()}
-        logger.debug(f"Entity type map: {entity_type_map}\n search_results={search_results}")
+        entity_type_map = {
+            k.lower().replace(" ", "_"): v.lower().replace(" ", "_")
+            for k, v in entity_type_map.items()
+        }
+        logger.debug(
+            f"Entity type map: {entity_type_map}\n search_results={search_results}"
+        )
         return entity_type_map
 
     def _establish_nodes_relations_from_data(self, data, filters, entity_type_map):
@@ -218,7 +242,9 @@ class MemoryGraph:
             messages = [
                 {
                     "role": "system",
-                    "content": EXTRACT_RELATIONS_PROMPT.replace("USER_ID", filters["user_id"]).replace(
+                    "content": EXTRACT_RELATIONS_PROMPT.replace(
+                        "USER_ID", filters["user_id"]
+                    ).replace(
                         "CUSTOM_PROMPT", f"4. {self.config.graph_store.custom_prompt}"
                     ),
                 },
@@ -228,7 +254,9 @@ class MemoryGraph:
             messages = [
                 {
                     "role": "system",
-                    "content": EXTRACT_RELATIONS_PROMPT.replace("USER_ID", filters["user_id"]),
+                    "content": EXTRACT_RELATIONS_PROMPT.replace(
+                        "USER_ID", filters["user_id"]
+                    ),
                 },
                 {
                     "role": "user",
@@ -327,7 +355,9 @@ class MemoryGraph:
     def _get_delete_entities_from_search_output(self, search_output, data, filters):
         """Get the entities to be deleted from the search output."""
         search_output_string = format_entities(search_output)
-        system_prompt, user_prompt = get_delete_messages(search_output_string, data, filters["user_id"])
+        system_prompt, user_prompt = get_delete_messages(
+            search_output_string, data, filters["user_id"]
+        )
 
         _tools = [DELETE_MEMORY_TOOL_GRAPH]
         if self.llm_provider in ["azure_openai_structured", "openai_structured"]:
@@ -414,8 +444,12 @@ class MemoryGraph:
             dest_embedding = self.embedding_model.embed(destination)
 
             # search for the nodes with the closest embeddings
-            source_node_search_result = self._search_source_node(source_embedding, filters, threshold=0.9)
-            destination_node_search_result = self._search_destination_node(dest_embedding, filters, threshold=0.9)
+            source_node_search_result = self._search_source_node(
+                source_embedding, filters, threshold=0.9
+            )
+            destination_node_search_result = self._search_destination_node(
+                dest_embedding, filters, threshold=0.9
+            )
 
             # Prepare agent_id for node creation
             agent_id_clause = ""
@@ -463,7 +497,9 @@ class MemoryGraph:
                     """
 
                 params = {
-                    "destination_id": destination_node_search_result[0]["id(destination_candidate)"],
+                    "destination_id": destination_node_search_result[0][
+                        "id(destination_candidate)"
+                    ],
                     "source_name": source,
                     "source_embedding": source_embedding,
                     "user_id": user_id,
@@ -485,7 +521,9 @@ class MemoryGraph:
                     """
                 params = {
                     "source_id": source_node_search_result[0]["id(source_candidate)"],
-                    "destination_id": destination_node_search_result[0]["id(destination_candidate)"],
+                    "destination_id": destination_node_search_result[0][
+                        "id(destination_candidate)"
+                    ],
                     "user_id": user_id,
                 }
                 if agent_id:

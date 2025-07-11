@@ -8,16 +8,24 @@ class PineconeConfig(BaseModel):
     """Configuration for Pinecone vector database."""
 
     collection_name: str = Field("mem0", description="Name of the index/collection")
-    embedding_model_dims: int = Field(1536, description="Dimensions of the embedding model")
+    embedding_model_dims: int = Field(
+        1536, description="Dimensions of the embedding model"
+    )
     client: Optional[Any] = Field(None, description="Existing Pinecone client instance")
     api_key: Optional[str] = Field(None, description="API key for Pinecone")
     environment: Optional[str] = Field(None, description="Pinecone environment")
-    serverless_config: Optional[Dict[str, Any]] = Field(None, description="Configuration for serverless deployment")
-    pod_config: Optional[Dict[str, Any]] = Field(None, description="Configuration for pod-based deployment")
+    serverless_config: Optional[Dict[str, Any]] = Field(
+        None, description="Configuration for serverless deployment"
+    )
+    pod_config: Optional[Dict[str, Any]] = Field(
+        None, description="Configuration for pod-based deployment"
+    )
     hybrid_search: bool = Field(False, description="Whether to enable hybrid search")
     metric: str = Field("cosine", description="Distance metric for vector similarity")
     batch_size: int = Field(100, description="Batch size for operations")
-    extra_params: Optional[Dict[str, Any]] = Field(None, description="Additional parameters for Pinecone client")
+    extra_params: Optional[Dict[str, Any]] = Field(
+        None, description="Additional parameters for Pinecone client"
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -32,7 +40,9 @@ class PineconeConfig(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def check_pod_or_serverless(cls, values: Dict[str, Any]) -> Dict[str, Any]:
-        pod_config, serverless_config = values.get("pod_config"), values.get("serverless_config")
+        pod_config, serverless_config = values.get("pod_config"), values.get(
+            "serverless_config"
+        )
         if pod_config and serverless_config:
             raise ValueError(
                 "Both 'pod_config' and 'serverless_config' cannot be specified. Choose one deployment option."

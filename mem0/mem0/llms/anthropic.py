@@ -4,7 +4,9 @@ from typing import Dict, List, Optional
 try:
     import anthropic
 except ImportError:
-    raise ImportError("The 'anthropic' library is required. Please install it using 'pip install anthropic'.")
+    raise ImportError(
+        "The 'anthropic' library is required. Please install it using 'pip install anthropic'."
+    )
 
 from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase
@@ -56,7 +58,9 @@ class AnthropicLLM(LLMBase):
             "max_tokens": self.config.max_tokens,
             "top_p": self.config.top_p,
         }
-        if tools:  # TODO: Remove tools if no issues found with new memory addition logic
+        if (
+            tools
+        ):  # TODO: Remove tools if no issues found with new memory addition logic
             params["tools"] = tools
             params["tool_choice"] = tool_choice
 

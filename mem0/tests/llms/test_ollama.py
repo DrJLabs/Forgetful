@@ -16,7 +16,9 @@ def mock_ollama_client():
 
 
 def test_generate_response_without_tools(mock_ollama_client):
-    config = BaseLlmConfig(model="llama3.1:70b", temperature=0.7, max_tokens=100, top_p=1.0)
+    config = BaseLlmConfig(
+        model="llama3.1:70b", temperature=0.7, max_tokens=100, top_p=1.0
+    )
     llm = OllamaLLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -29,6 +31,8 @@ def test_generate_response_without_tools(mock_ollama_client):
     response = llm.generate_response(messages)
 
     mock_ollama_client.chat.assert_called_once_with(
-        model="llama3.1:70b", messages=messages, options={"temperature": 0.7, "num_predict": 100, "top_p": 1.0}
+        model="llama3.1:70b",
+        messages=messages,
+        options={"temperature": 0.7, "num_predict": 100, "top_p": 1.0},
     )
     assert response == "I'm doing well, thank you for asking!"

@@ -5,9 +5,7 @@ from app.models import Memory, App, MemoryState
 
 
 def check_memory_access_permissions(
-    db: Session,
-    memory: Memory,
-    app_id: Optional[UUID] = None
+    db: Session, memory: Memory, app_id: Optional[UUID] = None
 ) -> bool:
     """
     Check if the given app has permission to access a memory based on:
@@ -42,6 +40,7 @@ def check_memory_access_permissions(
 
     # Check app-specific access controls
     from app.routers.memories import get_accessible_memory_ids
+
     accessible_memory_ids = get_accessible_memory_ids(db, app_id)
 
     # If accessible_memory_ids is None, all memories are accessible

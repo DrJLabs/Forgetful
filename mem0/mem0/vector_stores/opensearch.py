@@ -5,7 +5,9 @@ from typing import Any, Dict, List, Optional
 try:
     from opensearchpy import OpenSearch, RequestsHttpConnection
 except ImportError:
-    raise ImportError("OpenSearch requires extra dependencies. Install with `pip install opensearch-py`") from None
+    raise ImportError(
+        "OpenSearch requires extra dependencies. Install with `pip install opensearch-py`"
+    ) from None
 
 from pydantic import BaseModel
 
@@ -28,9 +30,15 @@ class OpenSearchDB(VectorStoreBase):
         # Initialize OpenSearch client
         self.client = OpenSearch(
             hosts=[{"host": config.host, "port": config.port or 9200}],
-            http_auth=config.http_auth
-            if config.http_auth
-            else ((config.user, config.password) if (config.user and config.password) else None),
+            http_auth=(
+                config.http_auth
+                if config.http_auth
+                else (
+                    (config.user, config.password)
+                    if (config.user and config.password)
+                    else None
+                )
+            ),
             use_ssl=config.use_ssl,
             verify_certs=config.verify_certs,
             connection_class=RequestsHttpConnection,
@@ -45,7 +53,12 @@ class OpenSearchDB(VectorStoreBase):
         """Create OpenSearch index with proper mappings if it doesn't exist."""
         index_settings = {
             "settings": {
-                "index": {"number_of_replicas": 1, "number_of_shards": 5, "refresh_interval": "10s", "knn": True}
+                "index": {
+                    "number_of_replicas": 1,
+                    "number_of_shards": 5,
+                    "refresh_interval": "10s",
+                    "knn": True,
+                }
             },
             "mappings": {
                 "properties": {
@@ -53,9 +66,16 @@ class OpenSearchDB(VectorStoreBase):
                     "vector_field": {
                         "type": "knn_vector",
                         "dimension": self.embedding_model_dims,
-                        "method": {"engine": "nmslib", "name": "hnsw", "space_type": "cosinesimil"},
+                        "method": {
+                            "engine": "nmslib",
+                            "name": "hnsw",
+                            "space_type": "cosinesimil",
+                        },
                     },
-                    "metadata": {"type": "object", "properties": {"user_id": {"type": "keyword"}}},
+                    "metadata": {
+                        "type": "object",
+                        "properties": {"user_id": {"type": "keyword"}},
+                    },
                 }
             },
         }
@@ -75,7 +95,11 @@ class OpenSearchDB(VectorStoreBase):
                     "vector_field": {
                         "type": "knn_vector",
                         "dimension": vector_size,
-                        "method": {"engine": "nmslib", "name": "hnsw", "space_type": "cosinesimil"},
+                        "method": {
+                            "engine": "nmslib",
+                            "name": "hnsw",
+                            "space_type": "cosinesimil",
+                        },
                     },
                     "payload": {"type": "object"},
                     "id": {"type": "keyword"},
@@ -100,11 +124,16 @@ class OpenSearchDB(VectorStoreBase):
                 except Exception:
                     retry_count += 1
                     if retry_count == max_retries:
-                        raise TimeoutError(f"Index {name} creation timed out after {max_retries} seconds")
+                        raise TimeoutError(
+                            f"Index {name} creation timed out after {max_retries} seconds"
+                        )
                     time.sleep(0.5)
 
     def insert(
-        self, vectors: List[List[float]], payloads: Optional[List[Dict]] = None, ids: Optional[List[str]] = None
+        self,
+        vectors: List[List[float]],
+        payloads: Optional[List[Dict]] = None,
+        ids: Optional[List[str]] = None,
     ) -> List[OutputData]:
         """Insert vectors into the index."""
         if not ids:
@@ -126,7 +155,11 @@ class OpenSearchDB(VectorStoreBase):
         return results
 
     def search(
-        self, query: str, vectors: List[float], limit: int = 5, filters: Optional[Dict] = None
+        self,
+        query: str,
+        vectors: List[float],
+        limit: int = 5,
+        filters: Optional[Dict] = None,
     ) -> List[OutputData]:
         """Search for similar vectors using OpenSearch k-NN search with optional filters."""
 
@@ -153,7 +186,9 @@ class OpenSearchDB(VectorStoreBase):
 
         # Combine knn with filters if needed
         if filter_clauses:
-            query_body["query"] = {"bool": {"must": knn_query, "filter": filter_clauses}}
+            query_body["query"] = {
+                "bool": {"must": knn_query, "filter": filter_clauses}
+            }
         else:
             query_body["query"] = knn_query
 
@@ -162,7 +197,11 @@ class OpenSearchDB(VectorStoreBase):
 
         hits = response["hits"]["hits"]
         results = [
-            OutputData(id=hit["_source"].get("id"), score=hit["_score"], payload=hit["_source"].get("payload", {}))
+            OutputData(
+                id=hit["_source"].get("id"),
+                score=hit["_score"],
+                payload=hit["_source"].get("payload", {}),
+            )
             for hit in hits
         ]
         return results
@@ -183,7 +222,12 @@ class OpenSearchDB(VectorStoreBase):
         # Delete using the actual document ID
         self.client.delete(index=self.collection_name, id=opensearch_id)
 
-    def update(self, vector_id: str, vector: Optional[List[float]] = None, payload: Optional[Dict] = None) -> None:
+    def update(
+        self,
+        vector_id: str,
+        vector: Optional[List[float]] = None,
+        payload: Optional[Dict] = None,
+    ) -> None:
         """Update a vector and its payload using the custom 'id' field."""
 
         # First, find the document by custom ID
@@ -206,7 +250,9 @@ class OpenSearchDB(VectorStoreBase):
 
         if doc:
             try:
-                response = self.client.update(index=self.collection_name, id=opensearch_id, body={"doc": doc})
+                response = self.client.update(
+                    index=self.collection_name, id=opensearch_id, body={"doc": doc}
+                )
             except Exception:
                 pass
 
@@ -215,7 +261,9 @@ class OpenSearchDB(VectorStoreBase):
         try:
             # First check if index exists
             if not self.client.indices.exists(index=self.collection_name):
-                logger.info(f"Index {self.collection_name} does not exist, creating it...")
+                logger.info(
+                    f"Index {self.collection_name} does not exist, creating it..."
+                )
                 self.create_col(self.collection_name, self.embedding_model_dims)
                 return None
 
@@ -227,7 +275,11 @@ class OpenSearchDB(VectorStoreBase):
             if not hits:
                 return None
 
-            return OutputData(id=hits[0]["_source"].get("id"), score=1.0, payload=hits[0]["_source"].get("payload", {}))
+            return OutputData(
+                id=hits[0]["_source"].get("id"),
+                score=1.0,
+                payload=hits[0]["_source"].get("payload", {}),
+            )
         except Exception as e:
             logger.error(f"Error retrieving vector {vector_id}: {str(e)}")
             return None
@@ -244,7 +296,9 @@ class OpenSearchDB(VectorStoreBase):
         """Get information about a collection (index)."""
         return self.client.indices.get(index=name)
 
-    def list(self, filters: Optional[Dict] = None, limit: Optional[int] = None) -> List[OutputData]:
+    def list(
+        self, filters: Optional[Dict] = None, limit: Optional[int] = None
+    ) -> List[OutputData]:
         try:
             """List all memories with optional filters."""
             query: Dict = {"query": {"match_all": {}}}
@@ -254,7 +308,9 @@ class OpenSearchDB(VectorStoreBase):
                 for key in ["user_id", "run_id", "agent_id"]:
                     value = filters.get(key)
                     if value:
-                        filter_clauses.append({"term": {f"payload.{key}.keyword": value}})
+                        filter_clauses.append(
+                            {"term": {f"payload.{key}.keyword": value}}
+                        )
 
             if filter_clauses:
                 query["query"] = {"bool": {"filter": filter_clauses}}
@@ -267,7 +323,11 @@ class OpenSearchDB(VectorStoreBase):
 
             return [
                 [
-                    OutputData(id=hit["_source"].get("id"), score=1.0, payload=hit["_source"].get("payload", {}))
+                    OutputData(
+                        id=hit["_source"].get("id"),
+                        score=1.0,
+                        payload=hit["_source"].get("payload", {}),
+                    )
                     for hit in hits
                 ]
             ]

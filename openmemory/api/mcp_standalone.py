@@ -33,7 +33,7 @@ class OpenMemoryMCPServer:
     def __init__(self):
         self.server = Server("mem0-mcp-server")
         self.setup_handlers()
-        
+
     def setup_handlers(self):
         @self.server.list_tools()
         async def handle_list_tools() -> list[Tool]:
@@ -47,11 +47,11 @@ class OpenMemoryMCPServer:
                         "properties": {
                             "text": {
                                 "type": "string",
-                                "description": "The text to remember"
+                                "description": "The text to remember",
                             }
                         },
-                        "required": ["text"]
-                    }
+                        "required": ["text"],
+                    },
                 ),
                 Tool(
                     name="search_memory",
@@ -61,94 +61,115 @@ class OpenMemoryMCPServer:
                         "properties": {
                             "query": {
                                 "type": "string",
-                                "description": "The search query"
+                                "description": "The search query",
                             }
                         },
-                        "required": ["query"]
-                    }
+                        "required": ["query"],
+                    },
                 ),
                 Tool(
                     name="list_memories",
                     description="List all memories in the user's memory",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {}
-                    }
+                    inputSchema={"type": "object", "properties": {}},
                 ),
                 Tool(
                     name="delete_all_memories",
                     description="Delete all memories in the user's memory",
-                    inputSchema={
-                        "type": "object",
-                        "properties": {}
-                    }
-                )
+                    inputSchema={"type": "object", "properties": {}},
+                ),
             ]
-        
+
         @self.server.call_tool()
-        async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> list[TextContent]:
+        async def handle_call_tool(
+            name: str, arguments: Dict[str, Any]
+        ) -> list[TextContent]:
             """Handle tool calls."""
             try:
                 memory_client = get_memory_client()
                 if not memory_client:
-                    return [TextContent(type="text", text="Error: Memory system is currently unavailable.")]
-                
+                    return [
+                        TextContent(
+                            type="text",
+                            text="Error: Memory system is currently unavailable.",
+                        )
+                    ]
+
                 if name == "add_memories":
                     text = arguments.get("text")
                     if not text:
-                        return [TextContent(type="text", text="Error: text parameter is required")]
-                    
+                        return [
+                            TextContent(
+                                type="text", text="Error: text parameter is required"
+                            )
+                        ]
+
                     result = memory_client.add(
                         text,
                         user_id=USER_ID,
                         metadata={
                             "source_app": "openmemory",
                             "mcp_client": CLIENT_NAME,
-                        }
+                        },
                     )
                     return [TextContent(type="text", text=json.dumps(result, indent=2))]
-                
+
                 elif name == "search_memory":
                     query = arguments.get("query")
                     if not query:
-                        return [TextContent(type="text", text="Error: query parameter is required")]
-                    
+                        return [
+                            TextContent(
+                                type="text", text="Error: query parameter is required"
+                            )
+                        ]
+
                     results = memory_client.search(query, user_id=USER_ID, limit=10)
-                    return [TextContent(type="text", text=json.dumps(results, indent=2))]
-                
+                    return [
+                        TextContent(type="text", text=json.dumps(results, indent=2))
+                    ]
+
                 elif name == "list_memories":
                     memories = memory_client.get_all(user_id=USER_ID)
-                    return [TextContent(type="text", text=json.dumps(memories, indent=2))]
-                
+                    return [
+                        TextContent(type="text", text=json.dumps(memories, indent=2))
+                    ]
+
                 elif name == "delete_all_memories":
                     # Get all memories first
                     memories = memory_client.get_all(user_id=USER_ID)
                     deleted_count = 0
-                    
-                    if isinstance(memories, dict) and 'results' in memories:
-                        for memory in memories['results']:
+
+                    if isinstance(memories, dict) and "results" in memories:
+                        for memory in memories["results"]:
                             try:
-                                memory_client.delete(memory['id'])
+                                memory_client.delete(memory["id"])
                                 deleted_count += 1
                             except Exception as e:
-                                logger.warning(f"Failed to delete memory {memory['id']}: {e}")
+                                logger.warning(
+                                    f"Failed to delete memory {memory['id']}: {e}"
+                                )
                     else:
                         for memory in memories:
                             try:
-                                memory_client.delete(memory['id'])
+                                memory_client.delete(memory["id"])
                                 deleted_count += 1
                             except Exception as e:
-                                logger.warning(f"Failed to delete memory {memory['id']}: {e}")
-                    
-                    return [TextContent(type="text", text=f"Deleted {deleted_count} memories")]
-                
+                                logger.warning(
+                                    f"Failed to delete memory {memory['id']}: {e}"
+                                )
+
+                    return [
+                        TextContent(
+                            type="text", text=f"Deleted {deleted_count} memories"
+                        )
+                    ]
+
                 else:
                     return [TextContent(type="text", text=f"Unknown tool: {name}")]
-                    
+
             except Exception as e:
                 logger.error(f"Error calling tool {name}: {e}", exc_info=True)
                 return [TextContent(type="text", text=f"Error: {str(e)}")]
-    
+
     async def run(self):
         """Run the MCP server."""
         options = InitializationOptions(
@@ -159,7 +180,7 @@ class OpenMemoryMCPServer:
                 experimental_capabilities={},
             ),
         )
-        
+
         async with stdio_server() as (read_stream, write_stream):
             await self.server.run(
                 read_stream,
@@ -175,4 +196,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main()) 
+    asyncio.run(main())

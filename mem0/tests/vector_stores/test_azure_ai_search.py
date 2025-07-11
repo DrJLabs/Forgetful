@@ -15,8 +15,12 @@ from mem0.vector_stores.azure_ai_search import AzureAISearch
 def mock_clients():
     with (
         patch("mem0.vector_stores.azure_ai_search.SearchClient") as MockSearchClient,
-        patch("mem0.vector_stores.azure_ai_search.SearchIndexClient") as MockIndexClient,
-        patch("mem0.vector_stores.azure_ai_search.AzureKeyCredential") as MockAzureKeyCredential,
+        patch(
+            "mem0.vector_stores.azure_ai_search.SearchIndexClient"
+        ) as MockIndexClient,
+        patch(
+            "mem0.vector_stores.azure_ai_search.AzureKeyCredential"
+        ) as MockAzureKeyCredential,
     ):
         # Create mocked instances for search and index clients.
         mock_search_client = MockSearchClient.return_value
@@ -30,12 +34,18 @@ def mock_clients():
 
         # Stub required methods on search_client.
         mock_search_client.upload_documents = Mock()
-        mock_search_client.upload_documents.return_value = [{"status": True, "id": "doc1"}]
+        mock_search_client.upload_documents.return_value = [
+            {"status": True, "id": "doc1"}
+        ]
         mock_search_client.search = Mock()
         mock_search_client.delete_documents = Mock()
-        mock_search_client.delete_documents.return_value = [{"status": True, "id": "doc1"}]
+        mock_search_client.delete_documents.return_value = [
+            {"status": True, "id": "doc1"}
+        ]
         mock_search_client.merge_or_upload_documents = Mock()
-        mock_search_client.merge_or_upload_documents.return_value = [{"status": True, "id": "doc1"}]
+        mock_search_client.merge_or_upload_documents.return_value = [
+            {"status": True, "id": "doc1"}
+        ]
         mock_search_client.get_document = Mock()
         mock_search_client.close = Mock()
 
@@ -76,7 +86,9 @@ def azure_ai_search_instance(mock_clients):
 def test_config_validation_valid():
     """Test valid configurations are accepted."""
     # Test minimal configuration
-    config = AzureAISearchConfig(service_name="test-service", api_key="test-api-key", embedding_model_dims=768)
+    config = AzureAISearchConfig(
+        service_name="test-service", api_key="test-api-key", embedding_model_dims=768
+    )
     assert config.collection_name == "mem0"  # Default value
     assert config.service_name == "test-service"
     assert config.api_key == "test-api-key"
@@ -146,7 +158,10 @@ def test_initialization(mock_clients):
 
     # Test with minimal parameters
     instance = AzureAISearch(
-        service_name="test-service", collection_name="test-index", api_key="test-api-key", embedding_model_dims=768
+        service_name="test-service",
+        collection_name="test-index",
+        api_key="test-api-key",
+        embedding_model_dims=768,
     )
 
     # Verify initialization parameters
@@ -158,8 +173,18 @@ def test_initialization(mock_clients):
 
     # Verify client creation
     mock_azure_key_credential.assert_called_with("test-api-key")
-    assert "mem0" in mock_search_client._client._config.user_agent_policy.add_user_agent.call_args[0]
-    assert "mem0" in mock_index_client._client._config.user_agent_policy.add_user_agent.call_args[0]
+    assert (
+        "mem0"
+        in mock_search_client._client._config.user_agent_policy.add_user_agent.call_args[
+            0
+        ]
+    )
+    assert (
+        "mem0"
+        in mock_index_client._client._config.user_agent_policy.add_user_agent.call_args[
+            0
+        ]
+    )
 
     # Verify index creation was called
     mock_index_client.create_or_update_index.assert_called_once()
@@ -185,7 +210,9 @@ def test_initialization_with_compression_types(mock_clients):
     # Verify scalar compression was configured
     assert hasattr(index.vector_search, "compressions")
     assert len(index.vector_search.compressions) > 0
-    assert "ScalarQuantizationCompression" in str(type(index.vector_search.compressions[0]))
+    assert "ScalarQuantizationCompression" in str(
+        type(index.vector_search.compressions[0])
+    )
 
     # Test with binary compression
     instance = AzureAISearch(
@@ -203,7 +230,9 @@ def test_initialization_with_compression_types(mock_clients):
     # Verify binary compression was configured
     assert hasattr(index.vector_search, "compressions")
     assert len(index.vector_search.compressions) > 0
-    assert "BinaryQuantizationCompression" in str(type(index.vector_search.compressions[0]))
+    assert "BinaryQuantizationCompression" in str(
+        type(index.vector_search.compressions[0])
+    )
 
     # Test with no compression
     instance = AzureAISearch(
@@ -299,7 +328,10 @@ def test_create_col(azure_ai_search_instance):
     assert index.vector_search is not None
     assert len(index.vector_search.profiles) == 1
     assert index.vector_search.profiles[0].name == "my-vector-config"
-    assert index.vector_search.profiles[0].algorithm_configuration_name == "my-algorithms-config"
+    assert (
+        index.vector_search.profiles[0].algorithm_configuration_name
+        == "my-algorithms-config"
+    )
 
     # Check algorithms
     assert len(index.vector_search.algorithms) == 1
@@ -309,7 +341,9 @@ def test_create_col(azure_ai_search_instance):
     # With binary compression and float16, we should have compression configuration
     assert len(index.vector_search.compressions) == 1
     assert index.vector_search.compressions[0].compression_name == "myCompression"
-    assert "BinaryQuantizationCompression" in str(type(index.vector_search.compressions[0]))
+    assert "BinaryQuantizationCompression" in str(
+        type(index.vector_search.compressions[0])
+    )
 
 
 def test_create_col_scalar_compression(mock_clients):
@@ -331,7 +365,9 @@ def test_create_col_scalar_compression(mock_clients):
     # Check compression configuration
     assert len(index.vector_search.compressions) == 1
     assert index.vector_search.compressions[0].compression_name == "myCompression"
-    assert "ScalarQuantizationCompression" in str(type(index.vector_search.compressions[0]))
+    assert "ScalarQuantizationCompression" in str(
+        type(index.vector_search.compressions[0])
+    )
 
     # Check profile references compression
     assert index.vector_search.profiles[0].compression_name == "myCompression"
@@ -371,7 +407,9 @@ def test_insert_single(azure_ai_search_instance):
     ids = ["doc1"]
 
     # Fix: Include status_code: 201 in mock response
-    mock_search_client.upload_documents.return_value = [{"status": True, "id": "doc1", "status_code": 201}]
+    mock_search_client.upload_documents.return_value = [
+        {"status": True, "id": "doc1", "status_code": 201}
+    ]
 
     instance.insert(vectors, payloads, ids)
 
@@ -396,8 +434,12 @@ def test_insert_multiple(azure_ai_search_instance):
 
     # Create multiple vectors
     num_docs = 3
-    vectors = [[float(i) / 10, float(i + 1) / 10, float(i + 2) / 10] for i in range(num_docs)]
-    payloads = [{"user_id": f"user{i}", "content": f"Test content {i}"} for i in range(num_docs)]
+    vectors = [
+        [float(i) / 10, float(i + 1) / 10, float(i + 2) / 10] for i in range(num_docs)
+    ]
+    payloads = [
+        {"user_id": f"user{i}", "content": f"Test content {i}"} for i in range(num_docs)
+    ]
     ids = [f"doc{i}" for i in range(num_docs)]
 
     # Configure mock to return success for all documents (fix: add status_code 201)
@@ -434,7 +476,9 @@ def test_insert_with_error(azure_ai_search_instance):
     instance, mock_search_client, _ = azure_ai_search_instance
 
     # Configure mock to return an error for one document
-    mock_search_client.upload_documents.return_value = [{"status": False, "id": "doc1", "errorMessage": "Azure error"}]
+    mock_search_client.upload_documents.return_value = [
+        {"status": False, "id": "doc1", "errorMessage": "Azure error"}
+    ]
 
     vectors = [[0.1, 0.2, 0.3]]
     payloads = [{"user_id": "user1"}]
@@ -460,9 +504,9 @@ def test_insert_with_error(azure_ai_search_instance):
     with pytest.raises(Exception) as exc_info:
         instance.insert(vectors, payloads, ids)
 
-    assert "Insert failed for document doc2" in str(exc_info.value) or "Insert failed for document doc1" in str(
+    assert "Insert failed for document doc2" in str(
         exc_info.value
-    )
+    ) or "Insert failed for document doc1" in str(exc_info.value)
 
 
 def test_insert_with_missing_payload_fields(azure_ai_search_instance):
@@ -498,7 +542,9 @@ def test_insert_with_http_error(azure_ai_search_instance):
     instance, mock_search_client, _ = azure_ai_search_instance
 
     # Configure mock to raise an HttpResponseError
-    mock_search_client.upload_documents.side_effect = HttpResponseError("Azure service error")
+    mock_search_client.upload_documents.side_effect = HttpResponseError(
+        "Azure service error"
+    )
 
     vectors = [[0.1, 0.2, 0.3]]
     payloads = [{"user_id": "user1"}]
@@ -533,7 +579,9 @@ def test_search_basic(azure_ai_search_instance):
     # Search with a vector
     query_text = "test query"  # Add a query string
     query_vector = [0.1, 0.2, 0.3]
-    results = instance.search(query_text, query_vector, limit=5)  # Pass the query string
+    results = instance.search(
+        query_text, query_vector, limit=5
+    )  # Pass the query string
 
     # Verify search was called correctly
     mock_search_client.search.assert_called_once()

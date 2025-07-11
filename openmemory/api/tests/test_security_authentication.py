@@ -24,11 +24,13 @@ import datetime
 
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
-sys.path.append('/workspace')
+
+sys.path.append("/workspace")
 from shared.logging_system import get_logger
 from shared.errors import ValidationError, NotFoundError, ExternalServiceError
 
-logger = get_logger('security_auth_tests')
+logger = get_logger("security_auth_tests")
+
 
 @pytest.mark.security
 @pytest.mark.unit
@@ -48,9 +50,9 @@ class TestAuthenticationSecurity:
             "../../etc/passwd",
             "null",
             "undefined",
-            "' OR 1=1 --"
+            "' OR 1=1 --",
         ]
-        
+
         for malicious_id in malicious_user_ids:
             # Should be properly escaped/rejected
             assert len(malicious_id) > 0  # Basic check
@@ -63,26 +65,26 @@ class TestAuthenticationSecurity:
         user1 = User(id=uuid4(), user_id="user1", name="User 1")
         user2 = User(id=uuid4(), user_id="user2", name="User 2")
         test_db_session.add_all([user1, user2])
-        
+
         # Create apps for each user
         app1 = App(id=uuid4(), name="app1", owner_id=user1.id)
         app2 = App(id=uuid4(), name="app2", owner_id=user2.id)
         test_db_session.add_all([app1, app2])
-        
+
         # Create memories for each user
         memory1 = Memory(
             id=uuid4(),
             user_id=user1.id,
             app_id=app1.id,
             content="User 1 private memory",
-            state=MemoryState.active
+            state=MemoryState.active,
         )
         memory2 = Memory(
             id=uuid4(),
             user_id=user2.id,
             app_id=app2.id,
             content="User 2 private memory",
-            state=MemoryState.active
+            state=MemoryState.active,
         )
         test_db_session.add_all([memory1, memory2])
         test_db_session.commit()
@@ -104,19 +106,19 @@ class TestAuthenticationSecurity:
         # Create user
         user = User(id=uuid4(), user_id="testuser", name="Test User")
         test_db_session.add(user)
-        
+
         # Create apps
         app1 = App(id=uuid4(), name="app1", owner_id=user.id, is_active=True)
         app2 = App(id=uuid4(), name="app2", owner_id=user.id, is_active=False)
         test_db_session.add_all([app1, app2])
-        
+
         # Create memory
         memory = Memory(
             id=uuid4(),
             user_id=user.id,
             app_id=app1.id,
             content="Test memory",
-            state=MemoryState.active
+            state=MemoryState.active,
         )
         test_db_session.add(memory)
         test_db_session.commit()
@@ -139,43 +141,52 @@ class TestAuthenticationSecurity:
         user = User(id=uuid4(), user_id="testuser", name="Test User")
         app = App(id=uuid4(), name="testapp", owner_id=user.id, is_active=True)
         test_db_session.add_all([user, app])
-        
+
         # Create memories with different states
         active_memory = Memory(
             id=uuid4(),
             user_id=user.id,
             app_id=app.id,
             content="Active memory",
-            state=MemoryState.active
+            state=MemoryState.active,
         )
-        
+
         deleted_memory = Memory(
             id=uuid4(),
             user_id=user.id,
             app_id=app.id,
             content="Deleted memory",
-            state=MemoryState.deleted
+            state=MemoryState.deleted,
         )
-        
+
         archived_memory = Memory(
             id=uuid4(),
             user_id=user.id,
             app_id=app.id,
             content="Archived memory",
-            state=MemoryState.archived
+            state=MemoryState.archived,
         )
-        
+
         test_db_session.add_all([active_memory, deleted_memory, archived_memory])
         test_db_session.commit()
 
         # Test: Active memory should be accessible
-        assert check_memory_access_permissions(test_db_session, active_memory, app.id) is True
+        assert (
+            check_memory_access_permissions(test_db_session, active_memory, app.id)
+            is True
+        )
 
         # Test: Deleted memory should NOT be accessible
-        assert check_memory_access_permissions(test_db_session, deleted_memory, app.id) is False
+        assert (
+            check_memory_access_permissions(test_db_session, deleted_memory, app.id)
+            is False
+        )
 
         # Test: Archived memory should NOT be accessible by default
-        assert check_memory_access_permissions(test_db_session, archived_memory, app.id) is False
+        assert (
+            check_memory_access_permissions(test_db_session, archived_memory, app.id)
+            is False
+        )
 
     def test_access_control_rules_enforcement(self, test_db_session):
         """Test enforcement of explicit access control rules"""
@@ -184,17 +195,17 @@ class TestAuthenticationSecurity:
         app1 = App(id=uuid4(), name="app1", owner_id=user.id, is_active=True)
         app2 = App(id=uuid4(), name="app2", owner_id=user.id, is_active=True)
         test_db_session.add_all([user, app1, app2])
-        
+
         # Create memory
         memory = Memory(
             id=uuid4(),
             user_id=user.id,
             app_id=app1.id,
             content="Protected memory",
-            state=MemoryState.active
+            state=MemoryState.active,
         )
         test_db_session.add(memory)
-        
+
         # Create explicit DENY rule for app2
         deny_rule = AccessControl(
             id=uuid4(),
@@ -202,7 +213,7 @@ class TestAuthenticationSecurity:
             subject_id=app2.id,
             object_type="memory",
             object_id=memory.id,
-            effect="deny"
+            effect="deny",
         )
         test_db_session.add(deny_rule)
         test_db_session.commit()
@@ -211,13 +222,15 @@ class TestAuthenticationSecurity:
         # Note: This test depends on the ACL implementation being extended
         # Currently the check_memory_access_permissions function has basic ACL support
         # but would need enhancement for full ACL rule processing
-        
+
         # For now, test that the memory exists and has the expected state
         assert memory.state == MemoryState.active
         assert deny_rule.effect == "deny"
 
     @pytest.mark.asyncio
-    async def test_api_endpoint_authentication_bypass_attempts(self, test_client: AsyncClient):
+    async def test_api_endpoint_authentication_bypass_attempts(
+        self, test_client: AsyncClient
+    ):
         """Test API endpoints against authentication bypass attempts"""
         # Test common authentication bypass patterns
         bypass_attempts = [
@@ -234,24 +247,28 @@ class TestAuthenticationSecurity:
             # Path traversal attempts
             {"params": {"user_id": "../../admin"}},
         ]
-        
+
         for attempt in bypass_attempts:
             try:
-                response = await test_client.get("/api/v1/memories/", params=attempt["params"])
-                
+                response = await test_client.get(
+                    "/api/v1/memories/", params=attempt["params"]
+                )
+
                 # Should either return 422 (validation error) or 404 (not found)
                 # Should NOT return 200 with unauthorized data
                 assert response.status_code in [
                     status.HTTP_422_UNPROCESSABLE_ENTITY,
                     status.HTTP_404_NOT_FOUND,
-                    status.HTTP_400_BAD_REQUEST
+                    status.HTTP_400_BAD_REQUEST,
                 ], f"Authentication bypass attempt should be blocked: {attempt}"
-                
+
                 # Should not return sensitive data
                 if response.status_code == 200:
                     data = response.json()
-                    assert len(data.get("items", [])) == 0, "No data should be returned for invalid auth"
-                    
+                    assert (
+                        len(data.get("items", [])) == 0
+                    ), "No data should be returned for invalid auth"
+
             except Exception as e:
                 # Exceptions during malicious requests are acceptable
                 logger.info(f"Authentication bypass attempt properly rejected: {e}")
@@ -272,15 +289,17 @@ class TestAuthenticationSecurity:
             # XSS attempts
             {"user_id": "test", "text": "<script>alert('xss')</script>", "app": "test"},
         ]
-        
+
         for malicious_request in malicious_requests:
-            response = await test_client.post("/api/v1/memories/", json=malicious_request)
-            
+            response = await test_client.post(
+                "/api/v1/memories/", json=malicious_request
+            )
+
             # Should be rejected with proper error codes
             assert response.status_code in [
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
                 status.HTTP_404_NOT_FOUND,
-                status.HTTP_400_BAD_REQUEST
+                status.HTTP_400_BAD_REQUEST,
             ], f"Malicious memory creation should be blocked: {malicious_request}"
 
     def test_session_security_validation(self):
@@ -288,13 +307,13 @@ class TestAuthenticationSecurity:
         # Test session fixation prevention
         # Test session timeout handling
         # Test concurrent session limits
-        
+
         # For now, test basic session concepts
         test_sessions = [
             {"user_id": "user1", "session_id": "session1"},
             {"user_id": "user2", "session_id": "session2"},
         ]
-        
+
         for session in test_sessions:
             # Basic session validation
             assert session["user_id"] is not None
@@ -306,17 +325,18 @@ class TestAuthenticationSecurity:
         # Test vertical privilege escalation
         # Test horizontal privilege escalation
         # Test role-based access control
-        
+
         # Create mock scenario
         regular_user = {"user_id": "regular", "role": "user"}
         admin_user = {"user_id": "admin", "role": "admin"}
-        
+
         # Regular user should not be able to access admin functions
         assert regular_user["role"] != "admin"
         assert admin_user["role"] == "admin"
-        
+
         # In production, this would test actual role-based access control
         logger.info("Permission escalation tests completed")
+
 
 @pytest.mark.security
 @pytest.mark.integration
@@ -328,23 +348,21 @@ class TestAuthenticationIntegration:
         """Test complete authentication flow"""
         # Test valid user authentication
         response = await test_client.get(
-            "/api/v1/memories/",
-            params={"user_id": test_user.user_id}
+            "/api/v1/memories/", params={"user_id": test_user.user_id}
         )
-        
+
         # Should succeed for valid user
         assert response.status_code == status.HTTP_200_OK
-        
+
         # Test invalid user
         response = await test_client.get(
-            "/api/v1/memories/",
-            params={"user_id": "nonexistent_user"}
+            "/api/v1/memories/", params={"user_id": "nonexistent_user"}
         )
-        
+
         # Should handle gracefully
         assert response.status_code in [
             status.HTTP_404_NOT_FOUND,
-            status.HTTP_200_OK  # May return empty result
+            status.HTTP_200_OK,  # May return empty result
         ]
 
     @pytest.mark.asyncio
@@ -355,10 +373,10 @@ class TestAuthenticationIntegration:
         for i in range(10):
             task = test_client.get("/api/v1/memories/", params={"user_id": f"user{i}"})
             tasks.append(task)
-        
+
         # Execute concurrently
         responses = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # All should complete without errors
         for response in responses:
             if isinstance(response, Exception):
@@ -372,14 +390,14 @@ class TestAuthenticationIntegration:
         # Test that error messages don't reveal system internals
         # Test that stack traces are not exposed
         # Test that database errors are properly handled
-        
+
         mock_errors = [
             "User not found",
             "Invalid credentials",
             "Access denied",
-            "Session expired"
+            "Session expired",
         ]
-        
+
         for error in mock_errors:
             # Error messages should be user-friendly and not reveal internals
             assert "password" not in error.lower()
@@ -387,5 +405,6 @@ class TestAuthenticationIntegration:
             assert "sql" not in error.lower()
             assert "exception" not in error.lower()
 
+
 if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"]) 
+    pytest.main([__file__, "-v", "--tb=short"])

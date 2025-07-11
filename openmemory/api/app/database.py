@@ -14,8 +14,7 @@ if not DATABASE_URL:
 # Only add check_same_thread for SQLite databases
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
-        DATABASE_URL,
-        connect_args={"check_same_thread": False}  # Needed for SQLite
+        DATABASE_URL, connect_args={"check_same_thread": False}  # Needed for SQLite
     )
 else:
     engine = create_engine(DATABASE_URL)
@@ -24,6 +23,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for models
 Base = declarative_base()
+
 
 # Dependency for FastAPI
 def get_db():

@@ -60,7 +60,11 @@ class EmbedderFactory:
 
     @classmethod
     def create(cls, provider_name, config, vector_config: Optional[dict]):
-        if provider_name == "upstash_vector" and vector_config and vector_config.enable_embeddings:
+        if (
+            provider_name == "upstash_vector"
+            and vector_config
+            and vector_config.enable_embeddings
+        ):
             return MockEmbeddings()
         class_type = cls.provider_to_class.get(provider_name)
         if class_type:

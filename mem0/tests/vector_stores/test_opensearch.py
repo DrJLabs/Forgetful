@@ -8,7 +8,9 @@ import pytest
 try:
     from opensearchpy import AWSV4SignerAuth, OpenSearch
 except ImportError:
-    raise ImportError("OpenSearch requires extra dependencies. Install with `pip install opensearch-py`") from None
+    raise ImportError(
+        "OpenSearch requires extra dependencies. Install with `pip install opensearch-py`"
+    ) from None
 
 from mem0.vector_stores.opensearch import OpenSearchDB
 
@@ -38,7 +40,9 @@ class TestOpenSearchDB(unittest.TestCase):
         self.client_mock.delete = MagicMock()
         self.client_mock.search = MagicMock()
 
-        patcher = patch("mem0.vector_stores.opensearch.OpenSearch", return_value=self.client_mock)
+        patcher = patch(
+            "mem0.vector_stores.opensearch.OpenSearch", return_value=self.client_mock
+        )
         self.mock_os = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -116,7 +120,16 @@ class TestOpenSearchDB(unittest.TestCase):
 
     @pytest.mark.skip(reason="This test is not working as expected")
     def test_get(self):
-        mock_response = {"hits": {"hits": [{"_id": "doc1", "_source": {"id": "id1", "payload": {"key1": "value1"}}}]}}
+        mock_response = {
+            "hits": {
+                "hits": [
+                    {
+                        "_id": "doc1",
+                        "_source": {"id": "id1", "payload": {"key1": "value1"}},
+                    }
+                ]
+            }
+        }
         self.client_mock.search.return_value = mock_response
         result = self.os_db.get("id1")
         self.client_mock.search.assert_called_once()
@@ -134,14 +147,18 @@ class TestOpenSearchDB(unittest.TestCase):
     def test_update(self):
         vector = [0.3] * 1536
         payload = {"key3": "value3"}
-        mock_search_response = {"hits": {"hits": [{"_id": "doc1", "_source": {"id": "id1"}}]}}
+        mock_search_response = {
+            "hits": {"hits": [{"_id": "doc1", "_source": {"id": "id1"}}]}
+        }
         self.client_mock.search.return_value = mock_search_response
         self.os_db.update("id1", vector=vector, payload=payload)
         self.client_mock.update.assert_called_once()
         update_args = self.client_mock.update.call_args[1]
         self.assertEqual(update_args["index"], "test_collection")
         self.assertEqual(update_args["id"], "doc1")
-        self.assertEqual(update_args["body"], {"doc": {"vector_field": vector, "payload": payload}})
+        self.assertEqual(
+            update_args["body"], {"doc": {"vector_field": vector, "payload": payload}}
+        )
 
     def test_list_cols(self):
         self.client_mock.indices.get_alias.return_value = {"test_collection": {}}
@@ -156,7 +173,11 @@ class TestOpenSearchDB(unittest.TestCase):
                     {
                         "_id": "id1",
                         "_score": 0.8,
-                        "_source": {"vector_field": [0.1] * 1536, "id": "id1", "payload": {"key1": "value1"}},
+                        "_source": {
+                            "vector_field": [0.1] * 1536,
+                            "id": "id1",
+                            "payload": {"key1": "value1"},
+                        },
                     }
                 ]
             }
@@ -178,10 +199,14 @@ class TestOpenSearchDB(unittest.TestCase):
         self.assertEqual(results[0].payload, {"key1": "value1"})
 
     def test_delete(self):
-        mock_search_response = {"hits": {"hits": [{"_id": "doc1", "_source": {"id": "id1"}}]}}
+        mock_search_response = {
+            "hits": {"hits": [{"_id": "doc1", "_source": {"id": "id1"}}]}
+        }
         self.client_mock.search.return_value = mock_search_response
         self.os_db.delete(vector_id="id1")
-        self.client_mock.delete.assert_called_once_with(index="test_collection", id="doc1")
+        self.client_mock.delete.assert_called_once_with(
+            index="test_collection", id="doc1"
+        )
 
     def test_delete_col(self):
         self.os_db.delete_col()

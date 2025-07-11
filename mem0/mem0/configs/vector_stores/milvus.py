@@ -20,10 +20,16 @@ class MetricType(str, Enum):
 
 
 class MilvusDBConfig(BaseModel):
-    url: str = Field("http://localhost:19530", description="Full URL for Milvus/Zilliz server")
-    token: str = Field(None, description="Token for Zilliz server / local setup defaults to None.")
+    url: str = Field(
+        "http://localhost:19530", description="Full URL for Milvus/Zilliz server"
+    )
+    token: str = Field(
+        None, description="Token for Zilliz server / local setup defaults to None."
+    )
     collection_name: str = Field("mem0", description="Name of the collection")
-    embedding_model_dims: int = Field(1536, description="Dimensions of the embedding model")
+    embedding_model_dims: int = Field(
+        1536, description="Dimensions of the embedding model"
+    )
     metric_type: str = Field("L2", description="Metric type for similarity search")
 
     @model_validator(mode="before")

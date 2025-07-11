@@ -4,7 +4,9 @@ from .base import NeptuneBase
 try:
     from langchain_aws import NeptuneAnalyticsGraph
 except ImportError:
-    raise ImportError("langchain_aws is not installed. Please install it using 'make install_all'.")
+    raise ImportError(
+        "langchain_aws is not installed. Please install it using 'make install_all'."
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +22,13 @@ class MemoryGraph(NeptuneBase):
             self.graph = NeptuneAnalyticsGraph(graph_identifier)
 
         if not self.graph:
-            raise ValueError("Unable to create a Neptune client: missing 'endpoint' in config")
+            raise ValueError(
+                "Unable to create a Neptune client: missing 'endpoint' in config"
+            )
 
-        self.node_label = ":`__Entity__`" if self.config.graph_store.config.base_label else ""
+        self.node_label = (
+            ":`__Entity__`" if self.config.graph_store.config.base_label else ""
+        )
 
         self.embedding_model = NeptuneBase._create_embedding_model(self.config)
 
@@ -96,8 +102,12 @@ class MemoryGraph(NeptuneBase):
 
         source_label = self.node_label if self.node_label else f":`{source_type}`"
         source_extra_set = f", source:`{source_type}`" if self.node_label else ""
-        destination_label = self.node_label if self.node_label else f":`{destination_type}`"
-        destination_extra_set = f", destination:`{destination_type}`" if self.node_label else ""
+        destination_label = (
+            self.node_label if self.node_label else f":`{destination_type}`"
+        )
+        destination_extra_set = (
+            f", destination:`{destination_type}`" if self.node_label else ""
+        )
 
         # Refactor this code with the graph_memory.py implementation
         if not destination_node_list and source_node_list:
@@ -256,7 +266,9 @@ class MemoryGraph(NeptuneBase):
         logger.debug(f"_search_source_node\n  query={cypher}")
         return cypher, params
 
-    def _search_destination_node_cypher(self, destination_embedding, user_id, threshold):
+    def _search_destination_node_cypher(
+        self, destination_embedding, user_id, threshold
+    ):
         """
         Returns the OpenCypher query and parameters to search for destination nodes
 

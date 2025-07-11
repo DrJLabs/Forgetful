@@ -3,8 +3,18 @@ import uuid
 import datetime
 import sqlalchemy as sa
 from sqlalchemy import (
-    Column, String, Boolean, ForeignKey, Enum, Table,
-    DateTime, JSON, Integer, UUID, Index, event
+    Column,
+    String,
+    Boolean,
+    ForeignKey,
+    Enum,
+    Table,
+    DateTime,
+    JSON,
+    Integer,
+    UUID,
+    Index,
+    event,
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -14,6 +24,7 @@ from app.utils.categorization import get_categories_for_memory
 # Import pgvector types for proper vector storage
 try:
     from pgvector.sqlalchemy import Vector
+
     PGVECTOR_AVAILABLE = True
 except ImportError:
     # Fallback for systems without pgvector
@@ -39,11 +50,11 @@ class User(Base):
     user_id = Column(String, nullable=False, unique=True, index=True)
     name = Column(String, nullable=True, index=True)
     email = Column(String, unique=True, nullable=True, index=True)
-    metadata_ = Column('metadata', JSON, default=dict)
+    metadata_ = Column("metadata", JSON, default=dict)
     created_at = Column(DateTime, default=get_current_utc_time, index=True)
-    updated_at = Column(DateTime,
-                        default=get_current_utc_time,
-                        onupdate=get_current_utc_time)
+    updated_at = Column(
+        DateTime, default=get_current_utc_time, onupdate=get_current_utc_time
+    )
 
     apps = relationship("App", back_populates="owner")
     memories = relationship("Memory", back_populates="user")
@@ -55,18 +66,18 @@ class App(Base):
     owner_id = Column(UUID, ForeignKey("users.id"), nullable=False, index=True)
     name = Column(String, nullable=False, index=True)
     description = Column(String)
-    metadata_ = Column('metadata', JSON, default=dict)
+    metadata_ = Column("metadata", JSON, default=dict)
     is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, default=get_current_utc_time, index=True)
-    updated_at = Column(DateTime,
-                        default=get_current_utc_time,
-                        onupdate=get_current_utc_time)
+    updated_at = Column(
+        DateTime, default=get_current_utc_time, onupdate=get_current_utc_time
+    )
 
     owner = relationship("User", back_populates="apps")
     memories = relationship("Memory", back_populates="app")
 
     __table_args__ = (
-        sa.UniqueConstraint('owner_id', 'name', name='idx_app_owner_name'),
+        sa.UniqueConstraint("owner_id", "name", name="idx_app_owner_name"),
     )
 
 
@@ -76,9 +87,9 @@ class Config(Base):
     key = Column(String, unique=True, nullable=False, index=True)
     value = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=get_current_utc_time)
-    updated_at = Column(DateTime,
-                        default=get_current_utc_time,
-                        onupdate=get_current_utc_time)
+    updated_at = Column(
+        DateTime, default=get_current_utc_time, onupdate=get_current_utc_time
+    )
 
 
 class Memory(Base):
@@ -89,23 +100,25 @@ class Memory(Base):
     content = Column(String, nullable=False)
     # Updated to use proper pgvector types for optimal performance
     vector = Column(Vector(1536) if PGVECTOR_AVAILABLE else String, nullable=True)
-    metadata_ = Column('metadata', JSON, default=dict)
+    metadata_ = Column("metadata", JSON, default=dict)
     state = Column(Enum(MemoryState), default=MemoryState.active, index=True)
     created_at = Column(DateTime, default=get_current_utc_time, index=True)
-    updated_at = Column(DateTime,
-                        default=get_current_utc_time,
-                        onupdate=get_current_utc_time)
+    updated_at = Column(
+        DateTime, default=get_current_utc_time, onupdate=get_current_utc_time
+    )
     archived_at = Column(DateTime, nullable=True, index=True)
     deleted_at = Column(DateTime, nullable=True, index=True)
 
     user = relationship("User", back_populates="memories")
     app = relationship("App", back_populates="memories")
-    categories = relationship("Category", secondary="memory_categories", back_populates="memories")
+    categories = relationship(
+        "Category", secondary="memory_categories", back_populates="memories"
+    )
 
     __table_args__ = (
-        Index('idx_memory_user_state', 'user_id', 'state'),
-        Index('idx_memory_app_state', 'app_id', 'state'),
-        Index('idx_memory_user_app', 'user_id', 'app_id'),
+        Index("idx_memory_user_state", "user_id", "state"),
+        Index("idx_memory_app_state", "app_id", "state"),
+        Index("idx_memory_user_app", "user_id", "app_id"),
         # Vector similarity index will be created by migration script
         # Index('idx_memory_vector_cosine', 'vector', postgresql_using='ivfflat', postgresql_ops={'vector': 'vector_cosine_ops'}) if PGVECTOR_AVAILABLE else None,
     )
@@ -116,18 +129,26 @@ class Category(Base):
     id = Column(UUID, primary_key=True, default=lambda: uuid.uuid4())
     name = Column(String, unique=True, nullable=False, index=True)
     description = Column(String)
-    created_at = Column(DateTime, default=datetime.datetime.now(datetime.UTC), index=True)
-    updated_at = Column(DateTime,
-                        default=get_current_utc_time,
-                        onupdate=get_current_utc_time)
+    created_at = Column(
+        DateTime, default=datetime.datetime.now(datetime.UTC), index=True
+    )
+    updated_at = Column(
+        DateTime, default=get_current_utc_time, onupdate=get_current_utc_time
+    )
 
-    memories = relationship("Memory", secondary="memory_categories", back_populates="categories")
+    memories = relationship(
+        "Memory", secondary="memory_categories", back_populates="categories"
+    )
+
 
 memory_categories = Table(
-    "memory_categories", Base.metadata,
+    "memory_categories",
+    Base.metadata,
     Column("memory_id", UUID, ForeignKey("memories.id"), primary_key=True, index=True),
-    Column("category_id", UUID, ForeignKey("categories.id"), primary_key=True, index=True),
-    Index('idx_memory_category', 'memory_id', 'category_id')
+    Column(
+        "category_id", UUID, ForeignKey("categories.id"), primary_key=True, index=True
+    ),
+    Index("idx_memory_category", "memory_id", "category_id"),
 )
 
 
@@ -142,8 +163,8 @@ class AccessControl(Base):
     created_at = Column(DateTime, default=get_current_utc_time, index=True)
 
     __table_args__ = (
-        Index('idx_access_subject', 'subject_type', 'subject_id'),
-        Index('idx_access_object', 'object_type', 'object_id'),
+        Index("idx_access_subject", "subject_type", "subject_id"),
+        Index("idx_access_object", "object_type", "object_id"),
     )
 
 
@@ -155,9 +176,7 @@ class ArchivePolicy(Base):
     days_to_archive = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=get_current_utc_time, index=True)
 
-    __table_args__ = (
-        Index('idx_policy_criteria', 'criteria_type', 'criteria_id'),
-    )
+    __table_args__ = (Index("idx_policy_criteria", "criteria_type", "criteria_id"),)
 
 
 class MemoryStatusHistory(Base):
@@ -170,8 +189,8 @@ class MemoryStatusHistory(Base):
     changed_at = Column(DateTime, default=get_current_utc_time, index=True)
 
     __table_args__ = (
-        Index('idx_history_memory_state', 'memory_id', 'new_state'),
-        Index('idx_history_user_time', 'changed_by', 'changed_at'),
+        Index("idx_history_memory_state", "memory_id", "new_state"),
+        Index("idx_history_user_time", "changed_by", "changed_at"),
     )
 
 
@@ -182,12 +201,13 @@ class MemoryAccessLog(Base):
     app_id = Column(UUID, ForeignKey("apps.id"), nullable=False, index=True)
     accessed_at = Column(DateTime, default=get_current_utc_time, index=True)
     access_type = Column(String, nullable=False, index=True)
-    metadata_ = Column('metadata', JSON, default=dict)
+    metadata_ = Column("metadata", JSON, default=dict)
 
     __table_args__ = (
-        Index('idx_access_memory_time', 'memory_id', 'accessed_at'),
-        Index('idx_access_app_time', 'app_id', 'accessed_at'),
+        Index("idx_access_memory_time", "memory_id", "accessed_at"),
+        Index("idx_access_app_time", "app_id", "accessed_at"),
     )
+
 
 def categorize_memory(memory: Memory, db: Session) -> None:
     """Categorize a memory using OpenAI and store the categories in the database."""
@@ -201,7 +221,7 @@ def categorize_memory(memory: Memory, db: Session) -> None:
             if not category:
                 category = Category(
                     name=category_name,
-                    description=f"Automatically created category for {category_name}"
+                    description=f"Automatically created category for {category_name}",
                 )
                 db.add(category)
                 db.flush()  # Flush to get the category ID
@@ -209,8 +229,8 @@ def categorize_memory(memory: Memory, db: Session) -> None:
             # Check if the memory-category association already exists
             existing = db.execute(
                 memory_categories.select().where(
-                    (memory_categories.c.memory_id == memory.id) &
-                    (memory_categories.c.category_id == category.id)
+                    (memory_categories.c.memory_id == memory.id)
+                    & (memory_categories.c.category_id == category.id)
                 )
             ).first()
 
@@ -218,8 +238,7 @@ def categorize_memory(memory: Memory, db: Session) -> None:
                 # Create the association
                 db.execute(
                     memory_categories.insert().values(
-                        memory_id=memory.id,
-                        category_id=category.id
+                        memory_id=memory.id, category_id=category.id
                     )
                 )
 
@@ -229,7 +248,7 @@ def categorize_memory(memory: Memory, db: Session) -> None:
         print(f"Error categorizing memory: {e}")
 
 
-@event.listens_for(Memory, 'after_insert')
+@event.listens_for(Memory, "after_insert")
 def after_memory_insert(mapper, connection, target):
     """Trigger categorization after a memory is inserted."""
     db = Session(bind=connection)
@@ -237,7 +256,7 @@ def after_memory_insert(mapper, connection, target):
     db.close()
 
 
-@event.listens_for(Memory, 'after_update')
+@event.listens_for(Memory, "after_update")
 def after_memory_update(mapper, connection, target):
     """Trigger categorization after a memory is updated."""
     db = Session(bind=connection)

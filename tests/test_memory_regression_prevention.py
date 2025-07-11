@@ -23,28 +23,29 @@ from unittest.mock import Mock, patch
 from typing import Dict, Any, List
 
 # Add the mem0 directory to Python path for testing
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../mem0'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../mem0"))
+
 
 class TestMemoryRegressionPrevention(unittest.TestCase):
     """Test suite to prevent memory system regressions."""
-    
+
     def setUp(self):
         """Set up test environment with mocked dependencies."""
         self.mock_config = Mock()
         self.mock_config.coding_similarity_threshold = 0.8
-        self.mock_config.coding_categories = ['bug_fix', 'architecture', 'performance']
+        self.mock_config.coding_categories = ["bug_fix", "architecture", "performance"]
         self.mock_config.autonomous_storage_config = {}
-        self.mock_config.coding_context_weights = {'bug_fix': 0.9, 'architecture': 0.8}
-        
+        self.mock_config.coding_context_weights = {"bug_fix": 0.9, "architecture": 0.8}
+
         # Mock vector store
         self.mock_vector_store = Mock()
         self.mock_vector_store.insert.return_value = True
         self.mock_vector_store.search.return_value = []
-        
+
         # Mock database
         self.mock_db = Mock()
         self.mock_db.add_history.return_value = True
-        
+
         # Mock embedding model
         self.mock_embedding_model = Mock()
         self.mock_embedding_model.embed.return_value = [0.1] * 1536
@@ -52,21 +53,24 @@ class TestMemoryRegressionPrevention(unittest.TestCase):
     def test_long_content_memory_creation(self):
         """Test that very long content strings work as memory data."""
         # Generate very long content (10KB+)
-        long_content = "This is a comprehensive test of very long memory content that would previously cause issues when used as dictionary keys. " * 100
-        
+        long_content = (
+            "This is a comprehensive test of very long memory content that would previously cause issues when used as dictionary keys. "
+            * 100
+        )
+
         self.assertGreater(len(long_content), 10000, "Content should be over 10KB")
-        
+
         # Test that we can create a hash and metadata without issues
         content_hash = hashlib.md5(long_content.encode()).hexdigest()
         self.assertEqual(len(content_hash), 32)
-        
+
         # Test metadata creation
         metadata = {
             "data": long_content,
             "hash": content_hash,
-            "category": "test_long_content"
+            "category": "test_long_content",
         }
-        
+
         # This should not raise any exceptions
         self.assertIsInstance(metadata["data"], str)
         self.assertEqual(len(metadata["data"]), len(long_content))
@@ -74,22 +78,22 @@ class TestMemoryRegressionPrevention(unittest.TestCase):
     def test_special_characters_in_memory(self):
         """Test that content with special characters is handled correctly."""
         special_content_cases = [
-            'Content with "double quotes" and \'single quotes\'',
-            'Content with\nnewlines\nand\ttabs',
-            'Content with unicode: café, naïve, résumé 🚀',
-            'Content with {brackets} and [arrays] and (parentheses)',
-            'Content with backslashes \\ and forward slashes /',
-            'Content with $ symbols and % percentages',
+            "Content with \"double quotes\" and 'single quotes'",
+            "Content with\nnewlines\nand\ttabs",
+            "Content with unicode: café, naïve, résumé 🚀",
+            "Content with {brackets} and [arrays] and (parentheses)",
+            "Content with backslashes \\ and forward slashes /",
+            "Content with $ symbols and % percentages",
             'JSON-like: {"key": "value", "nested": {"array": [1, 2, 3]}}',
             'XML-like: <element attribute="value">content</element>',
         ]
-        
+
         for i, content in enumerate(special_content_cases):
             with self.subTest(case=i, content=content[:50] + "..."):
                 # Test that we can safely process this content
                 content_hash = hashlib.md5(content.encode()).hexdigest()
                 self.assertEqual(len(content_hash), 32)
-                
+
                 # Test that the content can be stored in metadata
                 metadata = {"data": content, "hash": content_hash}
                 self.assertEqual(metadata["data"], content)
@@ -105,7 +109,7 @@ def complex_function(data):
         result["special"] = data["special"]
     return result
             ''',
-            '''
+            """
 class DataProcessor:
     def __init__(self, config):
         self.config = config
@@ -116,16 +120,16 @@ class DataProcessor:
         if key not in self.cache:
             self.cache[key] = self._expensive_operation(item)
         return self.cache[key]
-            ''',
-            '''
+            """,
+            """
 SELECT u.name, u.email, p.title
 FROM users u
 LEFT JOIN posts p ON u.id = p.author_id
 WHERE u.active = true
   AND p.published_at > '2023-01-01'
 ORDER BY p.published_at DESC;
-            ''',
-            '''
+            """,
+            """
 import React, { useState, useEffect } from 'react';
 
 const DataComponent = ({ apiUrl }) => {
@@ -143,31 +147,36 @@ const DataComponent = ({ apiUrl }) => {
 
   return loading ? <div>Loading...</div> : <div>{JSON.stringify(data)}</div>;
 };
-            '''
+            """,
         ]
-        
+
         for i, code in enumerate(code_samples):
-            with self.subTest(case=i, language=['python', 'python', 'sql', 'javascript'][i]):
+            with self.subTest(
+                case=i, language=["python", "python", "sql", "javascript"][i]
+            ):
                 # Test that code content can be safely processed
                 content_hash = hashlib.md5(code.encode()).hexdigest()
                 self.assertEqual(len(content_hash), 32)
-                
+
                 # Test metadata creation with code content
                 metadata = {
                     "data": code,
                     "hash": content_hash,
                     "category": "code_sample",
-                    "language": ['python', 'python', 'sql', 'javascript'][i]
+                    "language": ["python", "python", "sql", "javascript"][i],
                 }
-                
+
                 # Verify no data corruption
                 self.assertEqual(metadata["data"], code)
-                self.assertIn("def " if i < 2 else ("SELECT" if i == 2 else "const"), code)
+                self.assertIn(
+                    "def " if i < 2 else ("SELECT" if i == 2 else "const"), code
+                )
 
     def test_procedural_memory_pattern_safety(self):
         """Test that procedural memory uses safe patterns."""
         # Simulate the fixed procedural memory creation pattern
-        procedural_content = """
+        procedural_content = (
+            """
         DETAILED PROCEDURAL MEMORY:
         
         User Session: Complex API Integration Task
@@ -221,25 +230,31 @@ const DataComponent = ({ apiUrl }) => {
         - Event-driven architecture for audit logging
         - Graceful degradation for auth provider failures
         - Caching layer for permission lookups
-        """ * 2  # Make it longer to test large procedural content
-        
+        """
+            * 2
+        )  # Make it longer to test large procedural content
+
         # Test that procedural content can be safely handled
         content_length = len(procedural_content)
-        self.assertGreater(content_length, 4000, "Procedural content should be substantial")
-        
+        self.assertGreater(
+            content_length, 4000, "Procedural content should be substantial"
+        )
+
         # Test the SAFE pattern: empty dict instead of {content: embeddings}
         safe_embeddings_dict = {}
-        self.assertEqual(len(safe_embeddings_dict), 0, "Should use empty dict for embeddings")
-        
+        self.assertEqual(
+            len(safe_embeddings_dict), 0, "Should use empty dict for embeddings"
+        )
+
         # Test metadata creation
         metadata = {
             "data": procedural_content,
             "hash": hashlib.md5(procedural_content.encode()).hexdigest(),
             "memory_type": "procedural",
             "session_duration": "2.5 hours",
-            "complexity": "high"
+            "complexity": "high",
         }
-        
+
         # Verify the content is preserved correctly
         self.assertEqual(metadata["data"], procedural_content)
         self.assertEqual(metadata["memory_type"], "procedural")
@@ -248,51 +263,53 @@ const DataComponent = ({ apiUrl }) => {
         """Test that memory creation performance remains acceptable with large content."""
         # Test various content sizes
         test_sizes = [1000, 5000, 10000, 50000]  # 1KB to 50KB
-        
+
         for size in test_sizes:
-            with self.subTest(size_kb=size//1000):
+            with self.subTest(size_kb=size // 1000):
                 # Generate content of specified size
                 content = "x" * size
-                
+
                 # Measure time for hash creation (key operation)
                 start_time = time.time()
                 content_hash = hashlib.md5(content.encode()).hexdigest()
                 hash_time = time.time() - start_time
-                
+
                 # Hash creation should be fast even for large content
-                self.assertLess(hash_time, 0.1, f"Hash creation too slow for {size//1000}KB content")
-                
+                self.assertLess(
+                    hash_time, 0.1, f"Hash creation too slow for {size//1000}KB content"
+                )
+
                 # Measure metadata creation time
                 start_time = time.time()
-                metadata = {
-                    "data": content,
-                    "hash": content_hash,
-                    "size": len(content)
-                }
+                metadata = {"data": content, "hash": content_hash, "size": len(content)}
                 metadata_time = time.time() - start_time
-                
+
                 # Metadata creation should be very fast
-                self.assertLess(metadata_time, 0.01, f"Metadata creation too slow for {size//1000}KB content")
+                self.assertLess(
+                    metadata_time,
+                    0.01,
+                    f"Metadata creation too slow for {size//1000}KB content",
+                )
 
     def test_embedding_pattern_safety(self):
         """Test that embedding handling patterns are safe."""
         test_content = "Test content for embedding pattern validation"
         mock_embeddings = [0.1] * 1536  # Standard embedding size
-        
+
         # Test SAFE pattern: direct usage without problematic dictionary keys
         safe_metadata = {
             "data": test_content,
             "hash": hashlib.md5(test_content.encode()).hexdigest(),
-            "embedding_dimensions": len(mock_embeddings)
+            "embedding_dimensions": len(mock_embeddings),
         }
-        
+
         # Verify we can store embeddings separately from content
         embedding_storage = {
             "vectors": [mock_embeddings],
             "ids": ["test_id_123"],
-            "payloads": [safe_metadata]
+            "payloads": [safe_metadata],
         }
-        
+
         # Test that the pattern works correctly
         self.assertEqual(len(embedding_storage["vectors"]), 1)
         self.assertEqual(len(embedding_storage["ids"]), 1)
@@ -308,7 +325,7 @@ const DataComponent = ({ apiUrl }) => {
             "\x00\x01\x02",  # Binary-like content
             "Content with null\x00character",  # Content with null bytes
         ]
-        
+
         for i, content in enumerate(problematic_content_cases):
             with self.subTest(case=i):
                 try:
@@ -316,30 +333,32 @@ const DataComponent = ({ apiUrl }) => {
                         # Test handling of None content
                         self.assertIsNone(content)
                         continue
-                    
+
                     # Test that we can safely create metadata even with problematic content
                     content_hash = hashlib.md5(str(content).encode()).hexdigest()
                     metadata = {
                         "data": content,
                         "hash": content_hash,
-                        "content_type": "test_problematic"
+                        "content_type": "test_problematic",
                     }
-                    
+
                     # Verify the metadata was created successfully
                     self.assertIsInstance(metadata["hash"], str)
                     self.assertEqual(len(metadata["hash"]), 32)
-                    
+
                 except Exception as e:
                     # Document any exceptions for analysis
                     self.fail(f"Failed to handle problematic content case {i}: {e}")
 
+
 class TestRegressionIntegration(unittest.TestCase):
     """Integration tests to ensure regression fixes work end-to-end."""
-    
+
     def test_full_memory_workflow_with_large_content(self):
         """Test complete memory workflow with content that previously caused issues."""
         # Simulate a complete memory creation workflow
-        large_content = """
+        large_content = (
+            """
         COMPREHENSIVE SYSTEM ANALYSIS REPORT
         ===================================
         
@@ -419,44 +438,47 @@ class TestRegressionIntegration(unittest.TestCase):
         - Zero security incidents related to identified vulnerabilities
         - 50% reduction in operational support tickets
         - 25% improvement in system resource utilization efficiency
-        """ * 3  # Triple the content to make it really large
-        
+        """
+            * 3
+        )  # Triple the content to make it really large
+
         # Test the complete workflow
         try:
             # Step 1: Content validation
             self.assertIsInstance(large_content, str)
             self.assertGreater(len(large_content), 10000)  # Ensure it's substantial
-            
+
             # Step 2: Hash generation (key operation that was problematic)
             content_hash = hashlib.md5(large_content.encode()).hexdigest()
             self.assertEqual(len(content_hash), 32)
-            
+
             # Step 3: Metadata creation (this should work without dictionary key issues)
             metadata = {
                 "data": large_content,
                 "hash": content_hash,
                 "content_type": "system_analysis",
                 "priority": "high",
-                "category": "architecture"
+                "category": "architecture",
             }
-            
+
             # Step 4: Embedding simulation
             mock_embeddings = [0.1] * 1536
-            
+
             # Step 5: Storage simulation (the SAFE pattern)
             storage_data = {
                 "vectors": [mock_embeddings],
                 "ids": ["analysis_report_123"],
-                "payloads": [metadata]
+                "payloads": [metadata],
             }
-            
+
             # Verify the complete workflow succeeded
             self.assertEqual(storage_data["payloads"][0]["data"], large_content)
             self.assertEqual(len(storage_data["vectors"][0]), 1536)
-            
+
         except Exception as e:
             self.fail(f"Full workflow test failed with large content: {e}")
 
+
 if __name__ == "__main__":
     # Run the test suite
-    unittest.main(verbosity=2) 
+    unittest.main(verbosity=2)

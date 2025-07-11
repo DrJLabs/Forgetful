@@ -25,7 +25,12 @@ def mock_langchain_model():
 def test_langchain_initialization(mock_langchain_model):
     """Test that LangchainLLM initializes correctly with a valid model."""
     # Create a config with the model instance directly
-    config = BaseLlmConfig(model=mock_langchain_model, temperature=0.7, max_tokens=100, api_key="test-api-key")
+    config = BaseLlmConfig(
+        model=mock_langchain_model,
+        temperature=0.7,
+        max_tokens=100,
+        api_key="test-api-key",
+    )
 
     # Initialize the LangchainLLM
     llm = LangchainLLM(config)
@@ -37,7 +42,12 @@ def test_langchain_initialization(mock_langchain_model):
 def test_generate_response(mock_langchain_model):
     """Test that generate_response correctly processes messages and returns a response."""
     # Create a config with the model instance
-    config = BaseLlmConfig(model=mock_langchain_model, temperature=0.7, max_tokens=100, api_key="test-api-key")
+    config = BaseLlmConfig(
+        model=mock_langchain_model,
+        temperature=0.7,
+        max_tokens=100,
+        api_key="test-api-key",
+    )
 
     # Initialize the LangchainLLM
     llm = LangchainLLM(config)
@@ -70,15 +80,24 @@ def test_generate_response(mock_langchain_model):
 
 def test_invalid_model():
     """Test that LangchainLLM raises an error with an invalid model."""
-    config = BaseLlmConfig(model="not-a-valid-model-instance", temperature=0.7, max_tokens=100, api_key="test-api-key")
+    config = BaseLlmConfig(
+        model="not-a-valid-model-instance",
+        temperature=0.7,
+        max_tokens=100,
+        api_key="test-api-key",
+    )
 
-    with pytest.raises(ValueError, match="`model` must be an instance of BaseChatModel"):
+    with pytest.raises(
+        ValueError, match="`model` must be an instance of BaseChatModel"
+    ):
         LangchainLLM(config)
 
 
 def test_missing_model():
     """Test that LangchainLLM raises an error when model is None."""
-    config = BaseLlmConfig(model=None, temperature=0.7, max_tokens=100, api_key="test-api-key")
+    config = BaseLlmConfig(
+        model=None, temperature=0.7, max_tokens=100, api_key="test-api-key"
+    )
 
     with pytest.raises(ValueError, match="`model` parameter is required"):
         LangchainLLM(config)

@@ -15,5 +15,7 @@ def test_get_update_memory_messages():
 
     ## When custom update memory prompt is not provided
     ##
-    result = prompts.get_update_memory_messages(retrieved_old_memory_dict, response_content, None)
+    result = prompts.get_update_memory_messages(
+        retrieved_old_memory_dict, response_content, None
+    )
     assert result.startswith(prompts.DEFAULT_UPDATE_MEMORY_PROMPT)
