@@ -20,9 +20,10 @@ from concurrent.futures import ThreadPoolExecutor
 import psutil
 import os
 
-# Add the workspace to the path
+# Add the workspace to the path dynamically
 import sys
-sys.path.insert(0, '/workspace')
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from shared.caching import (
     MultiLayerCacheConfig, 
