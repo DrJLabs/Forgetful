@@ -304,9 +304,11 @@ class TestConnectionPoolPerformance:
         mock_neo4j_driver = AsyncMock()
         mock_redis_client = Mock()
 
-        with patch("asyncpg.create_pool", return_value=mock_pg_pool), patch(
-            "neo4j.AsyncGraphDatabase.driver", return_value=mock_neo4j_driver
-        ), patch("redis.Redis.from_url", return_value=mock_redis_client):
+        with (
+            patch("asyncpg.create_pool", return_value=mock_pg_pool),
+            patch("neo4j.AsyncGraphDatabase.driver", return_value=mock_neo4j_driver),
+            patch("redis.Redis.from_url", return_value=mock_redis_client),
+        ):
 
             # Create connection pool manager
             manager = ConnectionPoolManager(pool_config)

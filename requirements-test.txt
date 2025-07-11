@@ -145,7 +145,7 @@ pytest-bdd>=6.1.1
 # Test Fixtures and Utilities
 pytest-fixtures>=0.1.0
 pytest-datadir>=1.4.1
-pytest-tmpdir>=1.2.0
+# pytest-tmpdir - package doesn't exist, using pytest's built-in tmpdir fixture
 
 # Database Migration Testing
 alembic>=1.11.0

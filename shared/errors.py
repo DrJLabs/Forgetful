@@ -135,7 +135,7 @@ class ValidationError(StructuredError):
             severity=ErrorSeverity.LOW,
             technical_details={"field": field, "value": value},
             recovery_strategy=ErrorRecovery.IGNORE,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -149,7 +149,7 @@ class AuthenticationError(StructuredError):
             category=ErrorCategory.AUTHENTICATION,
             severity=ErrorSeverity.HIGH,
             recovery_strategy=ErrorRecovery.ESCALATE,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -164,7 +164,7 @@ class AuthorizationError(StructuredError):
             severity=ErrorSeverity.HIGH,
             technical_details={"resource": resource},
             recovery_strategy=ErrorRecovery.ESCALATE,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -184,7 +184,7 @@ class NotFoundError(StructuredError):
                 "resource_id": resource_id,
             },
             recovery_strategy=ErrorRecovery.IGNORE,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -199,7 +199,7 @@ class ConflictError(StructuredError):
             severity=ErrorSeverity.MEDIUM,
             technical_details={"resource": resource},
             recovery_strategy=ErrorRecovery.IGNORE,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -216,7 +216,7 @@ class RateLimitError(StructuredError):
             severity=ErrorSeverity.MEDIUM,
             technical_details={"retry_after": retry_after},
             recovery_strategy=ErrorRecovery.RETRY,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -231,7 +231,7 @@ class ExternalServiceError(StructuredError):
             severity=ErrorSeverity.HIGH,
             technical_details={"service_name": service_name},
             recovery_strategy=ErrorRecovery.CIRCUIT_BREAKER,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -246,7 +246,7 @@ class DatabaseError(StructuredError):
             severity=ErrorSeverity.HIGH,
             technical_details={"query": query},
             recovery_strategy=ErrorRecovery.RETRY,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -261,7 +261,7 @@ class NetworkError(StructuredError):
             severity=ErrorSeverity.HIGH,
             technical_details={"endpoint": endpoint},
             recovery_strategy=ErrorRecovery.RETRY,
-            **kwargs
+            **kwargs,
         )
 
 
@@ -276,7 +276,7 @@ class SystemError(StructuredError):
             severity=ErrorSeverity.CRITICAL,
             technical_details={"component": component},
             recovery_strategy=ErrorRecovery.ESCALATE,
-            **kwargs
+            **kwargs,
         )
 
 
