@@ -2,6 +2,7 @@
 Caching System for Agent-4 Performance Optimization
 
 This module provides comprehensive caching strategies including:
+- Multi-layer caching (L1/L2/L3)
 - In-memory caching with TTL
 - Redis-compatible caching (with fallback)
 - Query result caching
@@ -18,7 +19,9 @@ from functools import wraps
 from datetime import datetime, timedelta
 import hashlib
 import pickle
+import asyncio
 from contextlib import contextmanager
+import msgpack
 
 from .logging_system import get_logger, performance_logger
 
@@ -32,6 +35,23 @@ class CacheConfig:
     eviction_policy: str = 'lru'  # LRU, LFU, or FIFO
     compress: bool = False  # Whether to compress cached data
     serialize: bool = True  # Whether to serialize cached data
+
+@dataclass
+class MultiLayerCacheConfig:
+    """Configuration for multi-layer caching strategy."""
+    # L1 Cache (In-Memory)
+    l1_max_size: int = 256 * 1024 * 1024  # 256MB
+    l1_ttl: int = 300  # 5 minutes
+    l1_eviction_policy: str = 'lru'
+    
+    # L2 Cache (Redis)
+    l2_max_size: int = 4 * 1024 * 1024 * 1024  # 4GB
+    l2_ttl: int = 3600  # 1 hour
+    l2_redis_url: str = "redis://localhost:6379"
+    
+    # L3 Cache (PostgreSQL Query Cache)
+    l3_ttl: int = 1800  # 30 minutes
+    l3_max_prepared_statements: int = 1000
 
 class CacheEntry:
     """Individual cache entry with metadata."""
@@ -73,31 +93,35 @@ class CacheEntry:
         """Get age of cache entry in seconds."""
         return time.time() - self.created_at
 
-class InMemoryCache:
+class OptimizedL1Cache:
     """
-    High-performance in-memory cache with TTL and eviction policies.
+    Optimized L1 in-memory cache with LRU eviction and performance monitoring.
     
     Features:
-    - TTL-based expiration
-    - LRU/LFU/FIFO eviction policies
-    - Size-based eviction
-    - Performance metrics
+    - 256MB LRU cache with 5-minute TTL
+    - Size-based eviction for memory efficiency
+    - Performance metrics tracking
+    - Cache warming for hot memories
     """
     
-    def __init__(self, config: CacheConfig):
+    def __init__(self, config: MultiLayerCacheConfig):
         self.config = config
         self.cache = {}
+        self.access_order = []  # For LRU tracking
         self.lock = threading.RLock()
+        self.current_size = 0
         self.metrics = {
             'hits': 0,
             'misses': 0,
             'evictions': 0,
+            'warmings': 0,
             'size': 0,
-            'memory_usage': 0
+            'memory_usage': 0,
+            'hot_keys': set()
         }
     
     def get(self, key: str) -> Optional[Any]:
-        """Get value from cache."""
+        """Get value from L1 cache with LRU updates."""
         with self.lock:
             if key not in self.cache:
                 self.metrics['misses'] += 1
@@ -107,299 +131,483 @@ class InMemoryCache:
             
             # Check expiration
             if entry.is_expired():
-                del self.cache[key]
+                self._remove_key(key)
                 self.metrics['misses'] += 1
                 return None
             
-            # Update access metadata
+            # Update LRU order
+            self._update_access_order(key)
             entry.touch()
             self.metrics['hits'] += 1
             
-            logger.debug(f"Cache HIT for key: {key}")
+            # Track hot keys
+            if entry.access_count > 10:
+                self.metrics['hot_keys'].add(key)
+            
+            logger.debug(f"L1 Cache HIT for key: {key}")
             return entry.value
     
     def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
-        """Set value in cache."""
+        """Set value in L1 cache with size-based eviction."""
         with self.lock:
-            ttl = ttl or self.config.ttl
+            ttl = ttl or self.config.l1_ttl
             entry = CacheEntry(value, ttl)
             
-            # Check if we need to evict
-            if len(self.cache) >= self.config.max_size:
-                self._evict()
+            # Remove existing entry if present
+            if key in self.cache:
+                self._remove_key(key)
             
+            # Evict if needed to make space
+            while (self.current_size + entry.size > self.config.l1_max_size and
+                   len(self.cache) > 0):
+                self._evict_lru()
+            
+            # Add new entry
             self.cache[key] = entry
+            self.access_order.append(key)
+            self.current_size += entry.size
             self.metrics['size'] = len(self.cache)
-            self.metrics['memory_usage'] += entry.size
+            self.metrics['memory_usage'] = self.current_size
             
-            logger.debug(f"Cache SET for key: {key}, TTL: {ttl}")
+            logger.debug(f"L1 Cache SET for key: {key}, size: {entry.size}, TTL: {ttl}")
             return True
     
-    def delete(self, key: str) -> bool:
-        """Delete value from cache."""
-        with self.lock:
-            if key in self.cache:
-                entry = self.cache.pop(key)
-                self.metrics['size'] = len(self.cache)
-                self.metrics['memory_usage'] -= entry.size
-                logger.debug(f"Cache DELETE for key: {key}")
-                return True
-            return False
+    def warm(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """Warm cache with hot memory data."""
+        result = self.set(key, value, ttl)
+        if result:
+            self.metrics['warmings'] += 1
+            self.metrics['hot_keys'].add(key)
+        return result
     
-    def clear(self):
-        """Clear all cache entries."""
-        with self.lock:
-            self.cache.clear()
-            self.metrics['size'] = 0
-            self.metrics['memory_usage'] = 0
-            logger.info("Cache cleared")
+    def _update_access_order(self, key: str):
+        """Update LRU access order."""
+        if key in self.access_order:
+            self.access_order.remove(key)
+        self.access_order.append(key)
     
-    def _evict(self):
-        """Evict entries based on eviction policy."""
-        if not self.cache:
-            return
-        
-        if self.config.eviction_policy == 'lru':
-            # Evict least recently used
-            oldest_key = min(self.cache.keys(), 
-                           key=lambda k: self.cache[k].last_accessed)
-        elif self.config.eviction_policy == 'lfu':
-            # Evict least frequently used
-            oldest_key = min(self.cache.keys(), 
-                           key=lambda k: self.cache[k].access_count)
-        else:  # FIFO
-            # Evict oldest entry
-            oldest_key = min(self.cache.keys(), 
-                           key=lambda k: self.cache[k].created_at)
-        
-        entry = self.cache.pop(oldest_key)
-        self.metrics['evictions'] += 1
-        self.metrics['memory_usage'] -= entry.size
-        
-        logger.debug(f"Cache EVICT for key: {oldest_key}")
+    def _remove_key(self, key: str):
+        """Remove key from cache and update metrics."""
+        if key in self.cache:
+            entry = self.cache.pop(key)
+            self.current_size -= entry.size
+            if key in self.access_order:
+                self.access_order.remove(key)
+            self.metrics['hot_keys'].discard(key)
+    
+    def _evict_lru(self):
+        """Evict least recently used entry."""
+        if self.access_order:
+            lru_key = self.access_order[0]
+            self._remove_key(lru_key)
+            self.metrics['evictions'] += 1
+            logger.debug(f"L1 Cache EVICT for key: {lru_key}")
+    
+    def invalidate_user_cache(self, user_id: str):
+        """Invalidate all cache entries for a specific user."""
+        with self.lock:
+            keys_to_remove = []
+            for key in self.cache:
+                if f"user:{user_id}" in key:
+                    keys_to_remove.append(key)
+            
+            for key in keys_to_remove:
+                self._remove_key(key)
+            
+            logger.debug(f"L1 Cache invalidated {len(keys_to_remove)} entries for user: {user_id}")
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get cache statistics."""
+        """Get L1 cache statistics."""
         total_requests = self.metrics['hits'] + self.metrics['misses']
         hit_rate = self.metrics['hits'] / max(total_requests, 1)
         
         return {
-            **self.metrics,
+            'layer': 'L1',
+            'type': 'in_memory',
             'hit_rate': hit_rate,
-            'total_requests': total_requests
+            'total_requests': total_requests,
+            'memory_usage_mb': self.current_size / (1024 * 1024),
+            'hot_keys_count': len(self.metrics['hot_keys']),
+            **self.metrics
         }
 
-class RedisCache:
+class OptimizedL2RedisCache:
     """
-    Redis-compatible cache with fallback to in-memory cache.
+    Optimized L2 Redis cache with msgpack serialization and connection pooling.
     
     Features:
-    - Redis backend when available
-    - Automatic fallback to in-memory
-    - Connection pooling
-    - Serialization support
+    - 4GB Redis cache with 1-hour TTL
+    - msgpack serialization for performance
+    - Socket keepalive for connection optimization
+    - Automatic fallback to L1 cache
     """
     
-    def __init__(self, config: CacheConfig, redis_url: str = None):
+    def __init__(self, config: MultiLayerCacheConfig):
         self.config = config
         self.redis_client = None
-        self.fallback_cache = InMemoryCache(config)
+        self.fallback_cache = OptimizedL1Cache(config)
+        self.metrics = {
+            'hits': 0,
+            'misses': 0,
+            'errors': 0,
+            'fallbacks': 0
+        }
         
         # Try to connect to Redis
         try:
-            if redis_url:
-                # Would initialize Redis client if redis library available
-                logger.info("Redis not available, using in-memory fallback")
+            import redis
+            self.redis_client = redis.Redis.from_url(
+                config.l2_redis_url,
+                decode_responses=False,  # Use msgpack for performance
+                socket_keepalive=True,
+                socket_keepalive_options={
+                    1: 1,  # TCP_KEEPIDLE
+                    2: 3,  # TCP_KEEPINTVL
+                    3: 5   # TCP_KEEPCNT
+                },
+                socket_timeout=1.0,
+                socket_connect_timeout=2.0,
+                retry_on_timeout=True
+            )
+            # Test connection
+            self.redis_client.ping()
+            logger.info("L2 Redis cache initialized successfully")
         except Exception as e:
-            logger.warning(f"Redis connection failed, using in-memory fallback: {e}")
+            logger.warning(f"Redis connection failed, using L1 fallback: {e}")
+            self.redis_client = None
     
-    def get(self, key: str) -> Optional[Any]:
-        """Get value from cache."""
+    async def get(self, key: str) -> Optional[Any]:
+        """Get value from L2 Redis cache with async support."""
         if self.redis_client:
             try:
-                value = self.redis_client.get(key)
-                if value is not None:
-                    return json.loads(value) if self.config.serialize else value
-                return None
+                # Use asyncio for non-blocking Redis operations
+                cached = await asyncio.get_event_loop().run_in_executor(
+                    None, self.redis_client.get, key
+                )
+                if cached is not None:
+                    value = msgpack.unpackb(cached, raw=False)
+                    self.metrics['hits'] += 1
+                    logger.debug(f"L2 Cache HIT for key: {key}")
+                    return value
+                else:
+                    self.metrics['misses'] += 1
+                    return None
             except Exception as e:
-                logger.warning(f"Redis get failed: {e}")
+                self.metrics['errors'] += 1
+                logger.warning(f"L2 Redis get failed: {e}")
         
+        # Fallback to L1 cache
+        self.metrics['fallbacks'] += 1
         return self.fallback_cache.get(key)
     
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
-        """Set value in cache."""
-        ttl = ttl or self.config.ttl
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """Set value in L2 Redis cache with async support."""
+        ttl = ttl or self.config.l2_ttl
         
         if self.redis_client:
             try:
-                serialized_value = json.dumps(value) if self.config.serialize else value
-                self.redis_client.setex(key, ttl, serialized_value)
+                # Serialize with msgpack for performance
+                packed = msgpack.packb(value, use_bin_type=True)
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self.redis_client.setex, key, ttl, packed
+                )
+                logger.debug(f"L2 Cache SET for key: {key}, TTL: {ttl}")
                 return True
             except Exception as e:
-                logger.warning(f"Redis set failed: {e}")
+                self.metrics['errors'] += 1
+                logger.warning(f"L2 Redis set failed: {e}")
         
+        # Fallback to L1 cache
+        self.metrics['fallbacks'] += 1
         return self.fallback_cache.set(key, value, ttl)
     
-    def delete(self, key: str) -> bool:
-        """Delete value from cache."""
+    async def invalidate_user_cache(self, user_id: str):
+        """Invalidate all cache entries for a specific user."""
         if self.redis_client:
             try:
-                return bool(self.redis_client.delete(key))
+                pattern = f"*:user:{user_id}:*"
+                cursor = 0
+                deleted_count = 0
+                
+                while True:
+                    cursor, keys = await asyncio.get_event_loop().run_in_executor(
+                        None, self.redis_client.scan, cursor, pattern, 100
+                    )
+                    if keys:
+                        await asyncio.get_event_loop().run_in_executor(
+                            None, self.redis_client.delete, *keys
+                        )
+                        deleted_count += len(keys)
+                    if cursor == 0:
+                        break
+                
+                logger.debug(f"L2 Cache invalidated {deleted_count} entries for user: {user_id}")
             except Exception as e:
-                logger.warning(f"Redis delete failed: {e}")
+                logger.warning(f"L2 Redis invalidation failed: {e}")
         
-        return self.fallback_cache.delete(key)
-    
-    def clear(self):
-        """Clear all cache entries."""
-        if self.redis_client:
-            try:
-                self.redis_client.flushdb()
-                return
-            except Exception as e:
-                logger.warning(f"Redis clear failed: {e}")
-        
-        self.fallback_cache.clear()
+        # Also invalidate fallback cache
+        self.fallback_cache.invalidate_user_cache(user_id)
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get cache statistics."""
+        """Get L2 cache statistics."""
+        total_requests = self.metrics['hits'] + self.metrics['misses']
+        hit_rate = self.metrics['hits'] / max(total_requests, 1)
+        
+        stats = {
+            'layer': 'L2',
+            'type': 'redis',
+            'connected': self.redis_client is not None,
+            'hit_rate': hit_rate,
+            'total_requests': total_requests,
+            **self.metrics
+        }
+        
         if self.redis_client:
             try:
                 info = self.redis_client.info()
-                return {
-                    'type': 'redis',
-                    'connected': True,
-                    'memory_usage': info.get('used_memory', 0),
+                stats.update({
+                    'memory_usage_mb': info.get('used_memory', 0) / (1024 * 1024),
                     'keys': info.get('db0', {}).get('keys', 0)
-                }
+                })
             except Exception:
                 pass
         
-        return {
-            'type': 'in_memory_fallback',
-            'connected': False,
-            **self.fallback_cache.get_stats()
-        }
+        return stats
 
-class QueryCache:
+class OptimizedL3QueryCache:
     """
-    Specialized cache for database query results.
+    Optimized L3 PostgreSQL query cache with prepared statements.
     
     Features:
-    - Query-specific caching
-    - Parameter-based cache keys
-    - Automatic invalidation
-    - Performance metrics
+    - PostgreSQL prepared statements for vector queries
+    - Query result caching with parameter hashing
+    - Automatic cache invalidation on data changes
     """
     
-    def __init__(self, cache_backend: Union[InMemoryCache, RedisCache]):
-        self.cache = cache_backend
-        self.query_stats = {}
+    def __init__(self, config: MultiLayerCacheConfig):
+        self.config = config
+        self.query_cache = {}
+        self.prepared_statements = {}
+        self.lock = threading.RLock()
+        self.metrics = {
+            'hits': 0,
+            'misses': 0,
+            'prepared_statements': 0,
+            'invalidations': 0
+        }
     
     def get_cache_key(self, query: str, params: tuple = None) -> str:
         """Generate cache key for query and parameters."""
         key_data = f"{query}:{params or ()}"
-        return hashlib.md5(key_data.encode()).hexdigest()
+        return hashlib.sha256(key_data.encode()).hexdigest()
+    
+    def get_prepared_statement_key(self, query: str) -> str:
+        """Generate key for prepared statement."""
+        return hashlib.sha256(query.encode()).hexdigest()[:16]
     
     def get_query_result(self, query: str, params: tuple = None) -> Optional[Any]:
         """Get cached query result."""
         cache_key = self.get_cache_key(query, params)
-        result = self.cache.get(cache_key)
         
-        # Update query stats
-        query_hash = hashlib.md5(query.encode()).hexdigest()
-        if query_hash not in self.query_stats:
-            self.query_stats[query_hash] = {'hits': 0, 'misses': 0}
-        
-        if result is not None:
-            self.query_stats[query_hash]['hits'] += 1
-            logger.debug(f"Query cache HIT for query: {query[:50]}...")
-        else:
-            self.query_stats[query_hash]['misses'] += 1
-            logger.debug(f"Query cache MISS for query: {query[:50]}...")
-        
-        return result
+        with self.lock:
+            if cache_key in self.query_cache:
+                entry = self.query_cache[cache_key]
+                if not entry.is_expired():
+                    entry.touch()
+                    self.metrics['hits'] += 1
+                    logger.debug(f"L3 Query cache HIT for query: {query[:50]}...")
+                    return entry.value
+                else:
+                    del self.query_cache[cache_key]
+            
+            self.metrics['misses'] += 1
+            logger.debug(f"L3 Query cache MISS for query: {query[:50]}...")
+            return None
     
-    def cache_query_result(self, query: str, params: tuple, result: Any, ttl: int = 3600):
-        """Cache query result."""
+    def cache_query_result(self, query: str, params: tuple, result: Any, ttl: int = None):
+        """Cache query result with prepared statement optimization."""
         cache_key = self.get_cache_key(query, params)
-        self.cache.set(cache_key, result, ttl)
-        logger.debug(f"Query result cached for query: {query[:50]}...")
+        ttl = ttl or self.config.l3_ttl
+        
+        with self.lock:
+            # Store prepared statement if not exists
+            stmt_key = self.get_prepared_statement_key(query)
+            if stmt_key not in self.prepared_statements:
+                self.prepared_statements[stmt_key] = query
+                self.metrics['prepared_statements'] += 1
+            
+            # Cache result
+            entry = CacheEntry(result, ttl)
+            self.query_cache[cache_key] = entry
+            
+            # Cleanup if too many statements
+            if len(self.prepared_statements) > self.config.l3_max_prepared_statements:
+                self._cleanup_old_statements()
+        
+        logger.debug(f"L3 Query result cached for query: {query[:50]}...")
     
-    def invalidate_query_cache(self, pattern: str = None):
-        """Invalidate query cache entries."""
-        if pattern:
-            # Would implement pattern-based invalidation
-            logger.info(f"Query cache invalidation requested for pattern: {pattern}")
-        else:
-            self.cache.clear()
-            logger.info("All query cache invalidated")
+    def invalidate_query_cache(self, table_name: str = None):
+        """Invalidate query cache for specific table or all."""
+        with self.lock:
+            if table_name:
+                # Invalidate queries related to specific table
+                keys_to_remove = []
+                for key in self.query_cache:
+                    # Simple check if table name is in the cached query
+                    if any(table_name in stmt for stmt in self.prepared_statements.values()):
+                        keys_to_remove.append(key)
+                
+                for key in keys_to_remove:
+                    del self.query_cache[key]
+                    self.metrics['invalidations'] += 1
+                
+                logger.debug(f"L3 Query cache invalidated {len(keys_to_remove)} entries for table: {table_name}")
+            else:
+                # Clear all cache
+                count = len(self.query_cache)
+                self.query_cache.clear()
+                self.metrics['invalidations'] += count
+                logger.debug(f"L3 Query cache cleared {count} entries")
     
-    def get_query_stats(self) -> Dict[str, Any]:
-        """Get query cache statistics."""
+    def _cleanup_old_statements(self):
+        """Clean up old prepared statements."""
+        # Remove 10% of oldest statements
+        cleanup_count = max(1, len(self.prepared_statements) // 10)
+        old_keys = list(self.prepared_statements.keys())[:cleanup_count]
+        
+        for key in old_keys:
+            del self.prepared_statements[key]
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get L3 cache statistics."""
+        total_requests = self.metrics['hits'] + self.metrics['misses']
+        hit_rate = self.metrics['hits'] / max(total_requests, 1)
+        
         return {
-            'total_queries': len(self.query_stats),
-            'cache_stats': self.cache.get_stats(),
-            'query_stats': self.query_stats
+            'layer': 'L3',
+            'type': 'query_cache',
+            'hit_rate': hit_rate,
+            'total_requests': total_requests,
+            'cached_queries': len(self.query_cache),
+            **self.metrics
         }
 
-class CacheManager:
+class MultiLayerCache:
     """
-    Comprehensive cache manager with multiple strategies.
+    Comprehensive multi-layer cache implementation.
     
     Features:
-    - Multiple cache backends
-    - Cache hierarchy
+    - L1: In-memory cache (256MB, 5min TTL, LRU)
+    - L2: Redis cache (4GB, 1h TTL, msgpack)
+    - L3: PostgreSQL query cache (prepared statements)
+    - Cache warming for hot memories
+    - User-specific cache invalidation
     - Performance monitoring
-    - Cache invalidation
     """
     
-    def __init__(self):
-        self.caches = {}
-        self.default_config = CacheConfig()
+    def __init__(self, config: MultiLayerCacheConfig = None):
+        self.config = config or MultiLayerCacheConfig()
+        self.l1_cache = OptimizedL1Cache(self.config)
+        self.l2_cache = OptimizedL2RedisCache(self.config)
+        self.l3_cache = OptimizedL3QueryCache(self.config)
         self.metrics = {
-            'operations': 0,
-            'cache_hits': 0,
+            'total_requests': 0,
+            'l1_hits': 0,
+            'l2_hits': 0,
+            'l3_hits': 0,
             'cache_misses': 0
         }
     
-    def get_cache(self, name: str, config: CacheConfig = None, cache_type: str = 'memory') -> Union[InMemoryCache, RedisCache]:
-        """Get or create cache instance."""
-        if name not in self.caches:
-            config = config or self.default_config
+    def _generate_key(self, prefix: str, params: Dict) -> str:
+        """Generate cache key from parameters."""
+        param_str = json.dumps(params, sort_keys=True)
+        hash_val = hashlib.sha256(param_str.encode()).hexdigest()[:16]
+        return f"{prefix}:{hash_val}"
+    
+    async def get(self, key: str) -> Optional[Any]:
+        """Get value from multi-layer cache (L1 → L2 → L3)."""
+        self.metrics['total_requests'] += 1
+        
+        # Try L1 cache first
+        result = self.l1_cache.get(key)
+        if result is not None:
+            self.metrics['l1_hits'] += 1
+            return result
+        
+        # Try L2 cache
+        result = await self.l2_cache.get(key)
+        if result is not None:
+            self.metrics['l2_hits'] += 1
+            # Populate L1 cache
+            self.l1_cache.set(key, result)
+            return result
+        
+        # L3 cache is handled separately for query-specific caching
+        self.metrics['cache_misses'] += 1
+        return None
+    
+    async def set(self, key: str, value: Any, ttl: int = None):
+        """Set value in all cache layers."""
+        # Set in L1 cache
+        self.l1_cache.set(key, value, ttl)
+        
+        # Set in L2 cache
+        await self.l2_cache.set(key, value, ttl)
+    
+    async def warm_cache(self, user_id: str, hot_memories: List[Dict]):
+        """Warm cache with hot memories and frequent queries."""
+        for memory in hot_memories:
+            # Warm L1 cache with hot memory data
+            memory_key = f"memory:user:{user_id}:{memory['id']}"
+            self.l1_cache.warm(memory_key, memory)
             
-            if cache_type == 'redis':
-                self.caches[name] = RedisCache(config)
-            else:
-                self.caches[name] = InMemoryCache(config)
+            # Warm L2 cache
+            await self.l2_cache.set(memory_key, memory)
         
-        return self.caches[name]
+        logger.info(f"Cache warmed with {len(hot_memories)} hot memories for user: {user_id}")
     
-    def get_query_cache(self, name: str = 'default') -> QueryCache:
-        """Get or create query cache instance."""
-        cache_backend = self.get_cache(f"{name}_query")
-        return QueryCache(cache_backend)
+    async def invalidate_user_cache(self, user_id: str):
+        """Invalidate all cache layers for a specific user."""
+        # Invalidate L1 cache
+        self.l1_cache.invalidate_user_cache(user_id)
+        
+        # Invalidate L2 cache
+        await self.l2_cache.invalidate_user_cache(user_id)
+        
+        # Invalidate L3 query cache (memories table)
+        self.l3_cache.invalidate_query_cache("memories")
+        
+        logger.info(f"All cache layers invalidated for user: {user_id}")
     
-    def invalidate_all(self):
-        """Invalidate all caches."""
-        for cache in self.caches.values():
-            cache.clear()
-        logger.info("All caches invalidated")
+    def get_query_cache(self) -> OptimizedL3QueryCache:
+        """Get L3 query cache instance."""
+        return self.l3_cache
     
-    def get_global_stats(self) -> Dict[str, Any]:
-        """Get global cache statistics."""
-        stats = {
-            'total_caches': len(self.caches),
-            'cache_stats': {}
+    def get_comprehensive_stats(self) -> Dict[str, Any]:
+        """Get comprehensive statistics from all cache layers."""
+        total_requests = self.metrics['total_requests']
+        overall_hit_rate = (
+            self.metrics['l1_hits'] + self.metrics['l2_hits'] + self.metrics['l3_hits']
+        ) / max(total_requests, 1)
+        
+        return {
+            'overall_hit_rate': overall_hit_rate,
+            'total_requests': total_requests,
+            'cache_distribution': {
+                'l1_hits': self.metrics['l1_hits'],
+                'l2_hits': self.metrics['l2_hits'],
+                'l3_hits': self.metrics['l3_hits'],
+                'cache_misses': self.metrics['cache_misses']
+            },
+            'layer_stats': {
+                'l1': self.l1_cache.get_stats(),
+                'l2': self.l2_cache.get_stats(),
+                'l3': self.l3_cache.get_stats()
+            }
         }
-        
-        for name, cache in self.caches.items():
-            stats['cache_stats'][name] = cache.get_stats()
-        
-        return stats
 
-# Global cache manager instance
-cache_manager = CacheManager()
+# Global multi-layer cache instance
+global_cache = MultiLayerCache()
 
 # Decorators for easy caching
 def cached(ttl: int = 3600, cache_name: str = 'default'):
@@ -431,12 +639,41 @@ def cached(ttl: int = 3600, cache_name: str = 'default'):
         return wrapper
     return decorator
 
+def multi_layer_cached(ttl: int = 3600, prefix: str = 'default'):
+    """Decorator for multi-layer caching."""
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Generate cache key
+            key_data = f"{prefix}:{func.__name__}:{args}:{sorted(kwargs.items())}"
+            cache_key = hashlib.sha256(key_data.encode()).hexdigest()[:32]
+            
+            # Try to get from multi-layer cache
+            result = await global_cache.get(cache_key)
+            if result is not None:
+                logger.debug(f"Multi-layer cache HIT for {func.__name__}")
+                return result
+            
+            # Execute function and cache result
+            with performance_logger.timer(f"function_execution_{func.__name__}"):
+                if asyncio.iscoroutinefunction(func):
+                    result = await func(*args, **kwargs)
+                else:
+                    result = func(*args, **kwargs)
+            
+            await global_cache.set(cache_key, result, ttl)
+            logger.debug(f"Multi-layer cached result for {func.__name__}")
+            
+            return result
+        return wrapper
+    return decorator
+
 def query_cached(ttl: int = 3600):
     """Decorator for query result caching."""
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(query: str, params: tuple = None, *args, **kwargs):
-            query_cache = cache_manager.get_query_cache()
+            query_cache = global_cache.get_query_cache()
             
             # Try to get from cache
             result = query_cache.get_query_result(query, params)
