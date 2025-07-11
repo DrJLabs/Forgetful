@@ -220,6 +220,8 @@ def get_memory_client(custom_instructions: str = None):
     """
     Get memory client with Agent 4 resilience patterns
     """
+    global _memory_client, _config_hash
+    
     try:
         with performance_logger.timer("memory_client_initialization"):
             # Start with default configuration

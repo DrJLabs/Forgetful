@@ -7,21 +7,27 @@ import pytest
 import asyncio
 import os
 import tempfile
+import psycopg2
 from typing import AsyncGenerator, Generator
 from uuid import uuid4
 from datetime import datetime, UTC
 from unittest.mock import patch, MagicMock
+from contextlib import contextmanager
+from sqlalchemy import create_engine, text, pool
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.pool import StaticPool
+from testcontainers.postgres import PostgresContainer
+from testcontainers.neo4j import Neo4jContainer
+import alembic.config
+import alembic.command
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 
 # Set up test environment BEFORE any imports
 os.environ["TESTING"] = "true"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from httpx import AsyncClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-from testcontainers.postgres import PostgresContainer
-from testcontainers.neo4j import Neo4jContainer
 
 # Import app components after setting environment
 from main import app
@@ -40,28 +46,78 @@ def event_loop():
     loop.close()
 
 
+def get_app():
+    """Get app components for testing"""
+    from main import app
+    from app.database import get_db, Base
+    from app.models import User, App, Memory, MemoryState
+    return app, get_db, Base, User, App, Memory, MemoryState
+
+
+# ============================================================================
+# DATABASE TESTING FRAMEWORK
+# ============================================================================
+
 @pytest.fixture(scope="session")
-def postgres_container():
-    """Setup PostgreSQL test container for integration tests"""
-    with PostgresContainer("postgres:15") as postgres:
+def docker_postgres_container():
+    """
+    Create a PostgreSQL container for testing with production-like setup.
+    
+    This provides production fidelity for database testing while maintaining
+    isolation. Container is shared across test session for performance.
+    """
+    with PostgresContainer(
+        "pgvector/pgvector:pg16",
+        username="test_user",
+        password="test_password",
+        dbname="test_mem0",
+        port=5432
+    ) as postgres:
         # Wait for container to be ready
         postgres.get_connection_url()
         yield postgres
 
 
 @pytest.fixture(scope="session")
-def neo4j_container():
-    """Setup Neo4j test container for integration tests"""
-    with Neo4jContainer("neo4j:5.0") as neo4j:
-        neo4j.with_env("NEO4J_AUTH", "neo4j/testpass")
-        yield neo4j
+def docker_postgres_url(docker_postgres_container):
+    """Get PostgreSQL URL for Docker container."""
+    return docker_postgres_container.get_connection_url()
+
+
+@pytest.fixture(scope="session")
+def docker_postgres_engine(docker_postgres_url):
+    """
+    Create PostgreSQL engine with proper setup for testing.
+    
+    This engine uses the production database type (PostgreSQL) for maximum
+    fidelity while maintaining test isolation.
+    """
+    engine = create_engine(
+        docker_postgres_url,
+        pool_size=5,
+        max_overflow=10,
+        pool_pre_ping=True,
+        echo=False  # Set to True for SQL debugging
+    )
+    
+    # Create pgvector extension if not exists
+    with engine.connect() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        conn.commit()
+    
+    # Create all tables
+    Base.metadata.create_all(bind=engine)
+    
+    yield engine
+    
+    # Cleanup
+    Base.metadata.drop_all(bind=engine)
+    engine.dispose()
 
 
 @pytest.fixture(scope="function")
 def test_db_engine():
-    """Create test database engine with in-memory SQLite"""
-    app, get_db, Base, User, App, Memory, MemoryState = get_app()
-    
+    """Create test database engine with in-memory SQLite for fast unit tests."""
     engine = create_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
@@ -75,7 +131,7 @@ def test_db_engine():
 
 @pytest.fixture(scope="function")
 def test_db_session(test_db_engine):
-    """Create test database session"""
+    """Create test database session with automatic rollback."""
     SessionLocal = sessionmaker(bind=test_db_engine)
     session = SessionLocal()
     try:
@@ -85,10 +141,31 @@ def test_db_session(test_db_engine):
 
 
 @pytest.fixture(scope="function")
-async def test_client(test_db_session):
-    """Create test HTTP client with database override"""
-    app, get_db, Base, User, App, Memory, MemoryState = get_app()
+def postgres_test_session(docker_postgres_engine):
+    """
+    Create PostgreSQL test session with transaction rollback.
     
+    This fixture provides a PostgreSQL session that automatically rolls back
+    all changes at the end of each test, ensuring test isolation.
+    """
+    connection = docker_postgres_engine.connect()
+    transaction = connection.begin()
+    
+    # Create session bound to the transaction
+    SessionLocal = sessionmaker(bind=connection)
+    session = SessionLocal()
+    
+    try:
+        yield session
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
+
+
+@pytest.fixture(scope="function")
+async def test_client(test_db_session):
+    """Create test HTTP client with database override."""
     # Override database dependency
     def override_get_db():
         try:
@@ -106,182 +183,300 @@ async def test_client(test_db_session):
 
 
 @pytest.fixture(scope="function")
-def test_user(test_db_session):
-    """Create test user"""
-    app, get_db, Base, User, App, Memory, MemoryState = get_app()
+async def postgres_test_client(postgres_test_session):
+    """Create test HTTP client with PostgreSQL database."""
+    # Override database dependency
+    def override_get_db():
+        try:
+            yield postgres_test_session
+        finally:
+            pass
     
-    user = User(
-        id=uuid4(),
-        user_id="test_user",
-        name="Test User",
-        created_at=datetime.now(UTC)
-    )
-    test_db_session.add(user)
-    test_db_session.commit()
-    test_db_session.refresh(user)
-    return user
-
-
-@pytest.fixture(scope="function")
-def test_app(test_db_session, test_user):
-    """Create test app"""
-    app, get_db, Base, User, App, Memory, MemoryState = get_app()
+    app.dependency_overrides[get_db] = override_get_db
     
-    test_app = App(
-        id=uuid4(),
-        name="test_app",
-        owner_id=test_user.id,
-        is_active=True,
-        created_at=datetime.now(UTC)
-    )
-    test_db_session.add(test_app)
-    test_db_session.commit()
-    test_db_session.refresh(test_app)
-    return test_app
-
-
-@pytest.fixture(scope="function")
-def test_memory(test_db_session, test_user, test_app):
-    """Create test memory"""
-    app, get_db, Base, User, App, Memory, MemoryState = get_app()
+    async with AsyncClient(app=app, base_url="http://test") as client:
+        yield client
     
-    memory = Memory(
-        id=uuid4(),
-        content="Test memory content",
-        user_id=test_user.id,
-        app_id=test_app.id,
-        state=MemoryState.active,
-        created_at=datetime.now(UTC),
-        metadata_={"test": "data"}
-    )
-    test_db_session.add(memory)
-    test_db_session.commit()
-    test_db_session.refresh(memory)
-    return memory
+    # Clean up
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture(scope="function")
-def multiple_test_memories(test_db_session, test_user, test_app):
-    """Create multiple test memories"""
-    app, get_db, Base, User, App, Memory, MemoryState = get_app()
+# ============================================================================
+# TRANSACTION TESTING FIXTURES
+# ============================================================================
+
+@pytest.fixture
+def transaction_test_session(docker_postgres_engine):
+    """
+    Session for testing transaction behavior.
     
-    memories = []
-    for i in range(5):
-        memory = Memory(
+    This fixture is specifically for testing transaction rollback,
+    commit behavior, and concurrent access patterns.
+    """
+    connection = docker_postgres_engine.connect()
+    
+    try:
+        yield connection
+    finally:
+        connection.close()
+
+
+@pytest.fixture
+def concurrent_sessions(docker_postgres_engine):
+    """
+    Provide multiple concurrent database sessions for testing.
+    
+    Used for testing concurrent access, deadlock detection,
+    and transaction isolation levels.
+    """
+    sessions = []
+    
+    try:
+        for i in range(3):
+            connection = docker_postgres_engine.connect()
+            SessionLocal = sessionmaker(bind=connection)
+            session = SessionLocal()
+            sessions.append((connection, session))
+        
+        yield [session for _, session in sessions]
+    finally:
+        for connection, session in sessions:
+            session.close()
+            connection.close()
+
+
+# ============================================================================
+# MIGRATION TESTING FIXTURES
+# ============================================================================
+
+@pytest.fixture
+def migration_test_engine():
+    """
+    Create a separate engine for migration testing.
+    
+    This engine is used specifically for testing Alembic migrations
+    and database schema evolution.
+    """
+    with PostgresContainer(
+        "pgvector/pgvector:pg16",
+        username="migration_user",
+        password="migration_password",
+        dbname="migration_test",
+        port=5432
+    ) as postgres:
+        migration_url = postgres.get_connection_url()
+        engine = create_engine(migration_url)
+        
+        # Create pgvector extension
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
+        
+        yield engine, migration_url
+        
+        engine.dispose()
+
+
+@pytest.fixture
+def alembic_config(migration_test_engine):
+    """Create Alembic configuration for migration testing."""
+    engine, migration_url = migration_test_engine
+    
+    # Create temporary alembic.ini
+    config = alembic.config.Config()
+    config.set_main_option("script_location", "alembic")
+    config.set_main_option("sqlalchemy.url", migration_url)
+    
+    return config, engine
+
+
+# ============================================================================
+# TEST DATA FACTORIES
+# ============================================================================
+
+@pytest.fixture
+def test_user_factory():
+    """Factory for creating test users."""
+    def create_user(
+        user_id: str = None,
+        name: str = "Test User",
+        email: str = "test@example.com"
+    ) -> User:
+        return User(
             id=uuid4(),
-            content=f"Test memory content {i}",
-            user_id=test_user.id,
-            app_id=test_app.id,
-            state=MemoryState.active,
-            created_at=datetime.now(UTC),
-            metadata_={"test": f"data_{i}"}
+            user_id=user_id or f"test_user_{uuid4().hex[:8]}",
+            name=name,
+            email=email,
+            created_at=datetime.now(UTC)
         )
-        test_db_session.add(memory)
-        memories.append(memory)
-    
-    test_db_session.commit()
-    for memory in memories:
-        test_db_session.refresh(memory)
-    
-    return memories
+    return create_user
 
 
-@pytest.fixture(scope="function")
-def mock_memory_client(mocker):
-    """Mock memory client for testing"""
-    mock_client = mocker.MagicMock()
-    
-    # Mock successful responses
-    mock_client.add.return_value = {
-        "results": [{"id": "test_memory_id", "memory": "Test memory"}]
-    }
-    
-    mock_client.get_all.return_value = {
-        "results": [
-            {"id": "test_1", "memory": "Test memory 1", "created_at": "2024-01-01T00:00:00Z"},
-            {"id": "test_2", "memory": "Test memory 2", "created_at": "2024-01-01T00:00:00Z"}
-        ]
-    }
-    
-    mock_client.search.return_value = {
-        "results": [
-            {"id": "test_1", "memory": "Test memory 1", "created_at": "2024-01-01T00:00:00Z"}
-        ]
-    }
-    
-    mock_client.get.return_value = {
-        "id": "test_1", 
-        "memory": "Test memory 1", 
-        "created_at": "2024-01-01T00:00:00Z",
-        "user_id": "test_user",
-        "metadata": {}
-    }
-    
-    # Mock get_memory_client function - this will override the lazy initialization
-    mocker.patch("app.mem0_client.get_memory_client", return_value=mock_client)
-    
-    # Also patch any direct imports of the memory client
-    mocker.patch("app.mem0_client.memory_client", mock_client)
-    
-    return mock_client
+@pytest.fixture
+def test_app_factory():
+    """Factory for creating test applications."""
+    def create_app(
+        name: str = "Test App",
+        user_id: str = None
+    ) -> App:
+        return App(
+            id=uuid4(),
+            name=name,
+            user_id=user_id or f"test_user_{uuid4().hex[:8]}",
+            created_at=datetime.now(UTC)
+        )
+    return create_app
 
 
-# Test utilities
-class TestDataFactory:
-    """Factory for creating test data"""
+@pytest.fixture
+def test_memory_factory():
+    """Factory for creating test memories."""
+    def create_memory(
+        content: str = "Test memory content",
+        user_id: str = None,
+        app_id: str = None
+    ) -> Memory:
+        return Memory(
+            id=uuid4(),
+            content=content,
+            user_id=user_id or f"test_user_{uuid4().hex[:8]}",
+            app_id=app_id or f"test_app_{uuid4().hex[:8]}",
+            created_at=datetime.now(UTC)
+        )
+    return create_memory
+
+
+# ============================================================================
+# TESTING UTILITIES
+# ============================================================================
+
+@pytest.fixture
+def db_inspector():
+    """Utility for inspecting database state during tests."""
+    def inspector(engine):
+        """Inspect database state and structure."""
+        with engine.connect() as conn:
+            # Get table information
+            result = conn.execute(text("""
+                SELECT table_name, column_name, data_type, is_nullable
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                ORDER BY table_name, ordinal_position
+            """))
+            
+            tables = {}
+            for row in result:
+                table_name = row[0]
+                if table_name not in tables:
+                    tables[table_name] = []
+                tables[table_name].append({
+                    'column': row[1],
+                    'type': row[2],
+                    'nullable': row[3] == 'YES'
+                })
+            
+            return tables
     
-    @staticmethod
-    def create_user_data(user_id: str = "test_user") -> dict:
-        return {
-            "user_id": user_id,
-            "name": f"Test User {user_id}",
-            "created_at": datetime.now(UTC).isoformat()
-        }
+    return inspector
+
+
+@pytest.fixture
+def performance_monitor():
+    """Monitor database performance during tests."""
+    def monitor(engine):
+        """Monitor database performance metrics."""
+        with engine.connect() as conn:
+            # Get connection stats
+            result = conn.execute(text("""
+                SELECT 
+                    datname,
+                    numbackends,
+                    xact_commit,
+                    xact_rollback,
+                    blks_read,
+                    blks_hit,
+                    tup_returned,
+                    tup_fetched,
+                    tup_inserted,
+                    tup_updated,
+                    tup_deleted
+                FROM pg_stat_database 
+                WHERE datname = current_database()
+            """))
+            
+            stats = result.fetchone()
+            return {
+                'database': stats[0],
+                'connections': stats[1],
+                'commits': stats[2],
+                'rollbacks': stats[3],
+                'disk_reads': stats[4],
+                'buffer_hits': stats[5],
+                'tuples_returned': stats[6],
+                'tuples_fetched': stats[7],
+                'tuples_inserted': stats[8],
+                'tuples_updated': stats[9],
+                'tuples_deleted': stats[10]
+            }
     
-    @staticmethod
-    def create_memory_data(user_id: str = "test_user", app: str = "test_app") -> dict:
-        return {
-            "user_id": user_id,
-            "text": "Test memory content",
-            "metadata": {"test": "data"},
-            "app": app
-        }
-    
-    @staticmethod
-    def create_app_data(name: str = "test_app") -> dict:
-        return {
-            "name": name,
-            "description": f"Test application {name}",
-            "is_active": True
-        }
+    return monitor
 
 
-# Test markers
-pytest.mark.unit = pytest.mark.unit
-pytest.mark.integration = pytest.mark.integration
-pytest.mark.e2e = pytest.mark.e2e
+# ============================================================================
+# MOCK FIXTURES
+# ============================================================================
+
+@pytest.fixture
+def mock_openai_client():
+    """Mock OpenAI client for testing."""
+    with patch('openai.OpenAI') as mock_client:
+        # Mock embedding response
+        mock_client.return_value.embeddings.create.return_value = MagicMock(
+            data=[MagicMock(embedding=[0.1] * 1536)]
+        )
+        
+        # Mock chat completion response
+        mock_client.return_value.chat.completions.create.return_value = MagicMock(
+            choices=[MagicMock(message=MagicMock(content="Test response"))]
+        )
+        
+        yield mock_client
 
 
-# Test environment setup
+@pytest.fixture
+def mock_neo4j_driver():
+    """Mock Neo4j driver for testing."""
+    with patch('neo4j.GraphDatabase.driver') as mock_driver:
+        mock_session = MagicMock()
+        mock_driver.return_value.session.return_value = mock_session
+        mock_session.run.return_value = []
+        
+        yield mock_driver
+
+
+# ============================================================================
+# CLEANUP FIXTURES
+# ============================================================================
+
 @pytest.fixture(autouse=True)
-def setup_test_environment():
-    """Setup test environment variables"""
-    # Clear any existing memory client instance
-    import app.mem0_client
-    app.mem0_client._memory_client = None
-    
+def cleanup_test_data():
+    """Automatically cleanup test data after each test."""
     yield
     
-    # Environment variables are set at module level, so we don't need to clean them up
-    # as they should remain consistent throughout the test session
-
-
-def get_app():
-    """Get the FastAPI app and database components"""
-    return app, get_db, Base, User, App, Memory, MemoryState
-
-
-# Async test helper
-def async_test(func):
-    """Decorator to run async tests"""
-    return pytest.mark.asyncio(func) 
+    # Clear any global state
+    if hasattr(app, 'dependency_overrides'):
+        app.dependency_overrides.clear()
+    
+    # Reset environment variables
+    test_env_vars = [
+        'TESTING', 'DATABASE_URL', 'OPENAI_API_KEY',
+        'NEO4J_URL', 'NEO4J_USERNAME', 'NEO4J_PASSWORD'
+    ]
+    
+    for var in test_env_vars:
+        if var in os.environ:
+            if var == 'TESTING':
+                os.environ[var] = 'true'
+            elif var == 'DATABASE_URL':
+                os.environ[var] = 'sqlite:///:memory:'
+            # Don't reset other vars that might be needed 
