@@ -268,6 +268,7 @@ class BatchProcessor:
     async def _worker_loop(self, worker_id: str):
         """Worker loop for parallel processing."""
         while self.is_running:
+            batch = None
             try:
                 # Get batch from queue with timeout
                 batch = await asyncio.wait_for(self.queue.get(), timeout=0.1)
@@ -275,14 +276,16 @@ class BatchProcessor:
                 # Process the batch
                 await self._process_batch(batch)
                 
-                # Mark task as done
-                self.queue.task_done()
-                
             except asyncio.TimeoutError:
                 # No work available, continue
                 continue
             except Exception as e:
                 logger.error(f"Worker {worker_id} error in '{self.name}': {e}")
+            finally:
+                # CRITICAL: Always mark task as done if we got a batch
+                # This prevents queue.join() from hanging indefinitely
+                if batch is not None:
+                    self.queue.task_done()
     
     async def _process_batch(self, batch: List[BatchRequest]):
         """Process a batch of requests."""
