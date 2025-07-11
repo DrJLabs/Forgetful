@@ -24,6 +24,515 @@
       "fieldConfig": {
         "defaults": {
           "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 20,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.5.0",
+      "targets": [
+        {
+          "expr": "up{job=\"autonomous-agents\"}",
+          "interval": "",
+          "legendFormat": "Autonomous Agents",
+          "refId": "A"
+        },
+        {
+          "expr": "up{job=\"mem0-api\"}",
+          "interval": "",
+          "legendFormat": "mem0 API",
+          "refId": "B"
+        },
+        {
+          "expr": "up{job=\"openmemory-mcp\"}",
+          "interval": "",
+          "legendFormat": "OpenMemory MCP",
+          "refId": "C"
+        },
+        {
+          "expr": "up{job=\"openmemory-ui\"}",
+          "interval": "",
+          "legendFormat": "OpenMemory UI",
+          "refId": "D"
+        },
+        {
+          "expr": "up{job=\"postgres-exporter\"}",
+          "interval": "",
+          "legendFormat": "PostgreSQL",
+          "refId": "E"
+        },
+        {
+          "expr": "up{job=\"neo4j\"}",
+          "interval": "",
+          "legendFormat": "Neo4j",
+          "refId": "F"
+        }
+      ],
+      "title": "Autonomous Operation Health Status",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "id": 21,
+      "options": {
+        "legend": {
+          "calcs": ["last", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(memory_operation_duration_seconds_bucket[5m]))",
+          "interval": "",
+          "legendFormat": "95th percentile",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.90, rate(memory_operation_duration_seconds_bucket[5m]))",
+          "interval": "",
+          "legendFormat": "90th percentile",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.50, rate(memory_operation_duration_seconds_bucket[5m]))",
+          "interval": "",
+          "legendFormat": "50th percentile",
+          "refId": "C"
+        }
+      ],
+      "title": "Memory Operation Latency Trends",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "queries/min"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": ["last", "mean"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "agent_query_frequency",
+          "interval": "",
+          "legendFormat": "Query Frequency",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(agent_decision_latency_count[5m]) * 60",
+          "interval": "",
+          "legendFormat": "Decision Rate",
+          "refId": "B"
+        },
+        {
+          "expr": "avg_over_time(agent_query_frequency[1h])",
+          "interval": "",
+          "legendFormat": "Average (1h)",
+          "refId": "C"
+        }
+      ],
+      "title": "AI Agent Query Patterns",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 1,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.6
+              },
+              {
+                "color": "green",
+                "value": 0.8
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 12
+      },
+      "id": 23,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "8.5.0",
+      "targets": [
+        {
+          "expr": "memory_cache_hit_ratio",
+          "interval": "",
+          "legendFormat": "Cache Hit Ratio",
+          "refId": "A"
+        }
+      ],
+      "title": "Cache Hit Ratio",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 12
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "calcs": ["last"],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(memory_operation_duration_seconds_count[5m])",
+          "interval": "",
+          "legendFormat": "Memory Operations/sec",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(memory_operation_errors_total[5m])",
+          "interval": "",
+          "legendFormat": "Errors/sec",
+          "refId": "B"
+        }
+      ],
+      "title": "Autonomous Operation Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 0.7
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 12
+      },
+      "id": 25,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.5.0",
+      "targets": [
+        {
+          "expr": "agent_memory_relevance_score",
+          "interval": "",
+          "legendFormat": "Memory Relevance",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(agent_decision_latency_bucket[5m]))",
+          "interval": "",
+          "legendFormat": "Decision Latency (95th %)",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(agent_context_size_bytes_bucket[5m])) / 1024",
+          "interval": "",
+          "legendFormat": "Context Size (KB)",
+          "refId": "C"
+        }
+      ],
+      "title": "Agent Performance Metrics",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
             "mode": "palette-classic"
           },
           "custom": {
@@ -76,7 +585,189 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 20
+      },
+      "id": 26,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "abs(agent_query_frequency - avg_over_time(agent_query_frequency[1h]))",
+          "interval": "",
+          "legendFormat": "Query Frequency Deviation",
+          "refId": "A"
+        },
+        {
+          "expr": "abs(rate(memory_operation_duration_seconds_count[5m]) - avg_over_time(rate(memory_operation_duration_seconds_count[5m])[1h]))",
+          "interval": "",
+          "legendFormat": "Operation Rate Deviation",
+          "refId": "B"
+        },
+        {
+          "expr": "abs(memory_cache_hit_ratio - avg_over_time(memory_cache_hit_ratio[1h]))",
+          "interval": "",
+          "legendFormat": "Cache Hit Ratio Deviation",
+          "refId": "C"
+        }
+      ],
+      "title": "Autonomous Operation Anomaly Detection",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
+            "fillOpacity": 100,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 27,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, rate(memory_batch_size_histogram_bucket[5m]))",
+          "interval": "",
+          "legendFormat": "Batch Size (median)",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(memory_batch_size_histogram_bucket[5m]))",
+          "interval": "",
+          "legendFormat": "Batch Size (95th %)",
+          "refId": "B"
+        }
+      ],
+      "title": "Memory Batch Size Distribution",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 28
       },
       "id": 2,
       "options": {
@@ -100,87 +791,6 @@
       ],
       "title": "Service Availability",
       "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 0
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.5.0",
-      "targets": [
-        {
-          "expr": "up{job=\"mem0-api\"}",
-          "interval": "",
-          "legendFormat": "mem0 API",
-          "refId": "A"
-        },
-        {
-          "expr": "up{job=\"openmemory-mcp\"}",
-          "interval": "",
-          "legendFormat": "OpenMemory MCP",
-          "refId": "B"
-        },
-        {
-          "expr": "up{job=\"openmemory-ui\"}",
-          "interval": "",
-          "legendFormat": "OpenMemory UI",
-          "refId": "C"
-        },
-        {
-          "expr": "up{job=\"postgres-exporter\"}",
-          "interval": "",
-          "legendFormat": "PostgreSQL",
-          "refId": "D"
-        },
-        {
-          "expr": "up{job=\"neo4j\"}",
-          "interval": "",
-          "legendFormat": "Neo4j",
-          "refId": "E"
-        }
-      ],
-      "title": "Service Health Status",
-      "type": "stat"
     },
     {
       "datasource": "Prometheus",
@@ -238,8 +848,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 8
+        "x": 12,
+        "y": 28
       },
       "id": 4,
       "options": {
@@ -320,8 +930,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 36
       },
       "id": 5,
       "options": {
@@ -408,8 +1018,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 16
+        "x": 12,
+        "y": 36
       },
       "id": 6,
       "options": {
@@ -490,8 +1100,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 44
       },
       "id": 7,
       "options": {
@@ -578,8 +1188,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 24
+        "x": 12,
+        "y": 44
       },
       "id": 8,
       "options": {
@@ -666,8 +1276,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 24
+        "x": 0,
+        "y": 52
       },
       "id": 9,
       "options": {
@@ -748,8 +1358,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 0,
-        "y": 32
+        "x": 12,
+        "y": 52
       },
       "id": 10,
       "options": {
@@ -808,8 +1418,8 @@
       "gridPos": {
         "h": 8,
         "w": 12,
-        "x": 12,
-        "y": 32
+        "x": 0,
+        "y": 60
       },
       "id": 11,
       "options": {
@@ -851,12 +1461,13 @@
       "type": "stat"
     }
   ],
-  "refresh": "5s",
+  "refresh": "10s",
   "schemaVersion": 30,
   "style": "dark",
   "tags": [
     "mem0-stack",
-    "overview"
+    "overview",
+    "autonomous-agents"
   ],
   "templating": {
     "list": []
@@ -867,7 +1478,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "mem0-Stack System Overview",
-  "uid": "mem0-stack-overview",
-  "version": 1
+  "title": "mem0-Stack Autonomous Operations Dashboard",
+  "uid": "mem0-stack-autonomous-ops",
+  "version": 2
 }

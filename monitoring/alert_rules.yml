@@ -1,5 +1,169 @@
 groups:
   # =======================================================================
+  # AUTONOMOUS AI AGENT OPERATION ALERTS
+  # =======================================================================
+  
+  - name: autonomous-operations
+    rules:
+      - alert: HighMemoryOperationLatency
+        expr: histogram_quantile(0.95, rate(memory_operation_duration_seconds_bucket[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          team: backend
+          service: autonomous-memory-ops
+        annotations:
+          summary: "High memory operation latency for autonomous agents"
+          description: "95th percentile memory operation latency is {{ $value }}s (threshold: 100ms)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-memory-latency"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: HighMemoryOperationLatencyCritical
+        expr: histogram_quantile(0.95, rate(memory_operation_duration_seconds_bucket[5m])) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+          service: autonomous-memory-ops
+        annotations:
+          summary: "Critical memory operation latency for autonomous agents"
+          description: "95th percentile memory operation latency is {{ $value }}s (threshold: 500ms)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-memory-latency"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: HighAgentErrorRate
+        expr: |
+          (
+            rate(memory_operation_errors_total[5m]) /
+            rate(memory_operation_duration_seconds_count[5m])
+          ) * 100 > 1
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+          service: autonomous-agents
+        annotations:
+          summary: "High error rate for autonomous agent operations"
+          description: "Autonomous agent error rate is {{ $value }}% (threshold: 1%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-error-rate"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: CriticalAgentErrorRate
+        expr: |
+          (
+            rate(memory_operation_errors_total[5m]) /
+            rate(memory_operation_duration_seconds_count[5m])
+          ) * 100 > 5
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+          service: autonomous-agents
+        annotations:
+          summary: "Critical error rate for autonomous agent operations"
+          description: "Autonomous agent error rate is {{ $value }}% (threshold: 5%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-error-rate"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: LowMemoryCacheHitRatio
+        expr: memory_cache_hit_ratio < 0.8
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: autonomous-memory-ops
+        annotations:
+          summary: "Low cache hit ratio for autonomous memory operations"
+          description: "Memory cache hit ratio is {{ $value }} (threshold: 80%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-cache-hit-ratio"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: CriticalMemoryCacheHitRatio
+        expr: memory_cache_hit_ratio < 0.6
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+          service: autonomous-memory-ops
+        annotations:
+          summary: "Critical cache hit ratio for autonomous memory operations"
+          description: "Memory cache hit ratio is {{ $value }} (threshold: 60%)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-cache-hit-ratio"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: LowAutonomousOperationThroughput
+        expr: rate(memory_operation_duration_seconds_count[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+          service: autonomous-agents
+        annotations:
+          summary: "Low autonomous operation throughput"
+          description: "Autonomous operation throughput is {{ $value }}/sec (threshold: 0.1/sec)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-throughput"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: HighAgentDecisionLatency
+        expr: histogram_quantile(0.95, rate(agent_decision_latency_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: autonomous-agents
+        annotations:
+          summary: "High decision latency for autonomous agents"
+          description: "95th percentile agent decision latency is {{ $value }}s (threshold: 2s)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-decision-latency"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: LowMemoryRelevanceScore
+        expr: agent_memory_relevance_score < 0.7
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: autonomous-agents
+        annotations:
+          summary: "Low memory relevance score for autonomous agents"
+          description: "Agent memory relevance score is {{ $value }} (threshold: 0.7)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-relevance-score"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: HighAgentContextSize
+        expr: histogram_quantile(0.95, rate(agent_context_size_bytes_bucket[5m])) > 1048576  # 1MB
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: autonomous-agents
+        annotations:
+          summary: "High context size for autonomous agents"
+          description: "95th percentile agent context size is {{ $value | humanize1024 }}B (threshold: 1MB)"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-context-size"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+      - alert: UnusualAgentQueryFrequency
+        expr: |
+          (
+            agent_query_frequency > 
+            (avg_over_time(agent_query_frequency[1h]) * 2)
+          ) or (
+            agent_query_frequency < 
+            (avg_over_time(agent_query_frequency[1h]) * 0.5)
+          )
+        for: 10m
+        labels:
+          severity: info
+          team: backend
+          service: autonomous-agents
+        annotations:
+          summary: "Unusual agent query frequency pattern"
+          description: "Agent query frequency is {{ $value }} queries/min (expected: ~{{ avg_over_time(agent_query_frequency[1h]) }})"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-query-frequency"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
+
+  # =======================================================================
   # CRITICAL SERVICE AVAILABILITY ALERTS
   # =======================================================================
   
@@ -17,6 +181,19 @@ groups:
           description: "{{ $labels.job }} has been down for more than 1 minute. This affects core functionality."
           runbook_url: "https://docs.mem0-stack.com/runbooks/service-down"
           dashboard_url: "http://grafana.drjlabs.com/d/overview"
+
+      - alert: AutonomousAgentServiceDown
+        expr: up{job="autonomous-agents"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          team: infrastructure
+          service: autonomous-agents
+        annotations:
+          summary: "Autonomous agent monitoring is down"
+          description: "Autonomous agent metrics collection has been down for more than 30 seconds"
+          runbook_url: "https://docs.mem0-stack.com/runbooks/autonomous-service-down"
+          dashboard_url: "http://grafana.drjlabs.com/d/autonomous-operations"
 
       - alert: DatabaseDown
         expr: up{job=~"postgres-exporter|neo4j"} == 0

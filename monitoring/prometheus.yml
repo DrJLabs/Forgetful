@@ -42,6 +42,23 @@ scrape_configs:
         regex: 'mem0_.*'
         target_label: service
         replacement: mem0
+      # Autonomous AI agent specific metrics
+      - source_labels: [__name__]
+        regex: 'memory_operation_duration_seconds.*'
+        target_label: metric_type
+        replacement: autonomous_operation
+      - source_labels: [__name__]
+        regex: 'memory_operation_errors_total.*'
+        target_label: metric_type
+        replacement: autonomous_operation
+      - source_labels: [__name__]
+        regex: 'memory_cache_hit_ratio.*'
+        target_label: metric_type
+        replacement: autonomous_operation
+      - source_labels: [__name__]
+        regex: 'memory_batch_size_histogram.*'
+        target_label: metric_type
+        replacement: autonomous_operation
 
   - job_name: 'openmemory-mcp'
     static_configs:
@@ -58,12 +75,89 @@ scrape_configs:
         regex: 'openmemory_.*'
         target_label: service
         replacement: openmemory-mcp
+      # AI agent pattern metrics
+      - source_labels: [__name__]
+        regex: 'agent_query_frequency.*'
+        target_label: metric_type
+        replacement: agent_pattern
+      - source_labels: [__name__]
+        regex: 'agent_context_size_bytes.*'
+        target_label: metric_type
+        replacement: agent_pattern
+      - source_labels: [__name__]
+        regex: 'agent_decision_latency.*'
+        target_label: metric_type
+        replacement: agent_pattern
+      - source_labels: [__name__]
+        regex: 'agent_memory_relevance_score.*'
+        target_label: metric_type
+        replacement: agent_pattern
+
+  # =======================================================================
+  # AUTONOMOUS AI AGENT MONITORING
+  # =======================================================================
+  
+  - job_name: 'autonomous-agents'
+    static_configs:
+      - targets: ['mem0:8000', 'openmemory-mcp:8765']
+    metrics_path: /metrics
+    scrape_interval: 2s  # High frequency for autonomous operations
+    scrape_timeout: 5s
+    params:
+      format: ['prometheus']
+      autonomous: ['true']  # Signal for autonomous-specific metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__address__]
+        regex: 'mem0:8000'
+        target_label: service
+        replacement: autonomous-memory-ops
+      - source_labels: [__address__]
+        regex: 'openmemory-mcp:8765'
+        target_label: service
+        replacement: autonomous-agents
+    metric_relabel_configs:
+      # Memory operation metrics
+      - source_labels: [__name__]
+        regex: 'memory_operation_duration_seconds'
+        target_label: operation_type
+        replacement: autonomous_memory
+      - source_labels: [__name__]
+        regex: 'memory_operation_errors_total'
+        target_label: operation_type
+        replacement: autonomous_memory
+      - source_labels: [__name__]
+        regex: 'memory_cache_hit_ratio'
+        target_label: operation_type
+        replacement: autonomous_memory
+      - source_labels: [__name__]
+        regex: 'memory_batch_size_histogram'
+        target_label: operation_type
+        replacement: autonomous_memory
+      # Agent pattern metrics
+      - source_labels: [__name__]
+        regex: 'agent_query_frequency'
+        target_label: operation_type
+        replacement: agent_behavior
+      - source_labels: [__name__]
+        regex: 'agent_context_size_bytes'
+        target_label: operation_type
+        replacement: agent_behavior
+      - source_labels: [__name__]
+        regex: 'agent_decision_latency'
+        target_label: operation_type
+        replacement: agent_behavior
+      - source_labels: [__name__]
+        regex: 'agent_memory_relevance_score'
+        target_label: operation_type
+        replacement: agent_behavior
 
   - job_name: 'openmemory-ui'
     static_configs:
       - targets: ['openmemory-ui:3000']
     metrics_path: /api/metrics
-    scrape_interval: 15s
+    scrape_interval: 10s  # Optimized for autonomous UI interactions
     scrape_timeout: 10s
     relabel_configs:
       - source_labels: [__address__]
@@ -82,7 +176,7 @@ scrape_configs:
   - job_name: 'postgres-exporter'
     static_configs:
       - targets: ['postgres-exporter-mem0:9187']
-    scrape_interval: 5s
+    scrape_interval: 3s  # Optimized for autonomous database operations
     scrape_timeout: 10s
     relabel_configs:
       - source_labels: [__address__]
@@ -97,7 +191,7 @@ scrape_configs:
   - job_name: 'neo4j'
     static_configs:
       - targets: ['neo4j-mem0:2004']
-    scrape_interval: 5s
+    scrape_interval: 3s  # Optimized for autonomous graph operations
     scrape_timeout: 10s
     relabel_configs:
       - source_labels: [__address__]
@@ -185,6 +279,29 @@ scrape_configs:
       - source_labels: [__address__]
         target_label: service
         replacement: alertmanager
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor-mem0:8080']
+    scrape_interval: 5s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: cadvisor
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'container_.*'
+        target_label: metric_type
+        replacement: container_resource
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: docker_service
+        regex: '(.*)'
+        replacement: '${1}'
+      - source_labels: [container_label_com_docker_compose_project]
+        target_label: docker_project
+        regex: '(.*)'
+        replacement: '${1}'
 
   # =======================================================================
   # HEALTH CHECK MONITORING

@@ -1,0 +1,369 @@
+# PostgreSQL Exporter Custom Queries for Autonomous AI Agent Operations
+# This configuration provides enhanced metrics for autonomous memory operations
+
+# =======================================================================
+# AUTONOMOUS MEMORY OPERATIONS QUERIES
+# =======================================================================
+
+pg_autonomous_memory_operations:
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      n_tup_ins as inserts,
+      n_tup_upd as updates,
+      n_tup_del as deletes,
+      n_tup_hot_upd as hot_updates,
+      n_live_tup as live_tuples,
+      n_dead_tup as dead_tuples,
+      EXTRACT(EPOCH FROM now() - last_vacuum) as seconds_since_vacuum,
+      EXTRACT(EPOCH FROM now() - last_autovacuum) as seconds_since_autovacuum,
+      EXTRACT(EPOCH FROM now() - last_analyze) as seconds_since_analyze,
+      EXTRACT(EPOCH FROM now() - last_autoanalyze) as seconds_since_autoanalyze
+    FROM pg_stat_user_tables 
+    WHERE schemaname = 'public' 
+    AND (tablename LIKE '%memories%' OR tablename LIKE '%memory%' OR tablename LIKE '%vector%')
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"  
+        description: "Table name"
+    - inserts:
+        usage: "GAUGE"
+        description: "Number of tuples inserted"
+    - updates:
+        usage: "GAUGE"
+        description: "Number of tuples updated"
+    - deletes:
+        usage: "GAUGE"
+        description: "Number of tuples deleted"
+    - hot_updates:
+        usage: "GAUGE"
+        description: "Number of hot updates"
+    - live_tuples:
+        usage: "GAUGE"
+        description: "Number of live tuples"
+    - dead_tuples:
+        usage: "GAUGE"
+        description: "Number of dead tuples"
+    - seconds_since_vacuum:
+        usage: "GAUGE"
+        description: "Seconds since last vacuum"
+    - seconds_since_autovacuum:
+        usage: "GAUGE"
+        description: "Seconds since last autovacuum"
+    - seconds_since_analyze:
+        usage: "GAUGE"
+        description: "Seconds since last analyze"
+    - seconds_since_autoanalyze:
+        usage: "GAUGE"
+        description: "Seconds since last autoanalyze"
+
+# =======================================================================
+# AUTONOMOUS OPERATION PERFORMANCE QUERIES
+# =======================================================================
+
+pg_autonomous_query_performance:
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      seq_scan,
+      seq_tup_read,
+      idx_scan,
+      idx_tup_fetch,
+      CASE 
+        WHEN seq_scan + idx_scan > 0 THEN 
+          ROUND((idx_scan::float / (seq_scan + idx_scan)::float) * 100, 2)
+        ELSE 0 
+      END as index_usage_ratio,
+      CASE 
+        WHEN seq_tup_read + idx_tup_fetch > 0 THEN 
+          ROUND((idx_tup_fetch::float / (seq_tup_read + idx_tup_fetch)::float) * 100, 2)
+        ELSE 0 
+      END as index_efficiency_ratio
+    FROM pg_stat_user_tables 
+    WHERE schemaname = 'public'
+    AND (tablename LIKE '%memories%' OR tablename LIKE '%memory%' OR tablename LIKE '%vector%')
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - seq_scan:
+        usage: "GAUGE"
+        description: "Number of sequential scans"
+    - seq_tup_read:
+        usage: "GAUGE"
+        description: "Number of tuples read by sequential scans"
+    - idx_scan:
+        usage: "GAUGE"
+        description: "Number of index scans"
+    - idx_tup_fetch:
+        usage: "GAUGE"
+        description: "Number of tuples fetched by index scans"
+    - index_usage_ratio:
+        usage: "GAUGE"
+        description: "Percentage of scans that use indexes"
+    - index_efficiency_ratio:
+        usage: "GAUGE"
+        description: "Percentage of tuples fetched via indexes"
+
+# =======================================================================
+# AUTONOMOUS WORKLOAD CONNECTION TRACKING
+# =======================================================================
+
+pg_autonomous_connections:
+  query: |
+    SELECT 
+      state,
+      COUNT(*) as connections,
+      AVG(EXTRACT(EPOCH FROM now() - query_start)) as avg_query_duration_seconds,
+      AVG(EXTRACT(EPOCH FROM now() - state_change)) as avg_state_duration_seconds
+    FROM pg_stat_activity 
+    WHERE state IS NOT NULL 
+    AND application_name LIKE '%mem0%' OR application_name LIKE '%autonomous%'
+    GROUP BY state
+  metrics:
+    - state:
+        usage: "LABEL"
+        description: "Connection state"
+    - connections:
+        usage: "GAUGE"
+        description: "Number of connections in this state"
+    - avg_query_duration_seconds:
+        usage: "GAUGE"
+        description: "Average query duration in seconds"
+    - avg_state_duration_seconds:
+        usage: "GAUGE"
+        description: "Average time in current state in seconds"
+
+# =======================================================================
+# AUTONOMOUS OPERATION CACHE PERFORMANCE
+# =======================================================================
+
+pg_autonomous_cache_performance:
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      heap_blks_read,
+      heap_blks_hit,
+      idx_blks_read,
+      idx_blks_hit,
+      CASE 
+        WHEN heap_blks_read + heap_blks_hit > 0 THEN 
+          ROUND((heap_blks_hit::float / (heap_blks_read + heap_blks_hit)::float) * 100, 2)
+        ELSE 0 
+      END as heap_cache_hit_ratio,
+      CASE 
+        WHEN idx_blks_read + idx_blks_hit > 0 THEN 
+          ROUND((idx_blks_hit::float / (idx_blks_read + idx_blks_hit)::float) * 100, 2)
+        ELSE 0 
+      END as index_cache_hit_ratio
+    FROM pg_statio_user_tables 
+    WHERE schemaname = 'public'
+    AND (tablename LIKE '%memories%' OR tablename LIKE '%memory%' OR tablename LIKE '%vector%')
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - heap_blks_read:
+        usage: "GAUGE"
+        description: "Number of heap blocks read from disk"
+    - heap_blks_hit:
+        usage: "GAUGE"
+        description: "Number of heap blocks found in cache"
+    - idx_blks_read:
+        usage: "GAUGE"
+        description: "Number of index blocks read from disk"
+    - idx_blks_hit:
+        usage: "GAUGE"
+        description: "Number of index blocks found in cache"
+    - heap_cache_hit_ratio:
+        usage: "GAUGE"
+        description: "Heap cache hit ratio percentage"
+    - index_cache_hit_ratio:
+        usage: "GAUGE"
+        description: "Index cache hit ratio percentage"
+
+# =======================================================================
+# AUTONOMOUS OPERATION LOCKS AND WAITS
+# =======================================================================
+
+pg_autonomous_locks:
+  query: |
+    SELECT 
+      mode,
+      locktype,
+      COUNT(*) as lock_count,
+      SUM(CASE WHEN granted THEN 1 ELSE 0 END) as granted_locks,
+      SUM(CASE WHEN granted THEN 0 ELSE 1 END) as waiting_locks
+    FROM pg_locks l
+    LEFT JOIN pg_stat_activity a ON l.pid = a.pid
+    WHERE a.application_name LIKE '%mem0%' OR a.application_name LIKE '%autonomous%'
+    GROUP BY mode, locktype
+  metrics:
+    - mode:
+        usage: "LABEL"
+        description: "Lock mode"
+    - locktype:
+        usage: "LABEL"
+        description: "Lock type"
+    - lock_count:
+        usage: "GAUGE"
+        description: "Total number of locks"
+    - granted_locks:
+        usage: "GAUGE"
+        description: "Number of granted locks"
+    - waiting_locks:
+        usage: "GAUGE"
+        description: "Number of waiting locks"
+
+# =======================================================================
+# AUTONOMOUS OPERATION SLOW QUERIES
+# =======================================================================
+
+pg_autonomous_slow_queries:
+  query: |
+    SELECT 
+      calls,
+      total_exec_time,
+      mean_exec_time,
+      stddev_exec_time,
+      max_exec_time,
+      min_exec_time,
+      rows,
+      shared_blks_hit,
+      shared_blks_read,
+      shared_blks_dirtied,
+      shared_blks_written,
+      local_blks_hit,
+      local_blks_read,
+      local_blks_dirtied,
+      local_blks_written,
+      temp_blks_read,
+      temp_blks_written,
+      blk_read_time,
+      blk_write_time,
+      CASE 
+        WHEN shared_blks_hit + shared_blks_read > 0 THEN 
+          ROUND((shared_blks_hit::float / (shared_blks_hit + shared_blks_read)::float) * 100, 2)
+        ELSE 0 
+      END as buffer_hit_ratio
+    FROM pg_stat_statements 
+    WHERE query LIKE '%memories%' OR query LIKE '%memory%' OR query LIKE '%vector%'
+    ORDER BY mean_exec_time DESC
+    LIMIT 10
+  metrics:
+    - calls:
+        usage: "GAUGE"
+        description: "Number of times executed"
+    - total_exec_time:
+        usage: "GAUGE"
+        description: "Total execution time in milliseconds"
+    - mean_exec_time:
+        usage: "GAUGE"
+        description: "Mean execution time in milliseconds"
+    - stddev_exec_time:
+        usage: "GAUGE"
+        description: "Standard deviation of execution time"
+    - max_exec_time:
+        usage: "GAUGE"
+        description: "Maximum execution time in milliseconds"
+    - min_exec_time:
+        usage: "GAUGE"
+        description: "Minimum execution time in milliseconds"
+    - rows:
+        usage: "GAUGE"
+        description: "Total number of rows retrieved or affected"
+    - shared_blks_hit:
+        usage: "GAUGE"
+        description: "Total number of shared block cache hits"
+    - shared_blks_read:
+        usage: "GAUGE"
+        description: "Total number of shared blocks read"
+    - shared_blks_dirtied:
+        usage: "GAUGE"
+        description: "Total number of shared blocks dirtied"
+    - shared_blks_written:
+        usage: "GAUGE"
+        description: "Total number of shared blocks written"
+    - local_blks_hit:
+        usage: "GAUGE"
+        description: "Total number of local block cache hits"
+    - local_blks_read:
+        usage: "GAUGE"
+        description: "Total number of local blocks read"
+    - local_blks_dirtied:
+        usage: "GAUGE"
+        description: "Total number of local blocks dirtied"
+    - local_blks_written:
+        usage: "GAUGE"
+        description: "Total number of local blocks written"
+    - temp_blks_read:
+        usage: "GAUGE"
+        description: "Total number of temp blocks read"
+    - temp_blks_written:
+        usage: "GAUGE"
+        description: "Total number of temp blocks written"
+    - blk_read_time:
+        usage: "GAUGE"
+        description: "Time spent reading data file blocks in milliseconds"
+    - blk_write_time:
+        usage: "GAUGE"
+        description: "Time spent writing data file blocks in milliseconds"
+    - buffer_hit_ratio:
+        usage: "GAUGE"
+        description: "Buffer cache hit ratio percentage"
+
+# =======================================================================
+# AUTONOMOUS OPERATION DATABASE SIZE TRACKING
+# =======================================================================
+
+pg_autonomous_database_size:
+  query: |
+    SELECT 
+      schemaname,
+      tablename,
+      pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as total_size_pretty,
+      pg_total_relation_size(schemaname||'.'||tablename) as total_size_bytes,
+      pg_size_pretty(pg_relation_size(schemaname||'.'||tablename)) as table_size_pretty,
+      pg_relation_size(schemaname||'.'||tablename) as table_size_bytes,
+      pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename) - pg_relation_size(schemaname||'.'||tablename)) as index_size_pretty,
+      (pg_total_relation_size(schemaname||'.'||tablename) - pg_relation_size(schemaname||'.'||tablename)) as index_size_bytes
+    FROM pg_tables 
+    WHERE schemaname = 'public'
+    AND (tablename LIKE '%memories%' OR tablename LIKE '%memory%' OR tablename LIKE '%vector%')
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - total_size_pretty:
+        usage: "LABEL"
+        description: "Total size (human readable)"
+    - total_size_bytes:
+        usage: "GAUGE"
+        description: "Total size in bytes"
+    - table_size_pretty:
+        usage: "LABEL"
+        description: "Table size (human readable)"
+    - table_size_bytes:
+        usage: "GAUGE"
+        description: "Table size in bytes"
+    - index_size_pretty:
+        usage: "LABEL"
+        description: "Index size (human readable)"
+    - index_size_bytes:
+        usage: "GAUGE"
+        description: "Index size in bytes"
