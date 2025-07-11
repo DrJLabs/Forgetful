@@ -1,0 +1,32 @@
+name: "CodeQL Config"
+
+disable-default-rules: false
+
+queries:
+  - security-extended
+  - security-and-quality
+
+paths:
+  - mem0/
+  - openmemory/
+  - shared/
+  - scripts/
+  - tests/
+
+paths-ignore:
+  - "**/.git/**"
+  - "**/node_modules/**"
+  - "**/venv/**"
+  - "**/env/**"
+  - "**/__pycache__/**"
+  - "**/build/**"
+  - "**/dist/**"
+  - "**/coverage/**"
+  - "**/test-reports/**"
+  - "**/backups/**"
+  - "**/archive/**"
+  - "**/data/**"
+  - "**/.next/**"
+  - "**/docs/**"
+  - "mem0/embedchain/**"
+  - "openmemory/ui/public/**" 
