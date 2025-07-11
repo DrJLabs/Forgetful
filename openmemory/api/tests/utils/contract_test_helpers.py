@@ -13,13 +13,15 @@ Based on FastAPI testing patterns from Context7 documentation.
 """
 
 import json
-import jsonschema
-from typing import Dict, Any, List, Optional, Union, Tuple
-from uuid import uuid4
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple, Union
+from uuid import uuid4
+
+import jsonschema
 from fastapi.testclient import TestClient
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate
 from pydantic import BaseModel, ValidationError
-from jsonschema import validate, ValidationError as JsonSchemaValidationError
 
 
 class OpenAPIValidator:

@@ -692,6 +692,9 @@ class MultiLayerCache:
 # Global multi-layer cache instance
 global_cache = MultiLayerCache()
 
+# Alias for backwards compatibility with imports
+cache_manager = global_cache
+
 
 # Decorators for easy caching
 def cached(ttl: int = 3600, cache_name: str = "default"):

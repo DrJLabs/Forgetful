@@ -9,19 +9,19 @@ This module provides comprehensive testing for database operations including:
 - Concurrent access testing
 """
 
-import pytest
 import asyncio
-import psycopg2
-from uuid import uuid4
-from datetime import datetime, UTC
-from sqlalchemy import create_engine, text, MetaData, select, func
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import IntegrityError
-from concurrent.futures import ThreadPoolExecutor
 import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
+from uuid import uuid4
 
-from app.models import User, App, Memory, MemoryState
+import psycopg2
+import pytest
 from app.database import Base
+from app.models import App, Memory, MemoryState, User
+from sqlalchemy import MetaData, create_engine, func, select, text
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
 
 
 class TestDatabaseFramework:

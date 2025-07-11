@@ -10,28 +10,29 @@ This test suite validates:
 - Pool exhaustion handling
 """
 
-import pytest
 import asyncio
-import time
+import os
 import random
-from unittest.mock import Mock, patch, AsyncMock
-from concurrent.futures import ThreadPoolExecutor
 
 # Add the workspace to the path dynamically
 import sys
-import os
+import time
+from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from shared.config import Config
 from shared.connection_pool import (
     ConnectionPoolConfig,
-    OptimizedPostgreSQLPool,
-    OptimizedNeo4jPool,
-    OptimizedRedisPool,
     ConnectionPoolManager,
     ConnectionPoolMetrics,
+    OptimizedNeo4jPool,
+    OptimizedPostgreSQLPool,
+    OptimizedRedisPool,
 )
-from shared.config import Config
 
 
 class TestConnectionPoolPerformance:
