@@ -6,7 +6,7 @@ This module provides advanced metadata tagging and semantic enrichment.
 import logging
 import re
 from typing import Dict, List, Any, Optional, Tuple, Set
-from datetime import datetime
+from datetime import datetime, timedelta
 from collections import defaultdict
 import json
 import hashlib
@@ -14,6 +14,51 @@ import hashlib
 from mem0.configs.coding_config import CodingMemoryConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_datetime_now(reference_time: Optional[datetime] = None) -> datetime:
+    """
+    Safely get current datetime with proper timezone handling.
+    
+    Args:
+        reference_time: Optional reference datetime to match timezone
+        
+    Returns:
+        Current datetime with proper timezone handling
+    """
+    if reference_time is None:
+        return datetime.now()
+    
+    # Handle timezone-aware reference time
+    if reference_time.tzinfo is not None:
+        return datetime.now(reference_time.tzinfo)
+    
+    # Handle timezone-naive reference time - return naive datetime
+    return datetime.now()
+
+
+def _safe_datetime_diff(dt1: datetime, dt2: datetime) -> timedelta:
+    """
+    Safely calculate difference between two datetimes, handling timezone mismatches.
+    
+    Args:
+        dt1: First datetime
+        dt2: Second datetime
+        
+    Returns:
+        Time difference as timedelta
+    """
+    # If both are naive or both are aware, calculate normally
+    if (dt1.tzinfo is None) == (dt2.tzinfo is None):
+        return dt1 - dt2
+    
+    # If one is aware and other is naive, convert naive to aware (UTC)
+    if dt1.tzinfo is None:
+        dt1 = dt1.replace(tzinfo=dt2.tzinfo)
+    elif dt2.tzinfo is None:
+        dt2 = dt2.replace(tzinfo=dt1.tzinfo)
+    
+    return dt1 - dt2
 
 
 class SemanticTagger:
@@ -464,9 +509,9 @@ class SemanticTagger:
         if created_at:
             try:
                 created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                current_time = datetime.now().replace(tzinfo=created_time.tzinfo)
+                current_time = _safe_datetime_now(created_time)
                 
-                age_hours = (current_time - created_time).total_seconds() / 3600
+                age_hours = _safe_datetime_diff(current_time, created_time).total_seconds() / 3600
                 
                 if age_hours < 1:
                     temporal_tags['freshness'] = 'fresh'

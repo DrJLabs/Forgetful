@@ -258,7 +258,7 @@ class EnhancedConfidenceScorer:
         """
         try:
             last_time = datetime.fromisoformat(last_accessed.replace('Z', '+00:00'))
-            time_diff = (datetime.now().replace(tzinfo=last_time.tzinfo) - last_time).total_seconds()
+            time_diff = (datetime.now(last_time.tzinfo) - last_time).total_seconds()
             
             # Exponential decay with half-life of 1 day
             decay_factor = math.exp(-time_diff / 86400)  # 86400 seconds in a day
@@ -276,7 +276,7 @@ class EnhancedConfidenceScorer:
         
         try:
             created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-            age_days = (datetime.now().replace(tzinfo=created_time.tzinfo) - created_time).days
+            age_days = (datetime.now(created_time.tzinfo) - created_time).days
             
             # Memories lose relevance over time, but level off
             if age_days <= 1:
@@ -536,7 +536,7 @@ class ContextAwareConfidenceScorer:
             if created_at:
                 try:
                     created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    age_days = (datetime.now().replace(tzinfo=created_time.tzinfo) - created_time).days
+                    age_days = (datetime.now(created_time.tzinfo) - created_time).days
                     if age_days > 30:
                         adjusted -= profile['penalize_outdated']
                 except Exception:
