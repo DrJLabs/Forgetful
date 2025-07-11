@@ -11,53 +11,9 @@ from collections import defaultdict
 import json
 
 from mem0.configs.coding_config import CodingMemoryConfig
+from mem0.memory.timezone_utils import safe_datetime_now, safe_datetime_diff, create_memory_timestamp
 
 logger = logging.getLogger(__name__)
-
-
-def _safe_datetime_now(reference_time: Optional[datetime] = None) -> datetime:
-    """
-    Safely get current datetime with proper timezone handling.
-    
-    Args:
-        reference_time: Optional reference datetime to match timezone
-        
-    Returns:
-        Current datetime with proper timezone handling
-    """
-    if reference_time is None:
-        return datetime.now()
-    
-    # Handle timezone-aware reference time
-    if reference_time.tzinfo is not None:
-        return datetime.now(reference_time.tzinfo)
-    
-    # Handle timezone-naive reference time - return naive datetime
-    return datetime.now()
-
-
-def _safe_datetime_diff(dt1: datetime, dt2: datetime) -> timedelta:
-    """
-    Safely calculate difference between two datetimes, handling timezone mismatches.
-    
-    Args:
-        dt1: First datetime
-        dt2: Second datetime
-        
-    Returns:
-        Time difference as timedelta
-    """
-    # If both are naive or both are aware, calculate normally
-    if (dt1.tzinfo is None) == (dt2.tzinfo is None):
-        return dt1 - dt2
-    
-    # If one is aware and other is naive, convert naive to aware (UTC)
-    if dt1.tzinfo is None:
-        dt1 = dt1.replace(tzinfo=dt2.tzinfo)
-    elif dt2.tzinfo is None:
-        dt2 = dt2.replace(tzinfo=dt1.tzinfo)
-    
-    return dt1 - dt2
 
 
 class IntelligentStorageManager:
@@ -414,7 +370,7 @@ class IntelligentStorageManager:
         size_saved_mb = size_saved / (1024 * 1024)
         
         # Update statistics
-        self.storage_stats['last_purge_time'] = datetime.now().isoformat()
+        self.storage_stats['last_purge_time'] = create_memory_timestamp()
         self.storage_stats['purge_count'] += 1
         self.storage_stats['memories_purged'] += len(memories_to_purge)
         
@@ -541,7 +497,7 @@ class IntelligentStorageManager:
         
         # Check age restrictions
         max_age = timedelta(days=policy['max_age_days'])
-        current_time = _safe_datetime_now()
+        current_time = safe_datetime_now()
         
         purged = []
         for score, memory in scored_memories:
@@ -647,7 +603,7 @@ class IntelligentStorageManager:
         
         try:
             last_time = datetime.fromisoformat(last_accessed.replace('Z', '+00:00'))
-            time_diff = _safe_datetime_diff(datetime.now(), last_time).total_seconds()
+            time_diff = _safe_datetime_diff(_safe_datetime_now(), last_time).total_seconds()
             
             # Exponential decay with half-life of 7 days
             decay_factor = math.exp(-time_diff / (7 * 24 * 3600))
@@ -839,7 +795,7 @@ class AutonomousStorageManager:
         try:
             last_opt_time = datetime.fromisoformat(self.last_optimization)
             interval = timedelta(hours=self.autonomous_settings['optimization_interval_hours'])
-            return datetime.now() - last_opt_time >= interval
+            return datetime.utcnow() - last_opt_time >= interval
         except Exception:
             return True
     
@@ -880,7 +836,7 @@ class AutonomousStorageManager:
         if self.learning_enabled:
             self._update_learning_data(optimization_result)
         
-        self.last_optimization = datetime.now().isoformat()
+        self.last_optimization = datetime.utcnow().isoformat()
         
         return optimization_result
     
@@ -889,7 +845,7 @@ class AutonomousStorageManager:
         Record optimization for analytics.
         """
         record = {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': datetime.utcnow().isoformat(),
             'urgency': urgency,
             'strategy': result['strategy_used'],
             'memories_removed': result['memories_removed'],

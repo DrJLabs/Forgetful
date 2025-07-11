@@ -15,6 +15,7 @@ import pytz
 from pydantic import ValidationError
 
 from mem0.configs.base import MemoryConfig, MemoryItem
+from mem0.memory.timezone_utils import create_memory_timestamp
 from mem0.configs.enums import MemoryType
 from mem0.configs.prompts import (
     PROCEDURAL_MEMORY_SYSTEM_PROMPT,
@@ -812,7 +813,7 @@ class Memory(MemoryBase):
         metadata = metadata or {}
         metadata["data"] = data
         metadata["hash"] = hashlib.md5(data.encode()).hexdigest()
-        metadata["created_at"] = datetime.now(pytz.timezone("US/Pacific")).isoformat()
+        metadata["created_at"] = create_memory_timestamp()
 
         self.vector_store.insert(
             vectors=[embeddings],
@@ -885,7 +886,7 @@ class Memory(MemoryBase):
         new_metadata["data"] = data
         new_metadata["hash"] = hashlib.md5(data.encode()).hexdigest()
         new_metadata["created_at"] = existing_memory.payload.get("created_at")
-        new_metadata["updated_at"] = datetime.now(pytz.timezone("US/Pacific")).isoformat()
+        new_metadata["updated_at"] = create_memory_timestamp()
 
         if "user_id" in existing_memory.payload:
             new_metadata["user_id"] = existing_memory.payload["user_id"]
@@ -1665,7 +1666,7 @@ class AsyncMemory(MemoryBase):
         metadata = metadata or {}
         metadata["data"] = data
         metadata["hash"] = hashlib.md5(data.encode()).hexdigest()
-        metadata["created_at"] = datetime.now(pytz.timezone("US/Pacific")).isoformat()
+        metadata["created_at"] = create_memory_timestamp()
 
         await asyncio.to_thread(
             self.vector_store.insert,
@@ -1732,7 +1733,9 @@ class AsyncMemory(MemoryBase):
 
         metadata["memory_type"] = MemoryType.PROCEDURAL.value
         embeddings = await asyncio.to_thread(self.embedding_model.embed, procedural_memory, memory_action="add")
-        memory_id = await self._create_memory(procedural_memory, {procedural_memory: embeddings}, metadata=metadata)
+        # CRITICAL FIX: Avoid dictionary key anti-pattern with long procedural memory content
+        # Pass empty dict to force parent method to generate new embeddings safely
+        memory_id = await self._create_memory(procedural_memory, {}, metadata=metadata)
         capture_event("mem0._create_procedural_memory", self, {"memory_id": memory_id, "sync_type": "async"})
 
         result = {"results": [{"id": memory_id, "memory": procedural_memory, "event": "ADD"}]}
@@ -1755,7 +1758,7 @@ class AsyncMemory(MemoryBase):
         new_metadata["data"] = data
         new_metadata["hash"] = hashlib.md5(data.encode()).hexdigest()
         new_metadata["created_at"] = existing_memory.payload.get("created_at")
-        new_metadata["updated_at"] = datetime.now(pytz.timezone("US/Pacific")).isoformat()
+        new_metadata["updated_at"] = create_memory_timestamp()
 
         if "user_id" in existing_memory.payload:
             new_metadata["user_id"] = existing_memory.payload["user_id"]

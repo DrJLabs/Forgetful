@@ -12,53 +12,9 @@ import numpy as np
 
 from mem0.memory.utils import extract_json
 from mem0.configs.coding_config import CodingFactExtractor
+from mem0.memory.timezone_utils import safe_datetime_diff
 
 logger = logging.getLogger(__name__)
-
-
-def _safe_datetime_now(reference_time: Optional[datetime] = None) -> datetime:
-    """
-    Safely get current datetime with proper timezone handling.
-    
-    Args:
-        reference_time: Optional reference datetime to match timezone
-        
-    Returns:
-        Current datetime with proper timezone handling
-    """
-    if reference_time is None:
-        return datetime.now()
-    
-    # Handle timezone-aware reference time
-    if reference_time.tzinfo is not None:
-        return datetime.now(reference_time.tzinfo)
-    
-    # Handle timezone-naive reference time - return naive datetime
-    return datetime.now()
-
-
-def _safe_datetime_diff(dt1: datetime, dt2: datetime) -> timedelta:
-    """
-    Safely calculate difference between two datetimes, handling timezone mismatches.
-    
-    Args:
-        dt1: First datetime
-        dt2: Second datetime
-        
-    Returns:
-        Time difference as timedelta
-    """
-    # If both are naive or both are aware, calculate normally
-    if (dt1.tzinfo is None) == (dt2.tzinfo is None):
-        return dt1 - dt2
-    
-    # If one is aware and other is naive, convert naive to aware (UTC)
-    if dt1.tzinfo is None:
-        dt1 = dt1.replace(tzinfo=dt2.tzinfo)
-    elif dt2.tzinfo is None:
-        dt2 = dt2.replace(tzinfo=dt1.tzinfo)
-    
-    return dt1 - dt2
 
 
 class EnhancedDeduplicator:
@@ -275,7 +231,7 @@ class EnhancedDeduplicator:
             time2 = datetime.fromisoformat(created2.replace('Z', '+00:00'))
             
             # Calculate time difference
-            time_diff = abs(_safe_datetime_diff(time1, time2).total_seconds())
+            time_diff = abs(safe_datetime_diff(time1, time2).total_seconds())
             
             # Apply decay factor (memories from the same session are more likely duplicates)
             if time_diff < 300:  # Within 5 minutes
