@@ -214,8 +214,48 @@ class CodingMemory(Memory):
     def _create_coding_memory(self, data: str, embeddings: List[float], metadata: Dict[str, Any]) -> str:
         """
         Create memory with enhanced coding-specific metadata.
+        
+        CRITICAL: Directly implements memory creation to avoid problematic 
+        dictionary key anti-pattern with potentially long data strings.
         """
-        memory_id = super()._create_memory(data, {data: embeddings}, metadata)
+        import uuid
+        from datetime import datetime
+        import pytz
+        
+        # Generate memory ID and prepare enhanced metadata
+        memory_id = str(uuid.uuid4())
+        enhanced_metadata = metadata or {}
+        enhanced_metadata["data"] = data
+        enhanced_metadata["hash"] = hashlib.md5(data.encode()).hexdigest()
+        enhanced_metadata["created_at"] = datetime.now(pytz.timezone("US/Pacific")).isoformat()
+        
+        # Use pre-computed embeddings directly - SAFE APPROACH
+        self.vector_store.insert(
+            vectors=[embeddings],
+            ids=[memory_id],
+            payloads=[enhanced_metadata],
+        )
+        
+        # Add to history with proper error handling
+        try:
+            self.db.add_history(
+                memory_id,
+                None,
+                data,
+                "ADD",
+                created_at=enhanced_metadata.get("created_at"),
+                actor_id=enhanced_metadata.get("actor_id"),
+                role=enhanced_metadata.get("role"),
+            )
+        except Exception as e:
+            logger.error(f"Failed to add history for coding memory {memory_id}: {e}")
+        
+        # Add telemetry capture for consistency
+        try:
+            from mem0.memory.telemetry import capture_event
+            capture_event("mem0._create_memory", self, {"memory_id": memory_id, "sync_type": "sync"})
+        except ImportError:
+            logger.debug("Telemetry capture not available")
         
         # Store coding-specific patterns for optimization
         category = metadata.get('category', 'general')

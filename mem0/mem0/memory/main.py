@@ -863,7 +863,9 @@ class Memory(MemoryBase):
 
         metadata["memory_type"] = MemoryType.PROCEDURAL.value
         embeddings = self.embedding_model.embed(procedural_memory, memory_action="add")
-        memory_id = self._create_memory(procedural_memory, {procedural_memory: embeddings}, metadata=metadata)
+        # CRITICAL FIX: Avoid dictionary key anti-pattern with long procedural memory content
+        # Pass empty dict to force parent method to generate new embeddings safely
+        memory_id = self._create_memory(procedural_memory, {}, metadata=metadata)
         capture_event("mem0._create_procedural_memory", self, {"memory_id": memory_id, "sync_type": "sync"})
 
         result = {"results": [{"id": memory_id, "memory": procedural_memory, "event": "ADD"}]}
