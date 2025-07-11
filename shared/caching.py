@@ -669,28 +669,28 @@ global_cache = MultiLayerCache()
 
 # Decorators for easy caching
 def cached(ttl: int = 3600, cache_name: str = 'default'):
-    """Decorator for function result caching."""
+    """Decorator for function result caching using global multi-layer cache."""
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        async def wrapper(*args, **kwargs):
             # Generate cache key
-            key_data = f"{func.__name__}:{args}:{sorted(kwargs.items())}"
+            key_data = f"{cache_name}:{func.__name__}:{args}:{sorted(kwargs.items())}"
             cache_key = hashlib.md5(key_data.encode()).hexdigest()
             
-            # Get cache
-            cache = cache_manager.get_cache(cache_name)
-            
-            # Try to get from cache
-            result = cache.get(cache_key)
+            # Try to get from global cache
+            result = await global_cache.get(cache_key)
             if result is not None:
                 logger.debug(f"Function cache HIT for {func.__name__}")
                 return result
             
             # Execute function and cache result
             with performance_logger.timer(f"function_execution_{func.__name__}"):
-                result = func(*args, **kwargs)
+                if asyncio.iscoroutinefunction(func):
+                    result = await func(*args, **kwargs)
+                else:
+                    result = func(*args, **kwargs)
             
-            cache.set(cache_key, result, ttl)
+            await global_cache.set(cache_key, result, ttl)
             logger.debug(f"Function result cached for {func.__name__}")
             
             return result
@@ -751,37 +751,33 @@ def query_cached(ttl: int = 3600):
     return decorator
 
 # Cache warming utilities
-def warm_cache(cache_name: str, data: Dict[str, Any], ttl: int = 3600):
+async def warm_cache(cache_name: str, data: Dict[str, Any], ttl: int = 3600):
     """Warm cache with predefined data."""
-    cache = cache_manager.get_cache(cache_name)
-    
+    # Use global_cache directly for multi-layer warming
     for key, value in data.items():
-        cache.set(key, value, ttl)
+        cache_key = f"{cache_name}:{key}"
+        await global_cache.set(cache_key, value, ttl)
     
     logger.info(f"Cache {cache_name} warmed with {len(data)} entries")
 
-def cache_health_check() -> Dict[str, Any]:
+async def cache_health_check() -> Dict[str, Any]:
     """Perform cache health check."""
     health = {
         'status': 'healthy',
         'issues': [],
-        'cache_stats': cache_manager.get_global_stats()
+        'cache_stats': global_cache.get_comprehensive_stats()
     }
     
-    # Check each cache
-    for name, cache in cache_manager.caches.items():
-        try:
-            # Test cache operations
-            test_key = f"health_check_{int(time.time())}"
-            cache.set(test_key, "test_value", 60)
-            result = cache.get(test_key)
-            cache.delete(test_key)
-            
-            if result != "test_value":
-                health['issues'].append(f"Cache {name} failed read/write test")
-                
-        except Exception as e:
-            health['issues'].append(f"Cache {name} error: {str(e)}")
+    # Test multi-layer cache operations
+    try:
+        test_key = f"health_check_{int(time.time())}"
+        await global_cache.set(test_key, "test_value", 60)
+        result = await global_cache.get(test_key)
+        
+        if result != "test_value":
+            health['issues'].append("Multi-layer cache failed read/write test")
+    except Exception as e:
+        health['issues'].append(f"Multi-layer cache error: {str(e)}")
     
     if health['issues']:
         health['status'] = 'degraded'
@@ -834,8 +830,8 @@ if __name__ == "__main__":
     
     # Print cache stats
     print("Cache stats:", cache.get_stats())
-    print("Global stats:", cache_manager.get_global_stats())
+    print("Global stats:", global_cache.get_comprehensive_stats())
     
     # Test cache health
-    health = cache_health_check()
+    health = asyncio.run(cache_health_check())
     print("Cache health:", health)

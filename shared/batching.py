@@ -144,7 +144,6 @@ class BatchProcessor:
         
         self.is_running = False
         self.flush_task = None
-        self.process_task = None
         self.workers = []
         
         self._lock = asyncio.Lock()
@@ -157,10 +156,7 @@ class BatchProcessor:
         # Start flush task
         self.flush_task = asyncio.create_task(self._flush_loop())
         
-        # Start processing task
-        self.process_task = asyncio.create_task(self._process_loop())
-        
-        # Start worker tasks
+        # Start worker tasks for parallel processing
         for i in range(self.config.parallel_workers):
             worker = asyncio.create_task(self._worker_loop(f"worker-{i}"))
             self.workers.append(worker)
@@ -175,14 +171,18 @@ class BatchProcessor:
         if self.flush_task:
             self.flush_task.cancel()
         
-        if self.process_task:
-            self.process_task.cancel()
-        
+        # Cancel worker tasks
         for worker in self.workers:
             worker.cancel()
         
         # Process remaining batches
         await self._flush_all_batches()
+        
+        # Wait for queue to empty
+        try:
+            await asyncio.wait_for(self.queue.join(), timeout=5.0)
+        except asyncio.TimeoutError:
+            logger.warning(f"Timeout waiting for queue to empty in '{self.name}'")
         
         logger.info(f"Batch processor '{self.name}' stopped")
     
@@ -258,24 +258,24 @@ class BatchProcessor:
                     await self.queue.put(priority_batch)
                     priority_batch.clear()
     
-    async def _process_loop(self):
-        """Main processing loop."""
-        while self.is_running:
-            try:
-                # Get batch from queue
-                batch = await self.queue.get()
-                
-                # Process batch
-                await self._process_batch(batch)
-                
-            except Exception as e:
-                logger.error(f"Process loop error in '{self.name}': {e}")
+
     
     async def _worker_loop(self, worker_id: str):
         """Worker loop for parallel processing."""
         while self.is_running:
             try:
-                await asyncio.sleep(0.01)  # Small delay to prevent busy waiting
+                # Get batch from queue with timeout
+                batch = await asyncio.wait_for(self.queue.get(), timeout=0.1)
+                
+                # Process the batch
+                await self._process_batch(batch)
+                
+                # Mark task as done
+                self.queue.task_done()
+                
+            except asyncio.TimeoutError:
+                # No work available, continue
+                continue
             except Exception as e:
                 logger.error(f"Worker {worker_id} error in '{self.name}': {e}")
     
