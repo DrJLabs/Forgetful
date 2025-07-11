@@ -50,12 +50,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Cache pip packages
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
@@ -107,14 +107,15 @@ jobs:
           coverage report --skip-covered
 
       - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: coverage-unit.xml
           flags: unit-tests
           name: codecov-unit-py${{ matrix.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload Unit Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unit-test-results-py${{ matrix.python-version }}
@@ -152,7 +153,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -180,7 +181,7 @@ jobs:
           echo "✅ API contract tests completed"
 
       - name: Upload Contract Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: contract-test-results
@@ -217,7 +218,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -245,7 +246,7 @@ jobs:
           echo "✅ Security tests completed - 150+ test cases validated"
 
       - name: Upload Security Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: security-test-results
@@ -282,7 +283,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -310,7 +311,7 @@ jobs:
           echo "✅ Database tests completed"
 
       - name: Upload Database Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: database-test-results
@@ -359,7 +360,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -402,7 +403,7 @@ jobs:
           echo "✅ Integration tests completed"
 
       - name: Upload Integration Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-test-results
@@ -440,7 +441,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -471,7 +472,7 @@ jobs:
           echo "✅ Performance tests completed"
 
       - name: Upload Performance Test Results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: performance-test-results
@@ -492,7 +493,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -524,7 +525,7 @@ jobs:
           safety check --json --output safety-report.json
 
       - name: Upload Code Quality Reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: code-quality-reports
@@ -555,7 +556,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download All Test Results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: test-results
 
@@ -697,7 +698,7 @@ jobs:
           echo "✅ Comprehensive test report generated"
 
       - name: Upload Comprehensive Test Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: comprehensive-test-report
@@ -705,7 +706,7 @@ jobs:
           retention-days: 90
 
       - name: Comment PR with Results
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
         with:
           script: |
