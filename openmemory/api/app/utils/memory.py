@@ -37,6 +37,17 @@ from mem0 import Memory
 from app.database import SessionLocal
 from app.models import Config as ConfigModel
 
+# Agent 4 Integration - Structured Logging and Error Handling
+import sys
+sys.path.append('/workspace')
+from shared.logging_system import get_logger, performance_logger
+from shared.errors import ExternalServiceError, handle_error
+from shared.resilience import retry, RetryPolicy, circuit_breaker, CircuitBreakerConfig
+from shared.caching import cached, cache_manager
+
+# Replace standard logging with structured logging
+logger = get_logger('memory_utils')
+
 
 _memory_client = None
 _config_hash = None
@@ -203,102 +214,99 @@ def _parse_environment_variables(config_dict):
     return config_dict
 
 
+@retry(RetryPolicy(max_attempts=3, initial_delay=1.0))
+@circuit_breaker(CircuitBreakerConfig(failure_threshold=5, recovery_timeout=60))
 def get_memory_client(custom_instructions: str = None):
     """
-    Get or initialize the Mem0 client.
-
-    Args:
-        custom_instructions: Optional instructions for the memory project.
-
-    Returns:
-        Initialized Mem0 client instance or None if initialization fails.
-
-    Raises:
-        Exception: If required API keys are not set or critical configuration is missing.
+    Get memory client with Agent 4 resilience patterns
     """
-    global _memory_client, _config_hash
-
     try:
-        # Start with default configuration
-        config = get_default_memory_config()
-        
-        # Variable to track custom instructions
-        db_custom_instructions = None
-        
-        # Load configuration from database
-        try:
-            db = SessionLocal()
-            db_config = db.query(ConfigModel).filter(ConfigModel.key == "main").first()
+        with performance_logger.timer("memory_client_initialization"):
+            # Start with default configuration
+            config = get_default_memory_config()
             
-            if db_config:
-                json_config = db_config.value
-                
-                # Extract custom instructions from openmemory settings
-                if "openmemory" in json_config and "custom_instructions" in json_config["openmemory"]:
-                    db_custom_instructions = json_config["openmemory"]["custom_instructions"]
-                
-                # Override defaults with configurations from the database
-                if "mem0" in json_config:
-                    mem0_config = json_config["mem0"]
-                    
-                    # Update LLM configuration if available
-                    if "llm" in mem0_config and mem0_config["llm"] is not None:
-                        config["llm"] = mem0_config["llm"]
-                        
-                        # Fix Ollama URLs for Docker if needed
-                        if config["llm"].get("provider") == "ollama":
-                            config["llm"] = _fix_ollama_urls(config["llm"])
-                    
-                    # Update Embedder configuration if available
-                    if "embedder" in mem0_config and mem0_config["embedder"] is not None:
-                        config["embedder"] = mem0_config["embedder"]
-                        
-                        # Fix Ollama URLs for Docker if needed
-                        if config["embedder"].get("provider") == "ollama":
-                            config["embedder"] = _fix_ollama_urls(config["embedder"])
-            else:
-                print("No configuration found in database, using defaults")
-                    
-            db.close()
-                            
-        except Exception as e:
-            print(f"Warning: Error loading configuration from database: {e}")
-            print("Using default configuration")
-            # Continue with default configuration if database config can't be loaded
-
-        # Use custom_instructions parameter first, then fall back to database value
-        instructions_to_use = custom_instructions or db_custom_instructions
-        if instructions_to_use:
-            config["custom_fact_extraction_prompt"] = instructions_to_use
-
-        # ALWAYS parse environment variables in the final config
-        # This ensures that even default config values like "env:OPENAI_API_KEY" get parsed
-        print("Parsing environment variables in final config...")
-        config = _parse_environment_variables(config)
-
-        # Check if config has changed by comparing hashes
-        current_config_hash = _get_config_hash(config)
-        
-        # Only reinitialize if config changed or client doesn't exist
-        if _memory_client is None or _config_hash != current_config_hash:
-            print(f"Initializing memory client with config hash: {current_config_hash}")
+            # Variable to track custom instructions
+            db_custom_instructions = None
+            
+            # Load configuration from database
             try:
-                _memory_client = Memory.from_config(config_dict=config)
-                _config_hash = current_config_hash
-                print("Memory client initialized successfully")
-            except Exception as init_error:
-                print(f"Warning: Failed to initialize memory client: {init_error}")
-                print("Server will continue running with limited memory functionality")
-                _memory_client = None
-                _config_hash = None
-                return None
-        
-        return _memory_client
-        
+                db = SessionLocal()
+                db_config = db.query(ConfigModel).filter(ConfigModel.key == "main").first()
+                
+                if db_config:
+                    json_config = db_config.value
+                    
+                    # Extract custom instructions from openmemory settings
+                    if "openmemory" in json_config and "custom_instructions" in json_config["openmemory"]:
+                        db_custom_instructions = json_config["openmemory"]["custom_instructions"]
+                    
+                    # Override defaults with configurations from the database
+                    if "mem0" in json_config:
+                        mem0_config = json_config["mem0"]
+                        
+                        # Update LLM configuration if available
+                        if "llm" in mem0_config and mem0_config["llm"] is not None:
+                            config["llm"] = mem0_config["llm"]
+                            
+                            # Fix Ollama URLs for Docker if needed
+                            if config["llm"].get("provider") == "ollama":
+                                config["llm"] = _fix_ollama_urls(config["llm"])
+                        
+                        # Update Embedder configuration if available
+                        if "embedder" in mem0_config and mem0_config["embedder"] is not None:
+                            config["embedder"] = mem0_config["embedder"]
+                            
+                            # Fix Ollama URLs for Docker if needed
+                            if config["embedder"].get("provider") == "ollama":
+                                config["embedder"] = _fix_ollama_urls(config["embedder"])
+                else:
+                    print("No configuration found in database, using defaults")
+                        
+                db.close()
+                            
+            except Exception as e:
+                print(f"Warning: Error loading configuration from database: {e}")
+                print("Using default configuration")
+                # Continue with default configuration if database config can't be loaded
+
+            # Use custom_instructions parameter first, then fall back to database value
+            instructions_to_use = custom_instructions or db_custom_instructions
+            if instructions_to_use:
+                config["custom_fact_extraction_prompt"] = instructions_to_use
+
+            # ALWAYS parse environment variables in the final config
+            # This ensures that even default config values like "env:OPENAI_API_KEY" get parsed
+            print("Parsing environment variables in final config...")
+            config = _parse_environment_variables(config)
+
+            # Check if config has changed by comparing hashes
+            current_config_hash = _get_config_hash(config)
+            
+            # Only reinitialize if config changed or client doesn't exist
+            if _memory_client is None or _config_hash != current_config_hash:
+                print(f"Initializing memory client with config hash: {current_config_hash}")
+                try:
+                    _memory_client = Memory.from_config(config_dict=config)
+                    _config_hash = current_config_hash
+                    print("Memory client initialized successfully")
+                except Exception as init_error:
+                    print(f"Warning: Failed to initialize memory client: {init_error}")
+                    print("Server will continue running with limited memory functionality")
+                    _memory_client = None
+                    _config_hash = None
+                    return None
+            
+            return _memory_client
+            
     except Exception as e:
-        print(f"Warning: Exception occurred while initializing memory client: {e}")
-        print("Server will continue running with limited memory functionality")
-        return None
+        structured_error = handle_error(e, {
+            'operation': 'memory_client_initialization',
+            'custom_instructions': bool(custom_instructions)
+        })
+        logger.error("Memory client initialization failed", 
+                    error=structured_error.to_dict())
+        raise ExternalServiceError("Memory service unavailable", 
+                                 service_name="mem0_client")
 
 
 def get_default_user_id():

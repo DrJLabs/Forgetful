@@ -11,6 +11,17 @@ from pydantic import BaseModel
 from sqlalchemy import or_, func
 from app.utils.memory import get_memory_client
 
+# Agent 4 Integration - Structured Logging and Error Handling
+import sys
+sys.path.append('/workspace')
+from shared.logging_system import api_logger, CorrelationContextManager, performance_logger
+from shared.errors import (
+    ValidationError, NotFoundError, ExternalServiceError, 
+    handle_error, create_error_response
+)
+from shared.resilience import retry, RetryPolicy
+from shared.caching import cached, cache_manager
+
 from app.database import get_db
 from app.models import (
     Memory, MemoryState, MemoryAccessLog, App,
@@ -25,7 +36,10 @@ router = APIRouter(prefix="/api/v1/memories", tags=["memories"])
 def get_memory_or_404(db: Session, memory_id: UUID) -> Memory:
     memory = db.query(Memory).filter(Memory.id == memory_id).first()
     if not memory:
-        raise HTTPException(status_code=404, detail="Memory not found")
+        api_logger.warning(f"Memory not found", memory_id=str(memory_id))
+        raise NotFoundError(f"Memory with ID {memory_id} not found", 
+                          resource_type="memory", 
+                          resource_id=str(memory_id))
     return memory
 
 
