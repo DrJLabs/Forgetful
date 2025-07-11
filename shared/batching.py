@@ -25,8 +25,6 @@ import uuid
 from functools import wraps
 from collections import defaultdict
 
-import sys
-sys.path.append('/workspace')
 from shared.logging_system import get_logger, performance_logger
 from shared.connection_pool import global_pool_manager
 
