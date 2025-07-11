@@ -12,14 +12,13 @@ This module provides comprehensive caching strategies including:
 
 import json
 import time
-import threading
+import asyncio
 from typing import Any, Dict, Optional, Callable, Union, List
 from dataclasses import dataclass
 from functools import wraps
 from datetime import datetime, timedelta
 import hashlib
 import pickle
-import asyncio
 from contextlib import contextmanager
 import msgpack
 
@@ -35,6 +34,17 @@ class CacheConfig:
     eviction_policy: str = 'lru'  # LRU, LFU, or FIFO
     compress: bool = False  # Whether to compress cached data
     serialize: bool = True  # Whether to serialize cached data
+    
+    def __post_init__(self):
+        """Validate configuration parameters."""
+        if self.ttl < 60 or self.ttl > 86400:  # 1 min to 1 day
+            raise ValueError("TTL must be between 60 and 86400 seconds")
+        if self.max_size < 10 or self.max_size > 1000000:  # 10 to 1M entries
+            raise ValueError("Max size must be between 10 and 1000000 entries")
+        if self.eviction_policy not in ['lru', 'lfu', 'fifo']:
+            raise ValueError("Eviction policy must be 'lru', 'lfu', or 'fifo'")
+        
+        logger.debug("CacheConfig validation passed")
 
 @dataclass
 class MultiLayerCacheConfig:
@@ -52,6 +62,36 @@ class MultiLayerCacheConfig:
     # L3 Cache (PostgreSQL Query Cache)
     l3_ttl: int = 1800  # 30 minutes
     l3_max_prepared_statements: int = 1000
+    
+    def __post_init__(self):
+        """Validate configuration parameters."""
+        # L1 Cache validation
+        if self.l1_max_size < 1024 * 1024:  # Min 1MB
+            raise ValueError("L1 cache must be at least 1MB")
+        if self.l1_max_size > 1024 * 1024 * 1024:  # Max 1GB
+            raise ValueError("L1 cache cannot exceed 1GB")
+        if self.l1_ttl < 60 or self.l1_ttl > 86400:  # 1 min to 1 day
+            raise ValueError("L1 TTL must be between 60 and 86400 seconds")
+        if self.l1_eviction_policy not in ['lru', 'lfu', 'fifo']:
+            raise ValueError("L1 eviction policy must be 'lru', 'lfu', or 'fifo'")
+        
+        # L2 Cache validation
+        if self.l2_max_size < 1024 * 1024:  # Min 1MB
+            raise ValueError("L2 cache must be at least 1MB")
+        if self.l2_max_size > 8 * 1024 * 1024 * 1024:  # Max 8GB
+            raise ValueError("L2 cache cannot exceed 8GB")
+        if self.l2_ttl < 300 or self.l2_ttl > 86400:  # 5 min to 1 day
+            raise ValueError("L2 TTL must be between 300 and 86400 seconds")
+        if not self.l2_redis_url.startswith(('redis://', 'rediss://')):
+            raise ValueError("L2 Redis URL must start with 'redis://' or 'rediss://'")
+        
+        # L3 Cache validation
+        if self.l3_ttl < 60 or self.l3_ttl > 86400:  # 1 min to 1 day
+            raise ValueError("L3 TTL must be between 60 and 86400 seconds")
+        if self.l3_max_prepared_statements < 100 or self.l3_max_prepared_statements > 10000:
+            raise ValueError("L3 max prepared statements must be between 100 and 10000")
+        
+        logger.info("MultiLayerCacheConfig validation passed")
 
 class CacheEntry:
     """Individual cache entry with metadata."""
@@ -108,7 +148,7 @@ class OptimizedL1Cache:
         self.config = config
         self.cache = {}
         self.access_order = []  # For LRU tracking
-        self.lock = threading.RLock()
+        self.lock = asyncio.Lock()
         self.current_size = 0
         self.metrics = {
             'hits': 0,
@@ -120,9 +160,9 @@ class OptimizedL1Cache:
             'hot_keys': set()
         }
     
-    def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Optional[Any]:
         """Get value from L1 cache with LRU updates."""
-        with self.lock:
+        async with self.lock:
             if key not in self.cache:
                 self.metrics['misses'] += 1
                 return None
@@ -147,9 +187,9 @@ class OptimizedL1Cache:
             logger.debug(f"L1 Cache HIT for key: {key}")
             return entry.value
     
-    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in L1 cache with size-based eviction."""
-        with self.lock:
+        async with self.lock:
             ttl = ttl or self.config.l1_ttl
             entry = CacheEntry(value, ttl)
             
@@ -172,9 +212,9 @@ class OptimizedL1Cache:
             logger.debug(f"L1 Cache SET for key: {key}, size: {entry.size}, TTL: {ttl}")
             return True
     
-    def warm(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def warm(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Warm cache with hot memory data."""
-        result = self.set(key, value, ttl)
+        result = await self.set(key, value, ttl)
         if result:
             self.metrics['warmings'] += 1
             self.metrics['hot_keys'].add(key)
@@ -203,9 +243,9 @@ class OptimizedL1Cache:
             self.metrics['evictions'] += 1
             logger.debug(f"L1 Cache EVICT for key: {lru_key}")
     
-    def invalidate_user_cache(self, user_id: str):
+    async def invalidate_user_cache(self, user_id: str):
         """Invalidate all cache entries for a specific user."""
-        with self.lock:
+        async with self.lock:
             keys_to_remove = []
             for key in self.cache:
                 if f"user:{user_id}" in key:
@@ -298,7 +338,7 @@ class OptimizedL2RedisCache:
         
         # Fallback to L1 cache
         self.metrics['fallbacks'] += 1
-        return self.fallback_cache.get(key)
+        return await self.fallback_cache.get(key)
     
     async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
         """Set value in L2 Redis cache with async support."""
@@ -319,7 +359,7 @@ class OptimizedL2RedisCache:
         
         # Fallback to L1 cache
         self.metrics['fallbacks'] += 1
-        return self.fallback_cache.set(key, value, ttl)
+        return await self.fallback_cache.set(key, value, ttl)
     
     async def invalidate_user_cache(self, user_id: str):
         """Invalidate all cache entries for a specific user."""
@@ -346,7 +386,7 @@ class OptimizedL2RedisCache:
                 logger.warning(f"L2 Redis invalidation failed: {e}")
         
         # Also invalidate fallback cache
-        self.fallback_cache.invalidate_user_cache(user_id)
+        await self.fallback_cache.invalidate_user_cache(user_id)
     
     def get_stats(self) -> Dict[str, Any]:
         """Get L2 cache statistics."""
@@ -388,7 +428,7 @@ class OptimizedL3QueryCache:
         self.config = config
         self.query_cache = {}
         self.prepared_statements = {}
-        self.lock = threading.RLock()
+        self.lock = asyncio.Lock()
         self.metrics = {
             'hits': 0,
             'misses': 0,
@@ -405,11 +445,11 @@ class OptimizedL3QueryCache:
         """Generate key for prepared statement."""
         return hashlib.sha256(query.encode()).hexdigest()[:16]
     
-    def get_query_result(self, query: str, params: tuple = None) -> Optional[Any]:
+    async def get_query_result(self, query: str, params: tuple = None) -> Optional[Any]:
         """Get cached query result."""
         cache_key = self.get_cache_key(query, params)
         
-        with self.lock:
+        async with self.lock:
             if cache_key in self.query_cache:
                 entry = self.query_cache[cache_key]
                 if not entry.is_expired():
@@ -424,12 +464,12 @@ class OptimizedL3QueryCache:
             logger.debug(f"L3 Query cache MISS for query: {query[:50]}...")
             return None
     
-    def cache_query_result(self, query: str, params: tuple, result: Any, ttl: int = None):
+    async def cache_query_result(self, query: str, params: tuple, result: Any, ttl: int = None):
         """Cache query result with prepared statement optimization."""
         cache_key = self.get_cache_key(query, params)
         ttl = ttl or self.config.l3_ttl
         
-        with self.lock:
+        async with self.lock:
             # Store prepared statement if not exists
             stmt_key = self.get_prepared_statement_key(query)
             if stmt_key not in self.prepared_statements:
@@ -446,9 +486,9 @@ class OptimizedL3QueryCache:
         
         logger.debug(f"L3 Query result cached for query: {query[:50]}...")
     
-    def invalidate_query_cache(self, table_name: str = None):
+    async def invalidate_query_cache(self, table_name: str = None):
         """Invalidate query cache for specific table or all."""
-        with self.lock:
+        async with self.lock:
             if table_name:
                 # Invalidate queries related to specific table
                 keys_to_remove = []
@@ -470,13 +510,31 @@ class OptimizedL3QueryCache:
                 logger.debug(f"L3 Query cache cleared {count} entries")
     
     def _cleanup_old_statements(self):
-        """Clean up old prepared statements."""
-        # Remove 10% of oldest statements
-        cleanup_count = max(1, len(self.prepared_statements) // 10)
+        """Clean up old prepared statements with bounded operations."""
+        total_statements = len(self.prepared_statements)
+        
+        # Safety checks
+        if total_statements <= self.config.l3_max_prepared_statements:
+            return
+        
+        # Remove 10% but no more than 100 statements at once
+        cleanup_count = max(1, min(100, total_statements // 10))
+        
+        # Get oldest statements (first added)
         old_keys = list(self.prepared_statements.keys())[:cleanup_count]
         
+        # Bounded cleanup with monitoring
+        cleaned_count = 0
         for key in old_keys:
-            del self.prepared_statements[key]
+            if key in self.prepared_statements:
+                del self.prepared_statements[key]
+                cleaned_count += 1
+                
+                # Safety break to prevent excessive cleanup
+                if cleaned_count >= cleanup_count:
+                    break
+        
+        logger.debug(f"L3 Cache cleaned up {cleaned_count} prepared statements")
     
     def get_stats(self) -> Dict[str, Any]:
         """Get L3 cache statistics."""
@@ -529,7 +587,7 @@ class MultiLayerCache:
         self.metrics['total_requests'] += 1
         
         # Try L1 cache first
-        result = self.l1_cache.get(key)
+        result = await self.l1_cache.get(key)
         if result is not None:
             self.metrics['l1_hits'] += 1
             return result
@@ -539,7 +597,7 @@ class MultiLayerCache:
         if result is not None:
             self.metrics['l2_hits'] += 1
             # Populate L1 cache
-            self.l1_cache.set(key, result)
+            await self.l1_cache.set(key, result)
             return result
         
         # L3 cache is handled separately for query-specific caching
@@ -549,7 +607,7 @@ class MultiLayerCache:
     async def set(self, key: str, value: Any, ttl: int = None):
         """Set value in all cache layers."""
         # Set in L1 cache
-        self.l1_cache.set(key, value, ttl)
+        await self.l1_cache.set(key, value, ttl)
         
         # Set in L2 cache
         await self.l2_cache.set(key, value, ttl)
@@ -559,7 +617,7 @@ class MultiLayerCache:
         for memory in hot_memories:
             # Warm L1 cache with hot memory data
             memory_key = f"memory:user:{user_id}:{memory['id']}"
-            self.l1_cache.warm(memory_key, memory)
+            await self.l1_cache.warm(memory_key, memory)
             
             # Warm L2 cache
             await self.l2_cache.set(memory_key, memory)
@@ -569,13 +627,13 @@ class MultiLayerCache:
     async def invalidate_user_cache(self, user_id: str):
         """Invalidate all cache layers for a specific user."""
         # Invalidate L1 cache
-        self.l1_cache.invalidate_user_cache(user_id)
+        await self.l1_cache.invalidate_user_cache(user_id)
         
         # Invalidate L2 cache
         await self.l2_cache.invalidate_user_cache(user_id)
         
         # Invalidate L3 query cache (memories table)
-        self.l3_cache.invalidate_query_cache("memories")
+        await self.l3_cache.invalidate_query_cache("memories")
         
         logger.info(f"All cache layers invalidated for user: {user_id}")
     
@@ -672,19 +730,22 @@ def query_cached(ttl: int = 3600):
     """Decorator for query result caching."""
     def decorator(func: Callable) -> Callable:
         @wraps(func)
-        def wrapper(query: str, params: tuple = None, *args, **kwargs):
+        async def wrapper(query: str, params: tuple = None, *args, **kwargs):
             query_cache = global_cache.get_query_cache()
             
             # Try to get from cache
-            result = query_cache.get_query_result(query, params)
+            result = await query_cache.get_query_result(query, params)
             if result is not None:
                 return result
             
             # Execute query and cache result
             with performance_logger.timer(f"query_execution"):
-                result = func(query, params, *args, **kwargs)
+                if asyncio.iscoroutinefunction(func):
+                    result = await func(query, params, *args, **kwargs)
+                else:
+                    result = func(query, params, *args, **kwargs)
             
-            query_cache.cache_query_result(query, params, result, ttl)
+            await query_cache.cache_query_result(query, params, result, ttl)
             return result
         return wrapper
     return decorator
