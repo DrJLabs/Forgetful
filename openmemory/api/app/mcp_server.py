@@ -34,6 +34,10 @@ from app.utils.performance_monitor import (
 from app.utils.batch_processor import (
     get_batch_processor, submit_batch_request, OperationType
 )
+from app.utils.memory_factory import get_memory_client_safe
+from app.utils.mcp_initialization import (
+    setup_mcp_components, initialize_mcp_optimizations, is_mcp_initialized
+)
 
 # Agent 4 Integration - Structured Logging and Error Handling
 import sys
@@ -55,30 +59,21 @@ load_dotenv()
 # Initialize MCP
 mcp = FastMCP("mem0-mcp-server")
 
-# Initialize performance monitoring
+# Initialize performance monitoring components (registration only)
 performance_monitor = get_performance_monitor()
 connection_pool = get_connection_pool()
 batch_processor = get_batch_processor()
 
-# Start connection pool health monitoring when event loop is available
-def start_background_tasks():
-    """Start background tasks when event loop is available"""
-    try:
-        asyncio.create_task(connection_pool.start_health_monitoring())
-    except RuntimeError:
-        # No event loop available yet, will be started later
-        pass
+# Setup MCP components for async initialization
+setup_mcp_components()
 
-# Try to start background tasks
-start_background_tasks()
-
-# Agent 4 Enhanced Memory Client Access
+# Agent 4 Enhanced Memory Client Access (kept for compatibility)
 @retry(RetryPolicy(max_attempts=2, initial_delay=0.5))
-def get_memory_client_safe():
-    """Get memory client with Agent 4 resilience patterns"""
+def get_memory_client_safe_legacy():
+    """Legacy memory client access with Agent 4 resilience patterns"""
     try:
         with performance_logger.timer("memory_client_access"):
-            client = get_memory_client()
+            client = get_memory_client_safe()
             if not client:
                 raise ExternalServiceError("Memory client unavailable", 
                                          service_name="mem0_client")
@@ -519,6 +514,30 @@ async def get_performance_metrics():
         return {"error": str(e)}
 
 
+async def initialize_mcp_server():
+    """Initialize MCP server optimizations asynchronously"""
+    logger.info("Initializing MCP server optimizations")
+    
+    try:
+        # Initialize all MCP optimizations
+        success = await initialize_mcp_optimizations(timeout=30.0)
+        
+        if success:
+            logger.info("MCP server optimizations initialized successfully")
+            
+            # Warm connection pool for immediate availability
+            await connection_pool.warm_connections(connection_pool.min_connections)
+            
+        else:
+            logger.warning("MCP server optimization initialization incomplete")
+            
+        return success
+        
+    except Exception as e:
+        logger.error(f"Failed to initialize MCP optimizations: {e}")
+        return False
+
+
 def setup_mcp_server(app: FastAPI):
     """Setup MCP server with the FastAPI application"""
     mcp._mcp_server.name = f"mem0-mcp-server"
@@ -531,3 +550,20 @@ def setup_mcp_server(app: FastAPI):
         logger.warning(f"Performance alert: {alert_data}")
     
     performance_monitor.add_alert_handler(performance_alert_handler)
+    
+    # Add startup event to initialize optimizations
+    @app.on_event("startup")
+    async def startup_event():
+        """Initialize MCP optimizations on app startup"""
+        await initialize_mcp_server()
+    
+    # Add shutdown event for graceful cleanup
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        """Cleanup MCP optimizations on app shutdown"""
+        try:
+            from app.utils.mcp_initialization import shutdown_mcp_optimizations
+            await shutdown_mcp_optimizations()
+            logger.info("MCP server optimizations shutdown complete")
+        except Exception as e:
+            logger.error(f"Error during MCP optimization shutdown: {e}")

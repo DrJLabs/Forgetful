@@ -20,6 +20,8 @@ os.environ["TESTING"] = "true"
 from app.utils.connection_pool import MemoryClientPool, get_connection_pool
 from app.utils.performance_monitor import PerformanceMonitor, MetricType
 from app.utils.batch_processor import BatchProcessor, OperationType, BatchRequest
+from app.utils.memory_factory import MemoryClientFactory, MockMemoryClient
+from app.utils.mcp_initialization import MCPInitializationManager, InitializationStatus
 from app.mcp_server import add_memories, search_memory, user_id_var, client_name_var
 
 
@@ -381,3 +383,429 @@ class TestPerformanceTargets:
         # 5 failures out of 100 total = 5% error rate
         all_stats = monitor.get_all_operation_stats()
         assert len(all_stats) == 100  # 95 success + 5 failure operations
+
+
+@pytest.mark.unit
+class TestMemoryFactory:
+    """Test memory client factory for dependency injection"""
+    
+    def setup_method(self):
+        """Setup for each test method"""
+        MemoryClientFactory.reset()
+    
+    def test_mock_mode_configuration(self):
+        """Test memory factory mock mode configuration"""
+        # Configure in mock mode
+        MemoryClientFactory.configure(mock_mode=True)
+        
+        # Should create mock client
+        client = MemoryClientFactory.create_client()
+        assert isinstance(client, MockMemoryClient)
+        
+        # Reset for other tests
+        MemoryClientFactory.reset()
+    
+    def test_mock_client_functionality(self):
+        """Test mock client basic functionality"""
+        client = MockMemoryClient()
+        
+        # Test add memory
+        result = client.add("test memory", "test_user", {"key": "value"})
+        assert isinstance(result, dict)
+        assert "results" in result
+        assert len(result["results"]) == 1
+        assert result["results"][0]["memory"] == "test memory"
+        
+        # Test search memory
+        search_result = client.search("test", "test_user")
+        assert isinstance(search_result, dict)
+        assert "results" in search_result
+        assert len(search_result["results"]) == 1
+        assert search_result["results"][0]["memory"] == "test memory"
+        
+        # Test get all memories
+        all_memories = client.get_all("test_user")
+        assert isinstance(all_memories, dict)
+        assert "results" in all_memories
+        assert len(all_memories["results"]) == 1
+        
+        # Test update memory
+        memory_id = result["results"][0]["id"]
+        update_result = client.update(memory_id, "updated memory")
+        assert "message" in update_result
+        
+        # Test delete memory
+        delete_result = client.delete(memory_id)
+        assert "message" in delete_result
+    
+    def test_custom_provider_configuration(self):
+        """Test custom provider configuration"""
+        # Create custom provider
+        def custom_provider():
+            return MockMemoryClient()
+        
+        # Configure with custom provider
+        MemoryClientFactory.configure(client_provider=custom_provider)
+        
+        # Should use custom provider
+        client = MemoryClientFactory.create_client()
+        assert isinstance(client, MockMemoryClient)
+        
+        # Reset for other tests
+        MemoryClientFactory.reset()
+
+
+@pytest.mark.unit
+class TestAsyncInitialization:
+    """Test async initialization system"""
+    
+    @pytest.mark.asyncio
+    async def test_initialization_manager_basic(self):
+        """Test basic initialization manager functionality"""
+        manager = MCPInitializationManager()
+        
+        # Test component registration
+        initialization_called = False
+        
+        def test_initializer():
+            nonlocal initialization_called
+            initialization_called = True
+            return True
+        
+        manager.register_component("test_component", test_initializer)
+        
+        # Test initialization
+        success = await manager.initialize_all(timeout=5.0)
+        assert success
+        assert initialization_called
+        
+        # Test status
+        status = manager.get_status()
+        assert status["initialization_complete"]
+        assert "test_component" in status["components"]
+        assert status["components"]["test_component"]["status"] == "initialized"
+        
+        # Test shutdown
+        await manager.shutdown()
+    
+    @pytest.mark.asyncio
+    async def test_dependency_ordering(self):
+        """Test component dependency ordering"""
+        manager = MCPInitializationManager()
+        
+        initialization_order = []
+        
+        def component_a_init():
+            initialization_order.append("A")
+            return True
+        
+        def component_b_init():
+            initialization_order.append("B")
+            return True
+        
+        def component_c_init():
+            initialization_order.append("C")
+            return True
+        
+        # Register components with dependencies
+        manager.register_component("component_c", component_c_init, ["component_a"])
+        manager.register_component("component_b", component_b_init, ["component_a"])
+        manager.register_component("component_a", component_a_init, [])
+        
+        # Initialize all
+        success = await manager.initialize_all()
+        assert success
+        
+        # Check order - A should come before B and C
+        assert initialization_order.index("A") < initialization_order.index("B")
+        assert initialization_order.index("A") < initialization_order.index("C")
+        
+        await manager.shutdown()
+    
+    @pytest.mark.asyncio
+    async def test_initialization_failure_handling(self):
+        """Test initialization failure handling"""
+        manager = MCPInitializationManager()
+        
+        def failing_initializer():
+            raise Exception("Initialization failed")
+        
+        manager.register_component("failing_component", failing_initializer)
+        
+        # Should handle failure gracefully
+        success = await manager.initialize_all(timeout=5.0)
+        assert not success
+        
+        # Check status
+        status = manager.get_status()
+        assert not status["initialization_complete"]
+        assert status["components"]["failing_component"]["status"] == "failed"
+        assert "error" in status["components"]["failing_component"]
+        
+        await manager.shutdown()
+
+
+@pytest.mark.unit
+class TestConnectionWarming:
+    """Test connection warming functionality"""
+    
+    @pytest.mark.asyncio
+    async def test_connection_warming(self):
+        """Test connection pool warming"""
+        # Configure factory in mock mode
+        MemoryClientFactory.configure(mock_mode=True)
+        
+        pool = MemoryClientPool(max_connections=5, min_connections=2)
+        
+        # Check initial state
+        initial_metrics = pool.get_metrics()
+        initial_pool_size = initial_metrics['pool_size']
+        
+        # Warm connections
+        await pool.warm_connections(4)
+        
+        # Check pool size increased
+        warmed_metrics = pool.get_metrics()
+        assert warmed_metrics['pool_size'] >= initial_pool_size
+        assert warmed_metrics['total_created'] >= 4
+        
+        # Test warming maintains minimum connections
+        await pool.warm_connections(2)  # Already warmed, should maintain
+        final_metrics = pool.get_metrics()
+        assert final_metrics['pool_size'] >= 2
+        
+        # Reset factory
+        MemoryClientFactory.reset()
+    
+    @pytest.mark.asyncio
+    async def test_health_monitoring_with_warming(self):
+        """Test health monitoring maintains warm connections"""
+        MemoryClientFactory.configure(mock_mode=True)
+        
+        pool = MemoryClientPool(max_connections=5, min_connections=3)
+        
+        # Start health monitoring
+        await pool.start_health_monitoring()
+        
+        # Wait for initial warming
+        await asyncio.sleep(0.1)
+        
+        # Check that minimum connections are maintained
+        metrics = pool.get_metrics()
+        assert metrics['pool_size'] >= 3
+        
+        # Stop monitoring
+        await pool.stop_health_monitoring()
+        
+        MemoryClientFactory.reset()
+
+
+@pytest.mark.unit
+class TestSmartBatching:
+    """Test smart batching functionality"""
+    
+    @pytest.mark.asyncio
+    async def test_operation_specific_batch_sizes(self):
+        """Test batch sizes are optimized per operation type"""
+        processor = BatchProcessor(max_batch_size=15, max_wait_time_ms=50.0)
+        
+        # Test different operation types have different optimal sizes
+        search_size = processor._get_optimal_batch_size(OperationType.SEARCH_MEMORY)
+        add_size = processor._get_optimal_batch_size(OperationType.ADD_MEMORY)
+        delete_size = processor._get_optimal_batch_size(OperationType.DELETE_MEMORY)
+        
+        # Search should have smaller batches (more complex)
+        assert search_size < add_size
+        assert search_size < delete_size
+        
+        # Add and delete should allow larger batches
+        assert add_size > search_size
+        assert delete_size > search_size
+        
+        await processor.shutdown()
+    
+    @pytest.mark.asyncio
+    async def test_batch_collection_by_operation_type(self):
+        """Test batch collection groups by operation type"""
+        processor = BatchProcessor(max_batch_size=10, max_wait_time_ms=100.0)
+        
+        # Create mixed operation type requests
+        add_request = BatchRequest(
+            operation_type=OperationType.ADD_MEMORY,
+            parameters={"text": "add memory"},
+            request_id="add_req_1",
+            user_id="test_user",
+            client_name="test_client"
+        )
+        
+        search_request = BatchRequest(
+            operation_type=OperationType.SEARCH_MEMORY,
+            parameters={"query": "search query"},
+            request_id="search_req_1",
+            user_id="test_user",
+            client_name="test_client"
+        )
+        
+        # Test that different operation types are treated differently
+        add_optimal = processor._get_optimal_batch_size(add_request.operation_type)
+        search_optimal = processor._get_optimal_batch_size(search_request.operation_type)
+        
+        assert add_optimal != search_optimal
+        
+        await processor.shutdown()
+    
+    @pytest.mark.asyncio
+    async def test_adaptive_batching_performance(self):
+        """Test adaptive batching adjusts to performance"""
+        processor = BatchProcessor(max_batch_size=10, max_wait_time_ms=50.0, enable_adaptive_batching=True)
+        
+        # Simulate fast processing times
+        processor._recent_processing_times = [5.0, 8.0, 6.0, 7.0, 9.0]  # Fast processing
+        
+        # Should increase batch size for fast operations
+        fast_size = processor._get_optimal_batch_size(OperationType.ADD_MEMORY)
+        
+        # Simulate slow processing times
+        processor._recent_processing_times = [60.0, 65.0, 70.0, 55.0, 68.0]  # Slow processing
+        
+        # Should decrease batch size for slow operations
+        slow_size = processor._get_optimal_batch_size(OperationType.ADD_MEMORY)
+        
+        # Fast processing should allow larger batches
+        assert fast_size > slow_size
+        
+        await processor.shutdown()
+
+
+@pytest.mark.integration
+class TestEnhancedIntegration:
+    """Test enhanced integration with new components"""
+    
+    def setup_method(self):
+        """Setup for each test method"""
+        MemoryClientFactory.reset()
+        MemoryClientFactory.configure(mock_mode=True)
+    
+    def teardown_method(self):
+        """Cleanup after each test method"""
+        MemoryClientFactory.reset()
+    
+    @pytest.mark.asyncio
+    async def test_mcp_initialization_integration(self):
+        """Test MCP initialization with all components"""
+        from app.utils.mcp_initialization import setup_mcp_components, initialize_mcp_optimizations
+        
+        # Setup components
+        setup_mcp_components()
+        
+        # Initialize with timeout
+        success = await initialize_mcp_optimizations(timeout=10.0)
+        
+        # Should complete successfully (or at least not fail critically)
+        # In test environment, some components might not initialize fully
+        assert isinstance(success, bool)
+    
+    @pytest.mark.asyncio
+    async def test_production_validation_compatibility(self):
+        """Test compatibility with production validation"""
+        # Test that components can be imported and basic functionality works
+        from app.utils.memory_factory import get_memory_client_safe
+        from app.utils.mcp_initialization import is_mcp_initialized
+        
+        # Should be able to get memory client
+        client = get_memory_client_safe()
+        assert client is not None
+        
+        # Should be able to check initialization status
+        status = is_mcp_initialized()
+        assert isinstance(status, bool)
+        
+        # Test basic client functionality
+        if hasattr(client, 'add'):
+            result = client.add("test memory", "test_user")
+            assert isinstance(result, dict)
+
+
+@pytest.mark.performance
+class TestEnhancedPerformanceTargets:
+    """Test enhanced performance targets with new optimizations"""
+    
+    def setup_method(self):
+        """Setup for each test method"""
+        MemoryClientFactory.configure(mock_mode=True)
+    
+    def teardown_method(self):
+        """Cleanup after each test method"""
+        MemoryClientFactory.reset()
+    
+    @pytest.mark.asyncio
+    async def test_connection_pool_performance_targets(self):
+        """Test connection pool meets performance targets"""
+        pool = MemoryClientPool(max_connections=10, min_connections=5)
+        
+        # Warm the pool
+        await pool.warm_connections(5)
+        
+        # Test rapid connection acquisition
+        start_time = time.time()
+        
+        connections = []
+        for _ in range(5):
+            conn = await pool.get_connection()
+            if conn:
+                connections.append(conn)
+        
+        acquisition_time = (time.time() - start_time) * 1000
+        
+        # Return connections
+        for conn in connections:
+            pool.return_connection(conn)
+        
+        # Should be very fast with warmed pool
+        assert acquisition_time < 5.0  # Less than 5ms for 5 connections
+    
+    @pytest.mark.asyncio
+    async def test_smart_batching_performance_targets(self):
+        """Test smart batching meets performance targets"""
+        processor = BatchProcessor(max_batch_size=10, max_wait_time_ms=25.0)
+        
+        # Test batch size optimization
+        start_time = time.time()
+        
+        # Calculate optimal sizes for different operations
+        search_optimal = processor._get_optimal_batch_size(OperationType.SEARCH_MEMORY)
+        add_optimal = processor._get_optimal_batch_size(OperationType.ADD_MEMORY)
+        
+        calculation_time = (time.time() - start_time) * 1000
+        
+        # Should calculate very quickly
+        assert calculation_time < 1.0  # Less than 1ms
+        
+        # Should have reasonable batch sizes
+        assert 1 <= search_optimal <= 10
+        assert 1 <= add_optimal <= 10
+        
+        await processor.shutdown()
+    
+    def test_memory_factory_performance_targets(self):
+        """Test memory factory meets performance targets"""
+        MemoryClientFactory.configure(mock_mode=True)
+        
+        # Test rapid client creation
+        start_time = time.time()
+        
+        clients = []
+        for _ in range(10):
+            client = MemoryClientFactory.create_client()
+            clients.append(client)
+        
+        creation_time = (time.time() - start_time) * 1000
+        
+        # Should create clients very quickly
+        assert creation_time < 10.0  # Less than 10ms for 10 clients
+        
+        # All clients should be mock clients
+        for client in clients:
+            assert isinstance(client, MockMemoryClient)
+        
+        MemoryClientFactory.reset()

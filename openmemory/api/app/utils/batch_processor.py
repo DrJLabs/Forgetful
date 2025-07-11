@@ -129,7 +129,7 @@ class BatchProcessor:
         logger.info("Started batch processing task")
     
     async def _collect_batch(self) -> List[BatchRequest]:
-        """Collect requests into a batch"""
+        """Collect requests into a batch with smart sizing"""
         batch = []
         start_time = time.time()
         
@@ -140,8 +140,11 @@ class BatchProcessor:
         except Exception:
             return batch
         
-        # Collect additional requests up to batch size or timeout
-        while (len(batch) < self._get_current_batch_size() and
+        # Determine optimal batch size based on first request's operation type
+        optimal_size = self._get_optimal_batch_size(first_request.operation_type)
+        
+        # Collect additional requests of the same type up to optimal size or timeout
+        while (len(batch) < optimal_size and
                (time.time() - start_time) * 1000 < self.max_wait_time_ms):
             
             try:
@@ -150,7 +153,15 @@ class BatchProcessor:
                     self._request_queue.get(), 
                     timeout=max(0.001, (self.max_wait_time_ms - (time.time() - start_time) * 1000) / 1000)
                 )
-                batch.append(request)
+                
+                # Only add requests of the same operation type to maintain batch efficiency
+                if request.operation_type == first_request.operation_type:
+                    batch.append(request)
+                else:
+                    # Put the request back for the next batch
+                    await self._request_queue.put(request)
+                    break
+                    
             except asyncio.TimeoutError:
                 # No more requests available quickly, proceed with current batch
                 break
@@ -413,8 +424,40 @@ class BatchProcessor:
         
         return responses
     
+    def _get_optimal_batch_size(self, operation_type: OperationType) -> int:
+        """Get optimal batch size based on operation complexity"""
+        # Smart batching based on operation type complexity
+        complexity_map = {
+            OperationType.SEARCH_MEMORY: 5,      # Higher complexity, smaller batches
+            OperationType.ADD_MEMORY: 10,        # Lower complexity, larger batches
+            OperationType.GET_MEMORY: 8,         # Medium complexity
+            OperationType.DELETE_MEMORY: 12,     # Lower complexity, can batch more
+            OperationType.UPDATE_MEMORY: 6,      # Medium-high complexity
+        }
+        
+        base_size = complexity_map.get(operation_type, 8)
+        
+        if not self.enable_adaptive_batching:
+            return min(self.max_batch_size, base_size)
+        
+        # Adaptive adjustment based on recent performance
+        if len(self._recent_processing_times) < 5:
+            return min(self.max_batch_size, base_size)
+        
+        avg_time = sum(self._recent_processing_times) / len(self._recent_processing_times)
+        
+        # Adjust based on performance
+        if avg_time < 10.0:  # Fast processing, can increase
+            adjusted_size = min(self.max_batch_size, base_size + 2)
+        elif avg_time > 50.0:  # Slow processing, decrease
+            adjusted_size = max(1, base_size - 2)
+        else:
+            adjusted_size = base_size
+        
+        return adjusted_size
+    
     def _get_current_batch_size(self) -> int:
-        """Get the current optimal batch size"""
+        """Get the current optimal batch size (fallback method)"""
         if not self.enable_adaptive_batching:
             return self.max_batch_size
         

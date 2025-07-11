@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from queue import Queue
 import threading
-from app.utils.memory import get_memory_client
+from app.utils.memory_factory import get_memory_client_safe
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class MemoryClientPool:
         """Initialize the connection pool with minimum connections"""
         for _ in range(self.min_connections):
             try:
-                client = get_memory_client()
+                client = get_memory_client_safe()
                 if client:
                     conn_id = f"conn_{time.time()}_{id(client)}"
                     conn_info = ConnectionInfo(
@@ -137,7 +137,7 @@ class MemoryClientPool:
     async def _create_connection(self) -> Optional[Any]:
         """Create a new connection"""
         try:
-            client = get_memory_client()
+            client = get_memory_client_safe()
             if client:
                 conn_id = f"conn_{time.time()}_{id(client)}"
                 conn_info = ConnectionInfo(
@@ -256,6 +256,29 @@ class MemoryClientPool:
         if to_remove:
             logger.info(f"Cleaned up {len(to_remove)} idle connections")
     
+    async def warm_connections(self, target_count: int = None):
+        """Pre-warm connections for immediate availability"""
+        if target_count is None:
+            target_count = self.min_connections
+        
+        logger.info(f"Warming connection pool to {target_count} connections")
+        
+        while len(self._connections) < target_count:
+            try:
+                client = await self._create_connection()
+                if client:
+                    # Return the connection to pool immediately
+                    self.return_connection(client)
+                else:
+                    logger.warning("Failed to create connection during warming")
+                    break
+            except Exception as e:
+                logger.error(f"Error during connection warming: {e}")
+                break
+        
+        current_count = len(self._connections)
+        logger.info(f"Connection pool warmed: {current_count}/{target_count} connections")
+    
     async def start_health_monitoring(self):
         """Start periodic health monitoring"""
         if self._health_check_task:
@@ -266,6 +289,11 @@ class MemoryClientPool:
                 try:
                     await asyncio.sleep(self.health_check_interval)
                     await self.cleanup_idle_connections()
+                    
+                    # Maintain minimum connections by warming if needed
+                    if len(self._connections) < self.min_connections:
+                        await self.warm_connections(self.min_connections)
+                        
                 except Exception as e:
                     logger.error(f"Health check error: {e}")
         
