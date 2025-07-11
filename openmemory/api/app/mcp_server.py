@@ -1,18 +1,11 @@
 """
-MCP Server for OpenMemory with resilient memory client handling.
+MCP Server for OpenMemory with Agent 4 Operational Excellence Integration
 
-This module implements an MCP (Model Context Protocol) server that provides
-memory operations for OpenMemory. The memory client is initialized lazily
-to prevent server crashes when external dependencies (like Ollama) are
-unavailable. If the memory client cannot be initialized, the server will
-continue running with limited functionality and appropriate error messages.
-
-Key features:
-- Lazy memory client initialization
-- Graceful error handling for unavailable dependencies
-- Fallback to database-only mode when vector store is unavailable
-- Proper logging for debugging connection issues
-- Environment variable parsing for API keys
+This module implements an MCP (Model Context Protocol) server with:
+- Agent 4 structured logging with correlation IDs
+- Advanced error handling with classification
+- Resilience patterns for memory operations
+- Performance monitoring and caching
 """
 
 import logging
@@ -32,19 +25,40 @@ import uuid
 import datetime
 from app.utils.permissions import check_memory_access_permissions
 
+# Agent 4 Integration - Structured Logging and Error Handling
+import sys
+sys.path.append('/workspace')
+from shared.logging_system import get_logger, CorrelationContextManager, performance_logger
+from shared.errors import (
+    ExternalServiceError, ValidationError, handle_error, 
+    create_error_response, NotFoundError
+)
+from shared.resilience import retry, RetryPolicy, resilient
+from shared.caching import cached, cache_manager
+
+# Replace standard logging with structured logging
+logger = get_logger('mcp_server')
+
 # Load environment variables
 load_dotenv()
 
 # Initialize MCP
 mcp = FastMCP("mem0-mcp-server")
 
-# Don't initialize memory client at import time - do it lazily when needed
+# Agent 4 Enhanced Memory Client Access
+@retry(RetryPolicy(max_attempts=2, initial_delay=0.5))
 def get_memory_client_safe():
-    """Get memory client with error handling. Returns None if client cannot be initialized."""
+    """Get memory client with Agent 4 resilience patterns"""
     try:
-        return get_memory_client()
+        with performance_logger.timer("memory_client_access"):
+            client = get_memory_client()
+            if not client:
+                raise ExternalServiceError("Memory client unavailable", 
+                                         service_name="mem0_client")
+            return client
     except Exception as e:
-        logging.warning(f"Failed to get memory client: {e}")
+        structured_error = handle_error(e, {'operation': 'memory_client_access'})
+        logger.error("Memory client access failed", error=structured_error.to_dict())
         return None
 
 # Context variables for user_id and client_name
