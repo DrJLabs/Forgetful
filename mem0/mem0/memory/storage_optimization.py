@@ -509,7 +509,7 @@ class IntelligentStorageManager:
             if created_at:
                 try:
                     created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    if _safe_datetime_diff(current_time, created_time) > max_age:
+                    if safe_datetime_diff(current_time, created_time) > max_age:
                         purged.append(memory)
                     elif score < 0.3:  # Very low score, purge regardless of age
                         purged.append(memory)
@@ -603,7 +603,7 @@ class IntelligentStorageManager:
         
         try:
             last_time = datetime.fromisoformat(last_accessed.replace('Z', '+00:00'))
-            time_diff = _safe_datetime_diff(_safe_datetime_now(), last_time).total_seconds()
+            time_diff = safe_datetime_diff(safe_datetime_now(), last_time).total_seconds()
             
             # Exponential decay with half-life of 7 days
             decay_factor = math.exp(-time_diff / (7 * 24 * 3600))
@@ -795,7 +795,7 @@ class AutonomousStorageManager:
         try:
             last_opt_time = datetime.fromisoformat(self.last_optimization)
             interval = timedelta(hours=self.autonomous_settings['optimization_interval_hours'])
-            return datetime.utcnow() - last_opt_time >= interval
+            return safe_datetime_now() - last_opt_time >= interval
         except Exception:
             return True
     
@@ -836,7 +836,7 @@ class AutonomousStorageManager:
         if self.learning_enabled:
             self._update_learning_data(optimization_result)
         
-        self.last_optimization = datetime.utcnow().isoformat()
+        self.last_optimization = create_memory_timestamp()
         
         return optimization_result
     
@@ -845,7 +845,7 @@ class AutonomousStorageManager:
         Record optimization for analytics.
         """
         record = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': create_memory_timestamp(),
             'urgency': urgency,
             'strategy': result['strategy_used'],
             'memories_removed': result['memories_removed'],

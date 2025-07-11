@@ -227,7 +227,8 @@ class CodingMemory(Memory):
         enhanced_metadata = metadata or {}
         enhanced_metadata["data"] = data
         enhanced_metadata["hash"] = hashlib.md5(data.encode()).hexdigest()
-        enhanced_metadata["created_at"] = datetime.now(pytz.timezone("US/Pacific")).isoformat()
+        from mem0.memory.timezone_utils import create_memory_timestamp
+        enhanced_metadata["created_at"] = create_memory_timestamp()
         
         # Use pre-computed embeddings directly - SAFE APPROACH
         self.vector_store.insert(
