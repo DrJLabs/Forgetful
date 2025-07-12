@@ -3,7 +3,7 @@ Performance tests for the batching and pipelining implementation.
 
 This test suite validates:
 - Memory write batching performance
-- Vector search batching performance  
+- Vector search batching performance
 - Graph query batching performance
 - Batch processing queue with priority handling
 - Timeout and error handling performance

@@ -3,7 +3,7 @@ Performance tests for the connection pooling implementation.
 
 This test suite validates:
 - PostgreSQL connection pool performance
-- Neo4j connection pool performance  
+- Neo4j connection pool performance
 - Redis connection pool performance
 - Connection pool health monitoring
 - Connection recovery scenarios
@@ -86,7 +86,11 @@ class TestConnectionPoolPerformance:
         mock_conn.fetchval.return_value = 1
         mock_conn.fetch.return_value = [{"id": 1, "name": "test"}]
 
-        with patch("asyncpg.create_pool", return_value=mock_pool):
+        # Mock asyncpg.create_pool as an async function
+        async def mock_create_pool(*args, **kwargs):
+            return mock_pool
+
+        with patch("asyncpg.create_pool", side_effect=mock_create_pool):
             # Create PostgreSQL pool
             postgres_pool = OptimizedPostgreSQLPool(pool_config, database_config)
 
@@ -160,8 +164,9 @@ class TestConnectionPoolPerformance:
         mock_result = AsyncMock()
 
         # Setup mock behavior
-        mock_driver.session.return_value.__aenter__.return_value = mock_session
-        mock_driver.session.return_value.__aexit__.return_value = None
+        mock_driver.session.return_value = mock_session
+        mock_session.__aenter__.return_value = mock_session
+        mock_session.__aexit__.return_value = None
         mock_session.run.return_value = mock_result
         mock_result.consume.return_value = None
 
@@ -305,8 +310,12 @@ class TestConnectionPoolPerformance:
         mock_neo4j_driver = AsyncMock()
         mock_redis_client = Mock()
 
+        # Mock asyncpg.create_pool as an async function
+        async def mock_create_pool(*args, **kwargs):
+            return mock_pg_pool
+
         with (
-            patch("asyncpg.create_pool", return_value=mock_pg_pool),
+            patch("asyncpg.create_pool", side_effect=mock_create_pool),
             patch("neo4j.AsyncGraphDatabase.driver", return_value=mock_neo4j_driver),
             patch("redis.Redis.from_url", return_value=mock_redis_client),
         ):
@@ -383,7 +392,11 @@ class TestConnectionPoolPerformance:
         mock_pool.get_idle_size.return_value = 0
         mock_conn.fetchval.return_value = 1
 
-        with patch("asyncpg.create_pool", return_value=mock_pool):
+        # Mock asyncpg.create_pool as an async function
+        async def mock_create_pool(*args, **kwargs):
+            return mock_pool
+
+        with patch("asyncpg.create_pool", side_effect=mock_create_pool):
             postgres_pool = OptimizedPostgreSQLPool(pool_config, database_config)
             await postgres_pool.initialize()
 
@@ -445,7 +458,11 @@ class TestConnectionPoolPerformance:
         mock_pool.get_idle_size.return_value = pool_config.postgres_min_size - 1
         mock_conn.fetchval.side_effect = mock_health_check
 
-        with patch("asyncpg.create_pool", return_value=mock_pool):
+        # Mock asyncpg.create_pool as an async function
+        async def mock_create_pool(*args, **kwargs):
+            return mock_pool
+
+        with patch("asyncpg.create_pool", side_effect=mock_create_pool):
             postgres_pool = OptimizedPostgreSQLPool(pool_config, database_config)
             await postgres_pool.initialize()
 
@@ -483,7 +500,11 @@ class TestConnectionPoolPerformance:
         mock_conn.fetchval.return_value = 1
         mock_conn.fetch.return_value = [{"id": 1}]
 
-        with patch("asyncpg.create_pool", return_value=mock_pool):
+        # Mock asyncpg.create_pool as an async function
+        async def mock_create_pool(*args, **kwargs):
+            return mock_pool
+
+        with patch("asyncpg.create_pool", side_effect=mock_create_pool):
             postgres_pool = OptimizedPostgreSQLPool(pool_config, database_config)
             await postgres_pool.initialize()
 
