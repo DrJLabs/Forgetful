@@ -73,7 +73,7 @@ class TestMemoryAccessPermissions:
         # Mock accessible memory IDs function
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -126,7 +126,7 @@ class TestMemoryAccessPermissions:
         # Mock unrestricted access (None means all memories accessible)
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = None
 
@@ -149,7 +149,7 @@ class TestMemoryAccessPermissions:
         # Mock restricted access with memory in allowed list
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id, uuid4(), uuid4()]
 
@@ -172,7 +172,7 @@ class TestMemoryAccessPermissions:
         # Mock restricted access with memory not in allowed list
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [uuid4(), uuid4()]
 
@@ -200,7 +200,7 @@ class TestAppPermissionValidation:
         # Use UUID app ID
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -225,7 +225,7 @@ class TestAppPermissionValidation:
         # Use string app ID
         app_id = "test_app_id"
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -264,7 +264,7 @@ class TestAppPermissionValidation:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             # Mock complex permission logic
             mock_get_accessible.return_value = [mock_memory.id]
@@ -287,7 +287,7 @@ class TestAppPermissionValidation:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -333,7 +333,7 @@ class TestUserPermissionValidation:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -357,7 +357,7 @@ class TestUserPermissionValidation:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = []  # No access
 
@@ -382,7 +382,7 @@ class TestUserPermissionValidation:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -424,7 +424,7 @@ class TestSecurityEdgeCases:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = []  # No access
 
@@ -479,7 +479,7 @@ class TestSecurityEdgeCases:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             # Try to escalate permissions
             mock_get_accessible.return_value = [mock_memory.id]
@@ -503,7 +503,7 @@ class TestSecurityEdgeCases:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -521,16 +521,27 @@ class TestSecurityEdgeCases:
         mock_db = Mock()
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
+        mock_memory.id = uuid4()
+
+        # Mock active app
+        mock_app = Mock()
+        mock_app.is_active = True
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         # Mock database transaction
         mock_db.begin.return_value.__enter__ = Mock()
         mock_db.begin.return_value.__exit__ = Mock()
 
         app_id = uuid4()
-        check_memory_access_permissions(mock_db, mock_memory, app_id)
+        with patch(
+            "app.routers.memories.get_accessible_memory_ids"
+        ) as mock_get_accessible:
+            mock_get_accessible.return_value = [mock_memory.id]
 
-        # Verify database operations were performed
-        mock_db.query.assert_called_once()
+            check_memory_access_permissions(mock_db, mock_memory, app_id)
+
+            # Verify database operations were performed
+            mock_db.query.assert_called_once()
 
 
 @pytest.mark.unit
@@ -551,7 +562,7 @@ class TestPermissionCaching:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 
@@ -597,7 +608,7 @@ class TestPermissionCaching:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             # Mock large dataset
             large_memory_list = [uuid4() for _ in range(10000)]
@@ -622,7 +633,7 @@ class TestPermissionCaching:
 
         app_id = uuid4()
         with patch(
-            "app.utils.permissions.get_accessible_memory_ids"
+            "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
             mock_get_accessible.return_value = [mock_memory.id]
 

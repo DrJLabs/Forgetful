@@ -1,4 +1,1 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="4.239" timestamp="2025-07-12T16:04:24.043497-04:00" hostname="djin-1"><testcase classname="openmemory.api.tests.test_security_headers.TestCORSValidation" name="test_cors_credentials_handling" time="0.106"><failure message="AssertionError: CORS should not allow credentials with wildcard origin&#10;assert False">tests/test_security_headers.py:142: in test_cors_credentials_handling
-    assert False, "CORS should not allow credentials with wildcard origin"
-E   AssertionError: CORS should not allow credentials with wildcard origin
-E   assert False</failure></testcase></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.093" timestamp="2025-07-12T16:25:01.752759-04:00" hostname="djin-1"><testcase classname="openmemory.api.tests.test_permissions_comprehensive.TestSecurityEdgeCases" name="test_database_transaction_isolation" time="0.053" /></testsuite></testsuites>
