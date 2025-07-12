@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   # =======================================================================
-  # METRICS COLLECTION STACK
+  # METRICS COLLECTION STACK - OPTIMIZED FOR AUTONOMOUS WORKLOADS
   # =======================================================================
   
   prometheus:
@@ -14,10 +14,24 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=30d'
-      - '--storage.tsdb.retention.size=10GB'
+      # Optimized retention for autonomous operations with tiered storage
+      - '--storage.tsdb.retention.time=7d'
+      - '--storage.tsdb.retention.size=20GB'
+      - '--storage.tsdb.max-block-duration=2h'
+      - '--storage.tsdb.min-block-duration=2h'
+      # WAL optimization for autonomous patterns
+      - '--storage.tsdb.wal-segment-size=64MB'
+      - '--storage.tsdb.wal-compression'
+      # Query optimization for autonomous dashboards
+      - '--query.timeout=2m'
+      - '--query.max-concurrency=50'
+      - '--query.max-samples=50000000'
+      # Compaction settings for autonomous data patterns
+      - '--storage.tsdb.allow-overlapping-blocks'
+      - '--storage.tsdb.head-chunks-write-queue-size=10000'
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
+      - '--web.enable-remote-write-receiver'
     ports:
       - "127.0.0.1:9090:9090"
     volumes:
@@ -39,11 +53,17 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '4.0'
+          memory: 4GB
+        reservations:
           cpus: '2.0'
           memory: 2GB
-        reservations:
-          cpus: '1.0'
-          memory: 1GB
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   grafana:
     image: grafana/grafana:11.3.0
@@ -53,6 +73,23 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
+      # Optimized for autonomous dashboards
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/system-overview.json
+      - GF_USERS_DEFAULT_THEME=dark
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_ANALYTICS_CHECK_FOR_UPDATES=false
+      # Performance optimization for autonomous operations
+      - GF_DATABASE_WAL=true
+      - GF_DATABASE_CACHE_TTL=24h
+      - GF_DATAPROXY_TIMEOUT=300
+      - GF_DATAPROXY_KEEP_ALIVE_SECONDS=300
+      - GF_ALERTING_ENABLED=true
+      - GF_ALERTING_EXECUTE_ALERTS=true
+      - GF_UNIFIED_ALERTING_ENABLED=true
+      # Query optimization for autonomous dashboards
+      - GF_EXPLORE_ENABLED=true
+      - GF_QUERY_HISTORY_ENABLED=true
+      - GF_LIVE_ALLOWED_ORIGINS=*
     ports:
       - "127.0.0.1:3001:3000"
     volumes:
@@ -73,11 +110,17 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '2.0'
+          memory: 2GB
+        reservations:
           cpus: '1.0'
           memory: 1GB
-        reservations:
-          cpus: '0.5'
-          memory: 512MB
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   alertmanager:
     image: prom/alertmanager:v0.27.0
@@ -87,6 +130,9 @@ services:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
       - '--web.external-url=http://localhost:9093'
+      - '--data.retention=168h'  # 7 days for autonomous operations
+      - '--cluster.listen-address=0.0.0.0:9094'
+      - '--log.level=info'
     ports:
       - "127.0.0.1:9093:9093"
     volumes:
@@ -97,11 +143,19 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '1.0'
+          memory: 1GB
+        reservations:
           cpus: '0.5'
           memory: 512MB
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9093/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # =======================================================================
-  # SYSTEM MONITORING EXPORTERS
+  # SYSTEM MONITORING EXPORTERS - OPTIMIZED FOR AUTONOMOUS PATTERNS
   # =======================================================================
 
   node-exporter:
@@ -113,18 +167,27 @@ services:
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      # Enhanced collectors for autonomous monitoring
+      - '--collector.cpu.info'
+      - '--collector.processes'
+      - '--collector.systemd'
+      - '--collector.textfile.directory=/var/lib/node_exporter/textfile_collector'
     ports:
       - "127.0.0.1:9100:9100"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      - ./data/node_exporter:/var/lib/node_exporter
     networks:
       - traefik
     deploy:
       resources:
         limits:
           cpus: '0.5'
+          memory: 512MB
+        reservations:
+          cpus: '0.25'
           memory: 256MB
 
   postgres-exporter:
@@ -133,8 +196,16 @@ services:
     restart: unless-stopped
     environment:
       - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-drj}:${POSTGRES_PASSWORD}@postgres-mem0:5432/mem0?sslmode=disable
+      # Enhanced metrics for autonomous operations
+      - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yaml
+      - PG_EXPORTER_COLLECT_GLOBAL_STATS=true
+      - PG_EXPORTER_COLLECT_DATABASE_STATS=true
+      - PG_EXPORTER_COLLECT_TABLE_STATS=true
+      - PG_EXPORTER_COLLECT_INDEX_STATS=true
     ports:
       - "127.0.0.1:9187:9187"
+    volumes:
+      - ./monitoring/postgres_exporter_queries.yaml:/etc/postgres_exporter/queries.yaml
     depends_on:
       - postgres-mem0
     networks:
@@ -142,11 +213,53 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '1.0'
+          memory: 512MB
+        reservations:
           cpus: '0.5'
           memory: 256MB
 
   # =======================================================================
-  # CENTRALIZED LOGGING STACK (ELK)
+  # MONITORING STACK RESOURCE MONITORING
+  # =======================================================================
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor-mem0
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "127.0.0.1:8080:8080"
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512MB
+        reservations:
+          cpus: '0.25'
+          memory: 256MB
+    command:
+      - '--housekeeping_interval=30s'
+      - '--max_housekeeping_interval=35s'
+      - '--event_storage_event_limit=default=0'
+      - '--event_storage_age_limit=default=0'
+      - '--disable_metrics=percpu,sched,tcp,udp,disk,diskIO,accelerator,hugetlb,referenced_memory,cpu_topology,resctrl'
+      - '--docker_only=false'
+      - '--store_container_labels=false'
+      - '--whitelisted_container_labels=io.kubernetes.container.name,io.kubernetes.pod.name,io.kubernetes.pod.namespace'
+
+  # =======================================================================
+  # CENTRALIZED LOGGING STACK (ELK) - OPTIMIZED FOR AUTONOMOUS OPERATIONS
   # =======================================================================
 
   elasticsearch:
@@ -156,9 +269,20 @@ services:
     environment:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      # Optimized JVM settings for autonomous operations
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
       - xpack.security.enabled=false
       - xpack.monitoring.collection.enabled=true
+      # Index optimization for autonomous logs
+      - indices.memory.index_buffer_size=20%
+      - indices.query.bool.max_clause_count=10000
+      - cluster.routing.allocation.disk.threshold.enabled=true
+      - cluster.routing.allocation.disk.watermark.low=85%
+      - cluster.routing.allocation.disk.watermark.high=90%
+      - cluster.routing.allocation.disk.watermark.flood_stage=95%
+      # Thread pool optimization for autonomous workloads
+      - thread_pool.write.queue_size=1000
+      - thread_pool.search.queue_size=1000
     ulimits:
       memlock:
         soft: -1
@@ -172,16 +296,30 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '3.0'
+          memory: 4GB
+        reservations:
           cpus: '2.0'
           memory: 2GB
-        reservations:
-          cpus: '1.0'
-          memory: 1GB
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.15.0
     container_name: logstash-mem0
     restart: unless-stopped
+    environment:
+      # Optimized settings for autonomous log processing
+      - "LS_JAVA_OPTS=-Xmx1g -Xms1g"
+      - pipeline.workers=4
+      - pipeline.batch.size=1000
+      - pipeline.batch.delay=50
+      - config.reload.automatic=true
+      - config.reload.interval=3s
     ports:
       - "127.0.0.1:5000:5000"
       - "127.0.0.1:9600:9600"
@@ -195,8 +333,16 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '2.0'
+          memory: 2GB
+        reservations:
           cpus: '1.0'
           memory: 1GB
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.15.0
@@ -205,6 +351,13 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch-mem0:9200
       - SERVER_NAME=kibana-mem0
+      # Optimized for autonomous log analysis
+      - SERVER_MAXPAYLOAD=1048576
+      - LOGGING_QUIET=false
+      - KIBANA_AUTOCOMPLETETIMEOUT=3000
+      - KIBANA_AUTOCOMPLETEQUERYTHRESHOLD=2
+      - ELASTICSEARCH_REQUESTTIMEOUT=300000
+      - ELASTICSEARCH_SHARDTIMEOUT=300000
     ports:
       - "127.0.0.1:5601:5601"
     depends_on:
@@ -221,8 +374,16 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1GB
+          cpus: '1.5'
+          memory: 1.5GB
+        reservations:
+          cpus: '0.5'
+          memory: 512MB
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:8.15.0
@@ -241,11 +402,14 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '1.0'
+          memory: 1GB
+        reservations:
           cpus: '0.5'
           memory: 512MB
 
   # =======================================================================
-  # DISTRIBUTED TRACING STACK
+  # DISTRIBUTED TRACING STACK - ENHANCED FOR AUTONOMOUS OPERATIONS
   # =======================================================================
 
   jaeger:
@@ -255,11 +419,23 @@ services:
     environment:
       - COLLECTOR_ZIPKIN_HOST_PORT=:9411
       - COLLECTOR_OTLP_ENABLED=true
+      # Optimized for autonomous tracing patterns
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+      - BADGER_CONSISTENCY=true
+      - BADGER_MAINTENANCE_INTERVAL=5m
+      - BADGER_METRICS_UPDATE_INTERVAL=10s
+      - COLLECTOR_QUEUE_SIZE=100000
+      - COLLECTOR_NUM_WORKERS=100
     ports:
       - "127.0.0.1:16686:16686"  # Jaeger UI
       - "127.0.0.1:14268:14268"  # HTTP collector
       - "127.0.0.1:4317:4317"    # OTLP gRPC receiver
       - "127.0.0.1:4318:4318"    # OTLP HTTP receiver
+    volumes:
+      - ./data/jaeger:/badger
     networks:
       - traefik
     labels:
@@ -272,17 +448,31 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '2.0'
+          memory: 2GB
+        reservations:
           cpus: '1.0'
           memory: 1GB
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:16686 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # =======================================================================
-  # UPTIME MONITORING
+  # UPTIME MONITORING - ENHANCED FOR AUTONOMOUS SERVICES
   # =======================================================================
 
   uptime-kuma:
     image: louislam/uptime-kuma:1.23.13
     container_name: uptime-kuma-mem0
     restart: unless-stopped
+    environment:
+      # Optimized for autonomous service monitoring
+      - UPTIME_KUMA_CLOUDFLARED_TOKEN=${CLOUDFLARED_TOKEN:-}
+      - UPTIME_KUMA_SSL_KEY=${SSL_KEY:-}
+      - UPTIME_KUMA_SSL_CERT=${SSL_CERT:-}
+      - NODE_ENV=production
     ports:
       - "127.0.0.1:3001:3001"
     volumes:
@@ -299,8 +489,16 @@ services:
     deploy:
       resources:
         limits:
+          cpus: '1.0'
+          memory: 1GB
+        reservations:
           cpus: '0.5'
           memory: 512MB
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   traefik:
@@ -312,3 +510,5 @@ volumes:
   alertmanager-data:
   elasticsearch-data:
   uptime-kuma-data:
+  jaeger-data:
+  node-exporter-data:
