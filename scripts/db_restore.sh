@@ -46,14 +46,14 @@ EOF
 # Function to list available backups
 list_backups() {
     log "Listing available backups..."
-    
+
     echo "PostgreSQL Backups:"
     if ls "$BACKUP_DIR"/postgres/*.backup 2>/dev/null; then
         ls -lh "$BACKUP_DIR"/postgres/*.backup | awk '{print $9, $5, $6, $7, $8}'
     else
         echo "No PostgreSQL backups found"
     fi
-    
+
     echo
     echo "Neo4j Backups:"
     if ls "$BACKUP_DIR"/neo4j/*.cypher 2>/dev/null; then
@@ -67,7 +67,7 @@ list_backups() {
 get_latest_backup() {
     LATEST_PG=$(ls -t "$BACKUP_DIR"/postgres/*.backup 2>/dev/null | head -1 | sed 's/.*mem0_\([0-9_]*\)\.backup/\1/' || echo "")
     LATEST_NEO4J=$(ls -t "$BACKUP_DIR"/neo4j/*.cypher 2>/dev/null | head -1 | sed 's/.*backup_\([0-9_]*\)\.cypher/\1/' || echo "")
-    
+
     if [ -n "$LATEST_PG" ] && [ -n "$LATEST_NEO4J" ]; then
         # Return the most recent of the two
         if [ "$LATEST_PG" \> "$LATEST_NEO4J" ]; then
@@ -104,11 +104,11 @@ stop_services() {
 start_services() {
     log "Starting services..."
     docker-compose up -d
-    
+
     # Wait for services to be ready
     log "Waiting for services to be ready..."
     sleep 10
-    
+
     # Check health
     for i in {1..30}; do
         if docker exec "$POSTGRES_CONTAINER" pg_isready -U "${POSTGRES_USER:-drj}" -d mem0 >/dev/null 2>&1; then
@@ -117,7 +117,7 @@ start_services() {
         fi
         sleep 2
     done
-    
+
     for i in {1..30}; do
         if docker exec "$NEO4J_CONTAINER" wget -O /dev/null http://localhost:7474/ >/dev/null 2>&1; then
             log "Neo4j is ready"
@@ -130,12 +130,12 @@ start_services() {
 # Function to create pre-restore backup
 create_pre_restore_backup() {
     log "Creating pre-restore backup..."
-    
+
     PRE_RESTORE_DATE=$(date +%Y%m%d_%H%M%S)
     PRE_RESTORE_DIR="$BACKUP_DIR/pre_restore_$PRE_RESTORE_DATE"
-    
+
     mkdir -p "$PRE_RESTORE_DIR"/{postgres,neo4j}
-    
+
     # Backup current PostgreSQL
     if check_container "$POSTGRES_CONTAINER" >/dev/null 2>&1; then
         docker exec "$POSTGRES_CONTAINER" pg_dump \
@@ -145,7 +145,7 @@ create_pre_restore_backup() {
             > "$PRE_RESTORE_DIR/postgres/mem0_pre_restore.backup"
         log "Pre-restore PostgreSQL backup created"
     fi
-    
+
     # Backup current Neo4j
     if check_container "$NEO4J_CONTAINER" >/dev/null 2>&1; then
         docker exec "$NEO4J_CONTAINER" cypher-shell \
@@ -153,13 +153,13 @@ create_pre_restore_backup() {
             "CALL apoc.export.cypher.all('/var/lib/neo4j/backups/pre_restore.cypher', {
                 format: 'cypher-shell'
             })" >/dev/null 2>&1 || true
-        
+
         docker cp "$NEO4J_CONTAINER:/var/lib/neo4j/backups/pre_restore.cypher" \
             "$PRE_RESTORE_DIR/neo4j/pre_restore.cypher" 2>/dev/null || true
-        
+
         log "Pre-restore Neo4j backup created"
     fi
-    
+
     echo "$PRE_RESTORE_DIR" > "/tmp/mem0_pre_restore_path"
     log "Pre-restore backup location: $PRE_RESTORE_DIR"
 }
@@ -168,33 +168,33 @@ create_pre_restore_backup() {
 restore_postgres() {
     local backup_date="$1"
     local backup_file="$BACKUP_DIR/postgres/mem0_${backup_date}.backup"
-    
+
     log "Restoring PostgreSQL from $backup_file..."
-    
+
     if [ ! -f "$backup_file" ]; then
         log "ERROR: PostgreSQL backup file not found: $backup_file"
         return 1
     fi
-    
+
     check_container "$POSTGRES_CONTAINER"
-    
+
     # Drop and recreate database
     log "Dropping existing database..."
     docker exec "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d postgres \
         -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'mem0' AND pid <> pg_backend_pid();" >/dev/null 2>&1 || true
-    
+
     docker exec "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d postgres \
         -c "DROP DATABASE IF EXISTS mem0;" >/dev/null 2>&1 || true
-    
+
     docker exec "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d postgres \
         -c "CREATE DATABASE mem0;" >/dev/null 2>&1
-    
+
     # Restore from backup
     log "Restoring database from backup..."
     docker exec -i "$POSTGRES_CONTAINER" pg_restore \
@@ -203,7 +203,7 @@ restore_postgres() {
         --verbose \
         --clean \
         --if-exists < "$backup_file"
-    
+
     log "PostgreSQL restore completed"
 }
 
@@ -211,69 +211,69 @@ restore_postgres() {
 restore_neo4j() {
     local backup_date="$1"
     local backup_file="$BACKUP_DIR/neo4j/backup_${backup_date}.cypher"
-    
+
     log "Restoring Neo4j from $backup_file..."
-    
+
     if [ ! -f "$backup_file" ]; then
         log "ERROR: Neo4j backup file not found: $backup_file"
         return 1
     fi
-    
+
     check_container "$NEO4J_CONTAINER"
-    
+
     # Clear existing data
     log "Clearing existing Neo4j data..."
     docker exec "$NEO4J_CONTAINER" cypher-shell \
         -u neo4j -p "${NEO4J_PASSWORD}" \
         "MATCH (n) DETACH DELETE n;" >/dev/null 2>&1 || true
-    
+
     # Copy backup file to container
     docker cp "$backup_file" "$NEO4J_CONTAINER:/var/lib/neo4j/restore.cypher"
-    
+
     # Restore from backup
     log "Restoring graph data from backup..."
     docker exec "$NEO4J_CONTAINER" cypher-shell \
         -u neo4j -p "${NEO4J_PASSWORD}" \
         -f /var/lib/neo4j/restore.cypher >/dev/null 2>&1
-    
+
     # Clean up
     docker exec "$NEO4J_CONTAINER" rm -f /var/lib/neo4j/restore.cypher
-    
+
     log "Neo4j restore completed"
 }
 
 # Function to verify restore
 verify_restore() {
     log "Verifying restore integrity..."
-    
+
     # Verify PostgreSQL
     if [ "$RESTORE_POSTGRES" = true ]; then
         PG_TABLES=$(docker exec "$POSTGRES_CONTAINER" psql \
             -U "${POSTGRES_USER:-drj}" \
             -d mem0 \
             -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "0")
-        
+
         PG_RECORDS=$(docker exec "$POSTGRES_CONTAINER" psql \
             -U "${POSTGRES_USER:-drj}" \
             -d mem0 \
             -t -c "SELECT count(*) FROM memories;" 2>/dev/null || echo "0")
-        
+
         log "PostgreSQL verification - Tables: $PG_TABLES, Memory records: $PG_RECORDS"
     fi
-    
+
     # Verify Neo4j
     if [ "$RESTORE_NEO4J" = true ]; then
         NEO4J_NODES=$(docker exec "$NEO4J_CONTAINER" cypher-shell \
             -u neo4j -p "${NEO4J_PASSWORD}" \
             "MATCH (n) RETURN count(n) as node_count;" 2>/dev/null | tail -1 || echo "0")
-        
+
         NEO4J_RELS=$(docker exec "$NEO4J_CONTAINER" cypher-shell \
             -u neo4j -p "${NEO4J_PASSWORD}" \
             "MATCH ()-[r]-() RETURN count(r) as rel_count;" 2>/dev/null | tail -1 || echo "0")
-        
+
         log "Neo4j verification - Nodes: $NEO4J_NODES, Relationships: $NEO4J_RELS"
     fi
-    
+
     log "Restore verification completed"
 }
 
@@ -282,7 +282,7 @@ rollback_restore() {
     if [ -f "/tmp/mem0_pre_restore_path" ]; then
         PRE_RESTORE_DIR=$(cat "/tmp/mem0_pre_restore_path")
         log "Rolling back to pre-restore state from $PRE_RESTORE_DIR..."
-        
+
         # Rollback PostgreSQL
         if [ -f "$PRE_RESTORE_DIR/postgres/mem0_pre_restore.backup" ]; then
             log "Rolling back PostgreSQL..."
@@ -292,24 +292,24 @@ rollback_restore() {
                 --clean \
                 --if-exists < "$PRE_RESTORE_DIR/postgres/mem0_pre_restore.backup"
         fi
-        
+
         # Rollback Neo4j
         if [ -f "$PRE_RESTORE_DIR/neo4j/pre_restore.cypher" ]; then
             log "Rolling back Neo4j..."
             docker exec "$NEO4J_CONTAINER" cypher-shell \
                 -u neo4j -p "${NEO4J_PASSWORD}" \
                 "MATCH (n) DETACH DELETE n;" >/dev/null 2>&1 || true
-            
+
             docker cp "$PRE_RESTORE_DIR/neo4j/pre_restore.cypher" \
                 "$NEO4J_CONTAINER:/var/lib/neo4j/rollback.cypher"
-            
+
             docker exec "$NEO4J_CONTAINER" cypher-shell \
                 -u neo4j -p "${NEO4J_PASSWORD}" \
                 -f /var/lib/neo4j/rollback.cypher >/dev/null 2>&1
-            
+
             docker exec "$NEO4J_CONTAINER" rm -f /var/lib/neo4j/rollback.cypher
         fi
-        
+
         log "Rollback completed"
         rm -f "/tmp/mem0_pre_restore_path"
     else
@@ -472,4 +472,4 @@ $(docker ps --format "{{.Names}}: {{.Status}}" | grep -E "(postgres-mem0|neo4j-m
 Restore completed at: $(date)
 EOF
 
-log "Restore report generated: $REPORT_FILE" 
+log "Restore report generated: $REPORT_FILE"

@@ -23,13 +23,13 @@ const customJestConfig = {
     '^@/store/(.*)$': '<rootDir>/store/$1',
     '^@/styles/(.*)$': '<rootDir>/styles/$1',
     '^@/public/(.*)$': '<rootDir>/public/$1',
-    
+
     // Handle CSS imports (with CSS modules)
     '^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
-    
+
     // Handle CSS imports (without CSS modules)
     '^.+\\.(css|sass|scss)$': 'identity-obj-proxy',
-    
+
     // Handle image imports
     '^.+\\.(jpg|jpeg|png|gif|webp|avif|svg)$': '<rootDir>/__mocks__/fileMock.js',
   },
@@ -74,4 +74,4 @@ const customJestConfig = {
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(customJestConfig) 
+module.exports = createJestConfig(customJestConfig)

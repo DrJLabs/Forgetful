@@ -1,7 +1,7 @@
 """Initial migration
 
 Revision ID: 0b53c747049a
-Revises: 
+Revises:
 Create Date: 2025-04-19 00:59:56.244203
 
 """

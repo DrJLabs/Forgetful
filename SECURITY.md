@@ -50,4 +50,4 @@ When contributing to this project:
 
 ## Security Contact
 
-For security-related questions or concerns, please contact the project maintainers. 
+For security-related questions or concerns, please contact the project maintainers.

@@ -97,26 +97,26 @@ Environment Variables:
     COVERAGE_THRESHOLD      # Override coverage threshold
     MAX_TEST_DURATION       # Override max duration
     PYTEST_ARGS            # Additional pytest arguments
-    
+
 EOF
 }
 
 # Function to check dependencies
 check_dependencies() {
     print_header "🔍 Checking Dependencies"
-    
+
     # Check Python
     if ! command -v python3 &> /dev/null; then
         print_colored "${RED}" "❌ Python 3 not found"
         exit 1
     fi
-    
+
     # Check pip
     if ! command -v pip &> /dev/null; then
         print_colored "${RED}" "❌ pip not found"
         exit 1
     fi
-    
+
     # Check if we're in a virtual environment
     if [[ -z "${VIRTUAL_ENV:-}" ]]; then
         print_colored "${YELLOW}" "⚠️  Not in a virtual environment"
@@ -124,59 +124,59 @@ check_dependencies() {
     else
         print_colored "${GREEN}" "✅ Virtual environment: ${VIRTUAL_ENV}"
     fi
-    
+
     # Check if required packages are installed
     local missing_packages=()
-    
+
     if ! python3 -c "import pytest" 2>/dev/null; then
         missing_packages+=("pytest")
     fi
-    
+
     if ! python3 -c "import pytest_cov" 2>/dev/null; then
         missing_packages+=("pytest-cov")
     fi
-    
+
     if [[ ${#missing_packages[@]} -gt 0 ]]; then
         print_colored "${YELLOW}" "⚠️  Missing packages: ${missing_packages[*]}"
         print_colored "${YELLOW}" "   Installing test dependencies..."
         pip install -r "${PROJECT_ROOT}/requirements-test.txt"
     fi
-    
+
     print_colored "${GREEN}" "✅ Dependencies check complete"
 }
 
 # Function to setup test environment
 setup_test_environment() {
     print_header "🔧 Setting up Test Environment"
-    
+
     # Create directories
     mkdir -p "${TEST_RESULTS_DIR}" "${REPORTS_DIR}"
-    
+
     # Set environment variables
     export TESTING=true
     export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH:-}"
     export COVERAGE_THRESHOLD="${COVERAGE_THRESHOLD}"
     export MAX_TEST_DURATION="${MAX_DURATION}"
-    
+
     # Clean cache if requested
     if [[ "${CLEAN_CACHE}" == "true" ]]; then
         print_colored "${YELLOW}" "🧹 Cleaning pytest cache..."
         find "${PROJECT_ROOT}" -name ".pytest_cache" -type d -exec rm -rf {} + 2>/dev/null || true
         find "${PROJECT_ROOT}" -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
     fi
-    
+
     # Check if services are running (for integration tests)
     if [[ "${TEST_SUITE}" == "integration" || "${TEST_SUITE}" == "all" ]]; then
         check_services
     fi
-    
+
     print_colored "${GREEN}" "✅ Test environment setup complete"
 }
 
 # Function to check if required services are running
 check_services() {
     print_colored "${BLUE}" "🔍 Checking required services..."
-    
+
     # Check PostgreSQL
     if ! nc -z localhost 5432 2>/dev/null; then
         print_colored "${YELLOW}" "⚠️  PostgreSQL not running on localhost:5432"
@@ -184,7 +184,7 @@ check_services() {
     else
         print_colored "${GREEN}" "✅ PostgreSQL running"
     fi
-    
+
     # Check Neo4j
     if ! nc -z localhost 7687 2>/dev/null; then
         print_colored "${YELLOW}" "⚠️  Neo4j not running on localhost:7687"
@@ -192,7 +192,7 @@ check_services() {
     else
         print_colored "${GREEN}" "✅ Neo4j running"
     fi
-    
+
     # Check mem0 API
     if ! nc -z localhost 8000 2>/dev/null; then
         print_colored "${YELLOW}" "⚠️  mem0 API not running on localhost:8000"
@@ -205,7 +205,7 @@ check_services() {
 # Function to build pytest command
 build_pytest_command() {
     local cmd="python3 -m pytest"
-    
+
     # Add test paths based on suite
     case "${TEST_SUITE}" in
         "unit")
@@ -246,85 +246,85 @@ build_pytest_command() {
             exit 1
             ;;
     esac
-    
+
     # Add parallel execution
     if [[ "${PARALLEL_JOBS}" -gt 1 ]]; then
         cmd+=" -n ${PARALLEL_JOBS}"
     fi
-    
+
     # Add coverage options
     cmd+=" --cov-report=${COVERAGE_REPORT}"
     cmd+=" --cov-fail-under=${COVERAGE_THRESHOLD}"
-    
+
     # Add verbosity
     if [[ "${VERBOSE}" == "true" ]]; then
         cmd+=" -vv"
     fi
-    
+
     # Add failfast
     if [[ "${FAILFAST}" == "true" ]]; then
         cmd+=" -x"
     fi
-    
+
     # Add rerun failed
     if [[ "${RERUN_FAILED}" == "true" ]]; then
         cmd+=" --lf"
     fi
-    
+
     # Add benchmarking
     if [[ "${BENCHMARK}" == "true" ]]; then
         cmd+=" --benchmark-only"
         cmd+=" --benchmark-json=${REPORTS_DIR}/benchmark-results.json"
     fi
-    
+
     # Add profiling
     if [[ "${PROFILE}" == "true" ]]; then
         cmd+=" --profile"
         cmd+=" --profile-svg"
     fi
-    
+
     # Add custom pytest args
     if [[ -n "${PYTEST_ARGS:-}" ]]; then
         cmd+=" ${PYTEST_ARGS}"
     fi
-    
+
     echo "${cmd}"
 }
 
 # Function to run tests
 run_tests() {
     print_header "🧪 Running Tests: ${TEST_SUITE}"
-    
+
     local start_time=$(date +%s)
     local cmd=$(build_pytest_command)
-    
+
     print_colored "${BLUE}" "Command: ${cmd}"
     print_colored "${BLUE}" "Working directory: ${PROJECT_ROOT}"
     print_colored "${BLUE}" "Test suite: ${TEST_SUITE}"
     print_colored "${BLUE}" "Parallel jobs: ${PARALLEL_JOBS}"
     print_colored "${BLUE}" "Coverage threshold: ${COVERAGE_THRESHOLD}%"
     echo ""
-    
+
     # Change to project root
     cd "${PROJECT_ROOT}"
-    
+
     # Run the tests
     local exit_code=0
     eval "${cmd}" || exit_code=$?
-    
+
     local end_time=$(date +%s)
     local duration=$((end_time - start_time))
-    
+
     # Print results
     echo ""
     print_colored "${BLUE}" "Test execution completed in ${duration} seconds"
-    
+
     if [[ ${exit_code} -eq 0 ]]; then
         print_colored "${GREEN}" "✅ All tests passed!"
     else
         print_colored "${RED}" "❌ Some tests failed (exit code: ${exit_code})"
     fi
-    
+
     return ${exit_code}
 }
 
@@ -333,11 +333,11 @@ generate_report() {
     if [[ "${GENERATE_REPORT}" != "true" ]]; then
         return 0
     fi
-    
+
     print_header "📊 Generating Test Report"
-    
+
     local report_file="${REPORTS_DIR}/test-summary-$(date +%Y%m%d_%H%M%S).md"
-    
+
     cat > "${report_file}" << EOF
 # Test Execution Report
 
@@ -358,7 +358,7 @@ generate_report() {
 ## Test Results
 
 EOF
-    
+
     # Add coverage information if available
     if [[ -f "${PROJECT_ROOT}/coverage.xml" ]]; then
         echo "## Coverage Report" >> "${report_file}"
@@ -366,7 +366,7 @@ EOF
         echo "Coverage report generated: coverage.xml" >> "${report_file}"
         echo "" >> "${report_file}"
     fi
-    
+
     # Add HTML report link if available
     if [[ -d "${PROJECT_ROOT}/htmlcov" ]]; then
         echo "## HTML Coverage Report" >> "${report_file}"
@@ -374,7 +374,7 @@ EOF
         echo "Open: htmlcov/index.html" >> "${report_file}"
         echo "" >> "${report_file}"
     fi
-    
+
     # Add benchmark results if available
     if [[ -f "${REPORTS_DIR}/benchmark-results.json" ]]; then
         echo "## Benchmark Results" >> "${report_file}"
@@ -382,30 +382,30 @@ EOF
         echo "Benchmark results: test-reports/benchmark-results.json" >> "${report_file}"
         echo "" >> "${report_file}"
     fi
-    
+
     print_colored "${GREEN}" "✅ Test report generated: ${report_file}"
 }
 
 # Function to cleanup
 cleanup() {
     print_header "🧹 Cleanup"
-    
+
     # Move reports to timestamped directory
     if [[ -d "${REPORTS_DIR}" ]]; then
         local timestamp=$(date +%Y%m%d_%H%M%S)
         local archived_dir="${REPORTS_DIR}/archived/${timestamp}"
         mkdir -p "${archived_dir}"
-        
+
         # Move generated files
         [[ -f "${PROJECT_ROOT}/coverage.xml" ]] && mv "${PROJECT_ROOT}/coverage.xml" "${archived_dir}/"
         [[ -f "${PROJECT_ROOT}/test-results.xml" ]] && mv "${PROJECT_ROOT}/test-results.xml" "${archived_dir}/"
         [[ -f "${PROJECT_ROOT}/test-report.html" ]] && mv "${PROJECT_ROOT}/test-report.html" "${archived_dir}/"
         [[ -f "${PROJECT_ROOT}/tests.log" ]] && mv "${PROJECT_ROOT}/tests.log" "${archived_dir}/"
-        
+
         # Create symlink to latest
         rm -f "${REPORTS_DIR}/latest"
         ln -sf "archived/${timestamp}" "${REPORTS_DIR}/latest"
-        
+
         print_colored "${GREEN}" "✅ Reports archived to: ${archived_dir}"
         print_colored "${GREEN}" "✅ Latest symlink: ${REPORTS_DIR}/latest"
     fi
@@ -475,7 +475,7 @@ main() {
                 ;;
         esac
     done
-    
+
     # Validate coverage format
     case "${COVERAGE_REPORT}" in
         html|xml|json|term)
@@ -485,23 +485,23 @@ main() {
             exit 1
             ;;
     esac
-    
+
     # Print startup banner
     print_header "🚀 mem0-stack Comprehensive Test Suite"
     print_colored "${BLUE}" "Test Suite: ${TEST_SUITE}"
     print_colored "${BLUE}" "Coverage: ${COVERAGE_REPORT}"
     print_colored "${BLUE}" "Parallel Jobs: ${PARALLEL_JOBS}"
     print_colored "${BLUE}" "Threshold: ${COVERAGE_THRESHOLD}%"
-    
+
     # Execute test pipeline
     local exit_code=0
-    
+
     check_dependencies
     setup_test_environment
     run_tests || exit_code=$?
     generate_report
     cleanup
-    
+
     # Final status
     echo ""
     if [[ ${exit_code} -eq 0 ]]; then
@@ -514,9 +514,9 @@ main() {
         print_colored "${RED}" "❌ Some tests failed"
         print_colored "${RED}" "❌ Check the reports for details"
     fi
-    
+
     exit ${exit_code}
 }
 
 # Run main function
-main "$@" 
+main "$@"

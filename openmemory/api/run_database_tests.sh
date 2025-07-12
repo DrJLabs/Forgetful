@@ -72,7 +72,7 @@ log() {
     local level=$1
     shift
     local message="$@"
-    
+
     case $level in
         "INFO")
             echo -e "${GREEN}[INFO]${NC} $message"
@@ -94,62 +94,62 @@ log() {
 # Function to check prerequisites
 check_prerequisites() {
     log "INFO" "Checking prerequisites..."
-    
+
     # Check if we're in the correct directory
     if [ ! -f "pytest.ini" ]; then
         log "ERROR" "pytest.ini not found. Please run from the API directory."
         exit 1
     fi
-    
+
     # Check if Python is available
     if ! command -v python3 &> /dev/null; then
         log "ERROR" "Python 3 is required but not found."
         exit 1
     fi
-    
+
     # Check if pip is available
     if ! command -v pip &> /dev/null; then
         log "ERROR" "pip is required but not found."
         exit 1
     fi
-    
+
     # Check if Docker is available for Docker tests
     if [ "$ENVIRONMENT" = "docker" ] && ! command -v docker &> /dev/null; then
         log "ERROR" "Docker is required for Docker environment tests."
         exit 1
     fi
-    
+
     log "INFO" "Prerequisites check passed."
 }
 
 # Function to setup test environment
 setup_environment() {
     log "INFO" "Setting up test environment..."
-    
+
     # Create virtual environment if it doesn't exist
     if [ ! -d "venv" ]; then
         log "INFO" "Creating virtual environment..."
         python3 -m venv venv
     fi
-    
+
     # Activate virtual environment
     source venv/bin/activate
-    
+
     # Install/upgrade pip
     pip install --upgrade pip
-    
+
     # Install test dependencies
     log "INFO" "Installing test dependencies..."
     pip install -r requirements-test.txt
-    
+
     # Install main dependencies
     if [ -f "requirements.txt" ]; then
         pip install -r requirements.txt
     fi
-    
+
     # Create report directory
     mkdir -p "$REPORT_DIR"
-    
+
     log "INFO" "Test environment setup completed."
 }
 
@@ -157,16 +157,16 @@ setup_environment() {
 cleanup_docker() {
     if [ "$DOCKER_CLEANUP" = true ]; then
         log "INFO" "Cleaning up Docker containers..."
-        
+
         # Stop and remove test containers
         docker container prune -f --filter "label=testcontainer=true" 2>/dev/null || true
-        
+
         # Remove test networks
         docker network prune -f 2>/dev/null || true
-        
+
         # Remove test volumes
         docker volume prune -f 2>/dev/null || true
-        
+
         log "INFO" "Docker cleanup completed."
     fi
 }
@@ -174,41 +174,41 @@ cleanup_docker() {
 # Function to run tests
 run_tests() {
     log "INFO" "Running database tests..."
-    
+
     # Build pytest command
     local pytest_cmd="python -m pytest"
-    
+
     # Add verbosity
     if [ "$VERBOSE" = true ]; then
         pytest_cmd="$pytest_cmd -vv"
     fi
-    
+
     # Add parallel execution
     if [ "$PARALLEL" = true ]; then
         pytest_cmd="$pytest_cmd -n auto"
     fi
-    
+
     # Add coverage
     if [ "$COVERAGE" = true ]; then
         pytest_cmd="$pytest_cmd --cov=app --cov-report=html:$REPORT_DIR/htmlcov --cov-report=term-missing --cov-report=xml:$REPORT_DIR/coverage.xml"
     fi
-    
+
     # Add markers
     if [ -n "$MARKERS" ]; then
         pytest_cmd="$pytest_cmd -m \"$MARKERS\""
     fi
-    
+
     # Add pattern
     if [ -n "$PATTERN" ]; then
         pytest_cmd="$pytest_cmd -k \"$PATTERN\""
     fi
-    
+
     # Add timeout
     pytest_cmd="$pytest_cmd --timeout=$TIMEOUT"
-    
+
     # Add report outputs
     pytest_cmd="$pytest_cmd --junit-xml=$REPORT_DIR/test-results.xml --html=$REPORT_DIR/test-report.html --self-contained-html"
-    
+
     # Set environment variables based on test environment
     case $ENVIRONMENT in
         "test")
@@ -225,25 +225,25 @@ run_tests() {
             export DATABASE_URL="sqlite:///:memory:"
             ;;
     esac
-    
+
     # Run the tests
     log "INFO" "Executing: $pytest_cmd"
     log "INFO" "Test environment: $ENVIRONMENT"
     log "INFO" "Timeout: ${TIMEOUT}s"
-    
+
     if eval "$pytest_cmd"; then
         log "INFO" "Tests completed successfully!"
-        
+
         # Display coverage summary if available
         if [ "$COVERAGE" = true ] && [ -f "$REPORT_DIR/coverage.xml" ]; then
             log "INFO" "Coverage report generated: $REPORT_DIR/htmlcov/index.html"
         fi
-        
+
         # Display test report
         if [ -f "$REPORT_DIR/test-report.html" ]; then
             log "INFO" "Test report generated: $REPORT_DIR/test-report.html"
         fi
-        
+
         return 0
     else
         log "ERROR" "Tests failed!"
@@ -254,7 +254,7 @@ run_tests() {
 # Function to run specific test suites
 run_test_suite() {
     local suite=$1
-    
+
     case $suite in
         "unit")
             log "INFO" "Running unit tests..."
@@ -295,7 +295,7 @@ run_test_suite() {
 # Function to display test results summary
 display_summary() {
     log "INFO" "=== Test Results Summary ==="
-    
+
     if [ -f "$REPORT_DIR/test-results.xml" ]; then
         # Parse JUnit XML for summary (simplified)
         if command -v xmllint &> /dev/null; then
@@ -303,14 +303,14 @@ display_summary() {
             local failures=$(xmllint --xpath "string(//testsuite/@failures)" "$REPORT_DIR/test-results.xml" 2>/dev/null || echo "N/A")
             local errors=$(xmllint --xpath "string(//testsuite/@errors)" "$REPORT_DIR/test-results.xml" 2>/dev/null || echo "N/A")
             local time=$(xmllint --xpath "string(//testsuite/@time)" "$REPORT_DIR/test-results.xml" 2>/dev/null || echo "N/A")
-            
+
             log "INFO" "Total Tests: $tests"
             log "INFO" "Failures: $failures"
             log "INFO" "Errors: $errors"
             log "INFO" "Execution Time: ${time}s"
         fi
     fi
-    
+
     # Report locations
     log "INFO" "Reports generated in: $REPORT_DIR/"
     log "INFO" "- HTML Report: $REPORT_DIR/test-report.html"
@@ -393,13 +393,13 @@ main() {
     log "INFO" "Pattern: ${PATTERN:-'all'}"
     log "INFO" "Timeout: ${TIMEOUT}s"
     log "INFO" "Report Directory: $REPORT_DIR"
-    
+
     # Check prerequisites
     check_prerequisites
-    
+
     # Setup environment
     setup_environment
-    
+
     # Run tests
     if run_tests; then
         display_summary
@@ -412,4 +412,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"

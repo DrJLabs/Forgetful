@@ -20,7 +20,7 @@ dependencies = [
     "sqlalchemy>=2.0.31",
     # Security-critical dependencies with minimum safe versions
     "setuptools>=78.1.1",  # CVE-2025-47273 fix
-    "h11>=0.16.0",         # CVE-2025-43859 fix 
+    "h11>=0.16.0",         # CVE-2025-43859 fix
     "requests>=2.32.0",    # Security improvements
     "urllib3>=2.2.0",      # Security improvements
 ]

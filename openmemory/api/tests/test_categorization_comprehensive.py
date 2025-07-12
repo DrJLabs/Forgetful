@@ -7,7 +7,7 @@ including OpenAI integration, retry mechanisms, error handling, and category val
 
 Test Coverage Areas:
 1. Category Generation & OpenAI Integration
-2. Retry Mechanism & Error Handling  
+2. Retry Mechanism & Error Handling
 3. Category Validation & Normalization
 4. Edge Cases & Invalid Input Handling
 5. Response Parsing & Structured Output

@@ -1,8 +1,8 @@
 # Cursor Terminal Configuration & Hanging Issue Resolution
 
 ## Issue Summary
-**Problem**: Random terminal command hanging requiring manual intervention (pressing Enter)  
-**Root Cause**: Parallel `run_terminal_cmd` tool execution causes deadlocks  
+**Problem**: Random terminal command hanging requiring manual intervention (pressing Enter)
+**Root Cause**: Parallel `run_terminal_cmd` tool execution causes deadlocks
 **Solution**: Use sequential terminal commands only + optimized Cursor settings
 
 ## Configuration Files
@@ -83,4 +83,4 @@ env | grep -E "(PAGER|GIT_PAGER|DEBIAN_FRONTEND)"
 
 ## Memory Reference
 - Memory ID: 2923680
-- Contains critical behavioral guidelines for AI assistants 
+- Contains critical behavioral guidelines for AI assistants

@@ -1,7 +1,7 @@
 # OpenMemory Migration Report
 
-**Date:** January 9, 2025  
-**Project:** mem0-stack  
+**Date:** January 9, 2025
+**Project:** mem0-stack
 **Task:** Move OpenMemory from archive directory to main project structure
 
 ## Executive Summary
@@ -47,7 +47,7 @@ Successfully migrated the OpenMemory services from `archive/openmemory/` to the 
 - **Build Context:** ./openmemory/api/
 
 ### openmemory-ui (Web Interface)
-- **Container Name:** openmemory-ui  
+- **Container Name:** openmemory-ui
 - **Port:** 3000
 - **Build Context:** ./openmemory/ui/
 - **Traefik Domain:** memory.drjlabs.com
@@ -70,7 +70,7 @@ All services are running correctly:
 ```
 mem0             Running on port 8000
 postgres-mem0    Running (healthy)
-neo4j-mem0       Running (healthy)  
+neo4j-mem0       Running (healthy)
 openmemory-mcp   Running on port 8765
 openmemory-ui    Running on port 3000
 ```
@@ -83,4 +83,4 @@ openmemory-ui    Running on port 3000
 
 ## Conclusion
 
-The migration was completed successfully with no data loss or service interruption. OpenMemory is now properly integrated into the main project infrastructure. 
+The migration was completed successfully with no data loss or service interruption. OpenMemory is now properly integrated into the main project infrastructure.

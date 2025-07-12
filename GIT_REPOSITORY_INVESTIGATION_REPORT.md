@@ -52,4 +52,4 @@ git ls-remote git@github.com:DrJLabs/Forgetful.git
 # Check local status
 git status --porcelain --branch
 git log --oneline -n 10
-``` 
+```

@@ -6,7 +6,7 @@ The hardcoded `sys.path.append('/workspace')` in multiple files will cause impor
 ## 📋 Affected Files Analysis
 Based on grep search, the following files contain hardcoded paths:
 - `mem0/server/cache_layer.py:20`
-- `shared/batching.py:28`  
+- `shared/batching.py:28`
 - `shared/connection_pool.py:26`
 - `openmemory/api/app/utils/memory.py:41`
 - `openmemory/api/app/routers/memories.py:15`

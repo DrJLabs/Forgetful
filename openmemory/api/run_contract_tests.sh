@@ -2,7 +2,7 @@
 
 # API Contract Test Runner - Step 2.1 Implementation
 # ================================================
-# 
+#
 # This script runs comprehensive API contract tests to ensure:
 # - OpenAPI schema compliance
 # - Request/response contract validation
@@ -66,9 +66,9 @@ run_test_suite() {
     local test_markers="$2"
     local test_files="$3"
     local output_suffix="$4"
-    
+
     print_status "Running $test_name..."
-    
+
     local pytest_args=(
         "$test_files"
         "-v"
@@ -85,11 +85,11 @@ run_test_suite() {
         "--html=$REPORTS_DIR/contract_tests_$output_suffix.html"
         "--self-contained-html"
     )
-    
+
     if [ -n "$test_markers" ]; then
         pytest_args+=("-m" "$test_markers")
     fi
-    
+
     if pytest "${pytest_args[@]}"; then
         print_success "$test_name completed successfully"
         return 0
@@ -104,9 +104,9 @@ generate_summary() {
     local total_tests=0
     local passed_tests=0
     local failed_tests=0
-    
+
     print_status "Generating test summary..."
-    
+
     # Count test results from XML reports
     if command_exists xmllint; then
         for xml_file in "$REPORTS_DIR"/contract_tests_*.xml; do
@@ -114,14 +114,14 @@ generate_summary() {
                 local tests=$(xmllint --xpath "//testsuite/@tests" "$xml_file" 2>/dev/null | grep -o '[0-9]*' || echo "0")
                 local failures=$(xmllint --xpath "//testsuite/@failures" "$xml_file" 2>/dev/null | grep -o '[0-9]*' || echo "0")
                 local errors=$(xmllint --xpath "//testsuite/@errors" "$xml_file" 2>/dev/null | grep -o '[0-9]*' || echo "0")
-                
+
                 total_tests=$((total_tests + tests))
                 failed_tests=$((failed_tests + failures + errors))
                 passed_tests=$((passed_tests + tests - failures - errors))
             fi
         done
     fi
-    
+
     echo
     echo "======================================"
     echo "API Contract Test Summary"
@@ -219,11 +219,11 @@ main() {
     print_status "Test Category: $TEST_CATEGORY"
     print_status "Project Root: $PROJECT_ROOT"
     print_status "Test Directory: $TEST_DIR"
-    
+
     # Ensure directories exist
     ensure_directory "$REPORTS_DIR"
     ensure_directory "$COVERAGE_DIR"
-    
+
     # Clean reports if requested
     if [ "$CLEAN" = true ]; then
         print_status "Cleaning test reports..."
@@ -231,24 +231,24 @@ main() {
         ensure_directory "$REPORTS_DIR"
         ensure_directory "$COVERAGE_DIR"
     fi
-    
+
     # Check if pytest is available
     if ! command_exists pytest; then
         print_error "pytest is not installed. Please install test dependencies:"
         print_error "pip install -r requirements-test.txt"
         exit 1
     fi
-    
+
     # Change to script directory
     cd "$SCRIPT_DIR"
-    
+
     # Skip tests if report-only mode
     if [ "$REPORT_ONLY" = true ]; then
         print_status "Report-only mode - skipping test execution"
         generate_summary
         exit 0
     fi
-    
+
     # Coverage-only mode
     if [ "$COVERAGE_ONLY" = true ]; then
         print_status "Generating coverage report..."
@@ -256,15 +256,15 @@ main() {
         print_success "Coverage report generated: $COVERAGE_DIR/contract_tests_coverage/index.html"
         exit 0
     fi
-    
+
     # Test execution
     local exit_code=0
     local fast_markers=""
-    
+
     if [ "$FAST" = true ]; then
         fast_markers="not slow"
     fi
-    
+
     case "$TEST_CATEGORY" in
         "openapi")
             run_test_suite "OpenAPI Schema Validation Tests" "$fast_markers and openapi" "tests/test_openapi_schema_validation.py" "openapi" || exit_code=$?
@@ -283,13 +283,13 @@ main() {
             ;;
         "all")
             print_status "Running comprehensive API contract test suite..."
-            
+
             # Run OpenAPI schema validation tests
             run_test_suite "OpenAPI Schema Validation" "$fast_markers and openapi" "tests/test_openapi_schema_validation.py" "openapi" || exit_code=$?
-            
+
             # Run API contract tests
             run_test_suite "API Contract Validation" "$fast_markers and contract" "tests/test_api_contract_validation.py" "contract" || exit_code=$?
-            
+
             # Run all contract tests together for comprehensive coverage
             run_test_suite "Complete Contract Test Suite" "$fast_markers" "tests/test_api_contract_validation.py tests/test_openapi_schema_validation.py" "complete" || exit_code=$?
             ;;
@@ -299,10 +299,10 @@ main() {
             exit 1
             ;;
     esac
-    
+
     # Generate summary
     generate_summary
-    
+
     # Final status
     if [ $exit_code -eq 0 ]; then
         print_success "All API contract tests completed successfully!"
@@ -312,9 +312,9 @@ main() {
         print_error "Some API contract tests failed (exit code: $exit_code)"
         print_status "Check reports in: $REPORTS_DIR for details"
     fi
-    
+
     exit $exit_code
 }
 
 # Run main function
-main "$@" 
+main "$@"

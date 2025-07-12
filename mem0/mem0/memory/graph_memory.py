@@ -301,7 +301,7 @@ class MemoryGraph:
             WHERE similarity >= $threshold
             CALL {{
                 MATCH (n)-[r]->(m)
-                WHERE m.user_id = $user_id {agent_filter.replace("n.", "m.")} 
+                WHERE m.user_id = $user_id {agent_filter.replace("n.", "m.")}
                 RETURN n.name AS source, elementId(n) AS source_id, type(r) AS relationship, elementId(r) AS relation_id, m.name AS destination, elementId(m) AS destination_id
                 UNION
                 MATCH (m)-[r]->(n)
@@ -394,7 +394,7 @@ class MemoryGraph:
             (m {self.node_label} {{name: $dest_name, user_id: $user_id}})
             WHERE 1=1 {agent_filter}
             DELETE r
-            RETURN 
+            RETURN
                 n.name AS source,
                 m.name AS target,
                 type(r) AS relationship
@@ -464,7 +464,7 @@ class MemoryGraph:
                 CALL db.create.setNodeVectorProperty(destination, 'embedding', $destination_embedding)
                 WITH source, destination
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET 
+                ON CREATE SET
                     r.created = timestamp(),
                     r.mentions = 1
                 ON MATCH SET
@@ -506,7 +506,7 @@ class MemoryGraph:
                 CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
                 WITH source, destination
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET 
+                ON CREATE SET
                     r.created = timestamp(),
                     r.mentions = 1
                 ON MATCH SET
@@ -535,7 +535,7 @@ class MemoryGraph:
                 WHERE elementId(destination) = $destination_id
                 SET destination.mentions = coalesce(destination.mentions, 0) + 1
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET 
+                ON CREATE SET
                     r.created_at = timestamp(),
                     r.updated_at = timestamp(),
                     r.mentions = 1
@@ -615,7 +615,7 @@ class MemoryGraph:
 
         cypher = f"""
             MATCH (source_candidate {self.node_label})
-            WHERE source_candidate.embedding IS NOT NULL 
+            WHERE source_candidate.embedding IS NOT NULL
             AND source_candidate.user_id = $user_id
             {agent_filter}
 
@@ -648,7 +648,7 @@ class MemoryGraph:
 
         cypher = f"""
             MATCH (destination_candidate {self.node_label})
-            WHERE destination_candidate.embedding IS NOT NULL 
+            WHERE destination_candidate.embedding IS NOT NULL
             AND destination_candidate.user_id = $user_id
             {agent_filter}
 

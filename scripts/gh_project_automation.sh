@@ -121,9 +121,9 @@ update_project_item_field() {
     local field_id="$2"
     local option_id="$3"
     local field_name="$4"
-    
+
     log_info "Updating field '$field_name' for item $item_id"
-    
+
     gh api graphql -f query='
         mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
             updateProjectV2ItemFieldValue(
@@ -146,7 +146,7 @@ update_project_item_field() {
         -f fieldId="$field_id" \
         -f optionId="$option_id" \
         > /dev/null
-    
+
     if [ $? -eq 0 ]; then
         log_success "Updated $field_name successfully"
     else
@@ -158,7 +158,7 @@ update_project_item_field() {
 # Function to get all project items
 get_project_items() {
     log_info "Fetching all project items..."
-    
+
     gh api graphql -f query='
         query($orgLogin: String!, $projectNumber: Int!) {
             organization(login: $orgLogin) {
@@ -186,7 +186,7 @@ get_project_items() {
 # Function to configure project items based on issue content
 configure_project_items() {
     log_header "Configuring Project Items with Smart Field Values"
-    
+
     # Define item configurations based on issue titles
     declare -A ITEM_CONFIGS=(
         ["mem0 API Service Enhancements"]="component:mem0_api priority:high epic:service_development effort:xl sprint:sprint1"
@@ -197,35 +197,35 @@ configure_project_items() {
         ["Comprehensive Testing Framework Implementation"]="component:testing priority:high epic:testing_quality effort:xl sprint:sprint1"
         ["Security and Compliance Enhancement"]="component:security priority:high epic:security_compliance effort:l sprint:sprint2"
     )
-    
+
     # Get all project items
     local items_json
     items_json=$(get_project_items)
-    
+
     # Process each item
     while IFS= read -r item; do
         local item_id=$(echo "$item" | jq -r '.id')
         local title=$(echo "$item" | jq -r '.content.title // empty')
         local number=$(echo "$item" | jq -r '.content.number // empty')
-        
+
         if [ -z "$title" ] || [ "$title" = "null" ]; then
             log_warning "Skipping item $item_id - no title found"
             continue
         fi
-        
+
         log_info "Processing: Issue #$number - $title"
-        
+
         # Get configuration for this item
         local config="${ITEM_CONFIGS[$title]}"
         if [ -z "$config" ]; then
             log_warning "No configuration found for: $title"
             continue
         fi
-        
+
         # Parse and apply configuration
         for setting in $config; do
             IFS=':' read -r field_type value <<< "$setting"
-            
+
             case "$field_type" in
                 "component")
                     update_project_item_field "$item_id" "$COMPONENT_FIELD_ID" "${COMPONENT_OPTIONS[$value]}" "Component"
@@ -245,10 +245,10 @@ configure_project_items() {
             esac
             sleep 0.5  # Rate limiting
         done
-        
+
         # Set default status to Todo
         update_project_item_field "$item_id" "$STATUS_FIELD_ID" "${STATUS_OPTIONS[todo]}" "Status"
-        
+
         log_success "Configured item: $title"
         echo
     done <<< "$items_json"
@@ -258,9 +258,9 @@ configure_project_items() {
 create_draft_issue() {
     local title="$1"
     local body="$2"
-    
+
     log_info "Creating draft issue: $title"
-    
+
     gh api graphql -f query='
         mutation($projectId: ID!, $title: String!, $body: String!) {
             addProjectV2DraftIssue(
@@ -283,7 +283,7 @@ create_draft_issue() {
 # Function to get project analytics
 get_project_analytics() {
     log_header "Project Analytics & Insights"
-    
+
     gh api graphql -f query='
         query($orgLogin: String!, $projectNumber: Int!) {
             organization(login: $orgLogin) {
@@ -347,19 +347,19 @@ get_project_analytics() {
 bulk_update_sprint() {
     local sprint_name="$1"
     local issue_numbers=("${@:2}")
-    
+
     log_header "Bulk Update: Moving Issues to $sprint_name"
-    
+
     if [ -z "${SPRINT_OPTIONS[${sprint_name,,}]}" ]; then
         log_error "Invalid sprint name: $sprint_name"
         return 1
     fi
-    
+
     local sprint_option_id="${SPRINT_OPTIONS[${sprint_name,,}]}"
-    
+
     for issue_num in "${issue_numbers[@]}"; do
         log_info "Finding project item for issue #$issue_num"
-        
+
         # Get the project item ID for this issue
         local item_id
         item_id=$(gh api graphql -f query='
@@ -382,7 +382,7 @@ bulk_update_sprint() {
             -f orgLogin="$ORG_LOGIN" \
             -F projectNumber=4 \
             --jq ".data.organization.projectV2.items.nodes[] | select(.content.number == $issue_num) | .id")
-        
+
         if [ -n "$item_id" ] && [ "$item_id" != "null" ]; then
             update_project_item_field "$item_id" "$SPRINT_FIELD_ID" "$sprint_option_id" "Sprint"
             log_success "Moved issue #$issue_num to $sprint_name"
@@ -395,19 +395,19 @@ bulk_update_sprint() {
 # Function to show project dashboard
 show_project_dashboard() {
     log_header "Project Dashboard"
-    
+
     local analytics
     analytics=$(get_project_analytics)
-    
+
     echo -e "${CYAN}Project Overview:${NC}"
     echo "$analytics" | jq -r '"Total Items: \(.totalItems)"'
-    
+
     echo -e "\n${CYAN}Status Distribution:${NC}"
     echo "$analytics" | jq -r '.itemsByStatus[]? | "  \(.status // "Unassigned"): \(.count)"'
-    
+
     echo -e "\n${CYAN}Priority Distribution:${NC}"
     echo "$analytics" | jq -r '.itemsByPriority[]? | "  \(.priority // "Unassigned"): \(.count)"'
-    
+
     echo -e "\n${CYAN}Component Distribution:${NC}"
     echo "$analytics" | jq -r '.itemsByComponent[]? | "  \(.component // "Unassigned"): \(.count)"'
 }
@@ -415,34 +415,34 @@ show_project_dashboard() {
 # Function to check prerequisites
 check_prerequisites() {
     log_info "Checking prerequisites..."
-    
+
     # Check if gh CLI is installed
     if ! command -v gh &> /dev/null; then
         log_error "GitHub CLI (gh) is not installed"
         exit 1
     fi
-    
+
     # Check if jq is installed
     if ! command -v jq &> /dev/null; then
         log_error "jq is not installed"
         exit 1
     fi
-    
+
     # Check GitHub CLI authentication
     if ! gh auth status --hostname github.com &> /dev/null; then
         log_error "GitHub CLI is not authenticated"
         exit 1
     fi
-    
+
     log_success "All prerequisites met"
 }
 
 # Main execution function
 main() {
     local command="${1:-help}"
-    
+
     check_prerequisites
-    
+
     case "$command" in
         "configure")
             configure_project_items
@@ -490,4 +490,4 @@ main() {
 }
 
 # Run main function with all arguments
-main "$@" 
+main "$@"

@@ -20,4 +20,4 @@ docker exec postgres-mem0 psql -U drj -d mem0 -c "SELECT version_num FROM alembi
 
 # List tables to verify schema
 echo "Current database tables:"
-docker exec postgres-mem0 psql -U drj -d mem0 -c "\dt" 
+docker exec postgres-mem0 psql -U drj -d mem0 -c "\dt"

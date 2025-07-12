@@ -53,7 +53,7 @@ Check for workflow plan:
 **Warning Templates:**
 
 ```text
-SEQUENCE WARNING: 
+SEQUENCE WARNING:
 The workflow plan shows you should complete "{expected_step}" next.
 You're attempting to: "{requested_action}"
 
@@ -142,11 +142,11 @@ When encountering a decision point in the plan:
 
 1. **Identify Decision Marker**: `<!-- decision: {decision_id} -->`
 2. **Check Decision Status**: Made/Pending
-3. **If Pending**: 
+3. **If Pending**:
    - Block progress until decision made
    - Show options to user
    - Record decision when made
-4. **If Made**: 
+4. **If Made**:
    - Verify current path aligns with decision
    - Warn if attempting alternate path
 
@@ -184,7 +184,7 @@ Use *agent pm to switch, or *plan-status to see full progress.
 User: *task create-next-story
 
 [Plan check triggered]
-⚠️ SEQUENCE WARNING: 
+⚠️ SEQUENCE WARNING:
 Your workflow plan indicates the PRD hasn't been created yet.
 Creating stories before the PRD may lead to incomplete requirements.
 

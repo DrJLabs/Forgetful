@@ -2,7 +2,7 @@
 
 # Security Test Runner for OpenMemory API
 # Author: Quinn (QA Agent) - Step 2.2 Security Testing Suite
-# 
+#
 # This script runs comprehensive security tests covering:
 # - Authentication security
 # - Input validation security
@@ -66,19 +66,19 @@ print_info() {
 # Function to check prerequisites
 check_prerequisites() {
     print_header "CHECKING PREREQUISITES"
-    
+
     # Check if we're in the right directory
     if [ ! -f "main.py" ]; then
         print_error "Error: main.py not found. Please run from the OpenMemory API directory."
         exit 1
     fi
-    
+
     # Check if pytest is installed
     if ! command -v pytest &> /dev/null; then
         print_error "Error: pytest not found. Please install pytest."
         exit 1
     fi
-    
+
     # Check if test files exist
     missing_tests=()
     for test_file in "${SECURITY_TESTS[@]}"; do
@@ -86,7 +86,7 @@ check_prerequisites() {
             missing_tests+=("$test_file")
         fi
     done
-    
+
     if [ ${#missing_tests[@]} -gt 0 ]; then
         print_error "Error: Missing test files:"
         for test in "${missing_tests[@]}"; do
@@ -94,22 +94,22 @@ check_prerequisites() {
         done
         exit 1
     fi
-    
+
     print_success "✓ All prerequisites met"
 }
 
 # Function to setup test environment
 setup_environment() {
     print_header "SETTING UP TEST ENVIRONMENT"
-    
+
     # Create reports directory
     mkdir -p "$REPORTS_DIR"
     mkdir -p "$COVERAGE_DIR"
-    
+
     # Set test environment variables
     export TESTING=true
     export PYTHONPATH="${PYTHONPATH}:$(pwd)"
-    
+
     # Create test database if needed
     if [ ! -f "test_openmemory.db" ]; then
         print_info "Creating test database..."
@@ -122,7 +122,7 @@ Base.metadata.create_all(bind=engine)
 print('Test database created')
 "
     fi
-    
+
     print_success "✓ Test environment ready"
 }
 
@@ -130,9 +130,9 @@ print('Test database created')
 run_security_test() {
     local test_file=$1
     local test_name=$(basename "$test_file" .py)
-    
+
     print_info "Running $test_name..."
-    
+
     # Run the test with detailed output
     if pytest "$TEST_DIR/$test_file" \
         -v \
@@ -146,7 +146,7 @@ run_security_test() {
         --cov-report=term-missing \
         --disable-warnings \
         -x; then
-        
+
         print_success "✓ $test_name PASSED"
         return 0
     else
@@ -158,11 +158,11 @@ run_security_test() {
 # Function to run all security tests
 run_all_tests() {
     print_header "RUNNING SECURITY TESTS"
-    
+
     local passed_tests=0
     local total_tests=${#SECURITY_TESTS[@]}
     local failed_tests=()
-    
+
     for test_file in "${SECURITY_TESTS[@]}"; do
         if run_security_test "$test_file"; then
             ((passed_tests++))
@@ -171,31 +171,31 @@ run_all_tests() {
         fi
         echo ""
     done
-    
+
     # Summary
     print_header "SECURITY TEST SUMMARY"
     print_info "Total tests: $total_tests"
     print_success "Passed: $passed_tests"
     print_error "Failed: $((total_tests - passed_tests))"
-    
+
     if [ ${#failed_tests[@]} -gt 0 ]; then
         print_error "Failed tests:"
         for test in "${failed_tests[@]}"; do
             print_error "  - $test"
         done
     fi
-    
+
     # Calculate success rate
     local success_rate=$((passed_tests * 100 / total_tests))
     print_info "Success rate: $success_rate%"
-    
+
     return $((total_tests - passed_tests))
 }
 
 # Function to run quick security check
 run_quick_check() {
     print_header "QUICK SECURITY CHECK"
-    
+
     # Run only critical security tests
     critical_tests=(
         "test_security_authentication.py::TestAuthenticationSecurity::test_unauthorized_memory_access_prevention"
@@ -204,10 +204,10 @@ run_quick_check() {
         "test_security_headers.py::TestCORSValidation::test_cors_credentials_handling"
         "test_security_api.py::TestEndpointAuthorization::test_cross_user_data_access_prevention"
     )
-    
+
     local passed=0
     local total=${#critical_tests[@]}
-    
+
     for test in "${critical_tests[@]}"; do
         print_info "Running critical test: $test"
         if pytest "$TEST_DIR/$test" -v --tb=short --disable-warnings; then
@@ -217,7 +217,7 @@ run_quick_check() {
             print_error "✗ FAILED"
         fi
     done
-    
+
     print_info "Critical security tests: $passed/$total passed"
     return $((total - passed))
 }
@@ -225,9 +225,9 @@ run_quick_check() {
 # Function to generate security report
 generate_report() {
     print_header "GENERATING SECURITY REPORT"
-    
+
     local report_file="$REPORTS_DIR/security_report_${TIMESTAMP}.md"
-    
+
     cat > "$report_file" << EOF
 # OpenMemory API Security Test Report
 
@@ -251,11 +251,11 @@ This report covers comprehensive security testing across multiple layers:
 ### Test Files Executed
 
 EOF
-    
+
     for test_file in "${SECURITY_TESTS[@]}"; do
         echo "- $test_file" >> "$report_file"
     done
-    
+
     cat >> "$report_file" << EOF
 
 ## Test Results
@@ -292,23 +292,23 @@ Results are available in the following formats:
 ---
 *This report was generated automatically by the OpenMemory Security Testing Suite*
 EOF
-    
+
     print_success "✓ Security report generated: $report_file"
 }
 
 # Function to cleanup test environment
 cleanup() {
     print_header "CLEANING UP"
-    
+
     # Remove test database
     if [ -f "test_openmemory.db" ]; then
         rm -f "test_openmemory.db"
         print_info "Test database removed"
     fi
-    
+
     # Unset environment variables
     unset TESTING
-    
+
     print_success "✓ Cleanup completed"
 }
 
@@ -337,7 +337,7 @@ show_help() {
 main() {
     local run_mode="all"
     local verbose=false
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -372,26 +372,26 @@ main() {
                 ;;
         esac
     done
-    
+
     # Set verbose mode
     if [ "$verbose" = true ]; then
         set -x
     fi
-    
+
     # Print header
     print_header "OPENMEMORY API SECURITY TEST RUNNER"
     print_info "Mode: $run_mode"
     print_info "Timestamp: $TIMESTAMP"
-    
+
     # Check prerequisites
     check_prerequisites
-    
+
     # Setup environment
     setup_environment
-    
+
     # Run tests based on mode
     local exit_code=0
-    
+
     case $run_mode in
         "all")
             run_all_tests
@@ -405,20 +405,20 @@ main() {
             print_info "Generating report only..."
             ;;
     esac
-    
+
     # Generate report
     generate_report
-    
+
     # Cleanup
     cleanup
-    
+
     # Final status
     if [ $exit_code -eq 0 ]; then
         print_success "✓ All security tests completed successfully!"
     else
         print_error "✗ Some security tests failed. Please review the results."
     fi
-    
+
     exit $exit_code
 }
 
@@ -426,4 +426,4 @@ main() {
 trap 'print_error "An error occurred. Cleaning up..."; cleanup; exit 1' ERR
 
 # Run main function
-main "$@" 
+main "$@"

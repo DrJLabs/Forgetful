@@ -39,7 +39,7 @@ BEGIN
         VALUES (gen_random_uuid(), 'drj', 'Default User', CURRENT_TIMESTAMP)
         RETURNING id INTO default_user_id;
     END IF;
-    
+
     -- Get or create default app
     SELECT id INTO default_app_id FROM apps WHERE name = 'openmemory' AND owner_id = default_user_id;
     IF default_app_id IS NULL THEN
@@ -47,10 +47,10 @@ BEGIN
         VALUES (gen_random_uuid(), default_user_id, 'openmemory', 'Default OpenMemory App', true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING id INTO default_app_id;
     END IF;
-    
+
     -- Migrate existing data from mem0_memories to the new memories table
     INSERT INTO memories (id, user_id, app_id, content, vector, metadata, state, created_at)
-    SELECT 
+    SELECT
         m.id,
         default_user_id,
         default_app_id,
@@ -61,10 +61,10 @@ BEGIN
         COALESCE((m.payload->>'created_at')::timestamp, CURRENT_TIMESTAMP)
     FROM mem0_memories m
     WHERE NOT EXISTS (SELECT 1 FROM memories WHERE id = m.id);
-    
+
     -- Also migrate from memories_mem0_backup if it exists
     INSERT INTO memories (id, user_id, app_id, content, vector, metadata, state, created_at)
-    SELECT 
+    SELECT
         m.id,
         default_user_id,
         default_app_id,
@@ -75,4 +75,4 @@ BEGIN
         COALESCE((m.payload->>'created_at')::timestamp, CURRENT_TIMESTAMP)
     FROM memories_mem0_backup m
     WHERE NOT EXISTS (SELECT 1 FROM memories WHERE id = m.id);
-END $$; 
+END $$;

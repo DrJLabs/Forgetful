@@ -71,8 +71,8 @@ def benchmark_vector_operations(
         # Create vector index
         cur.execute(
             f"""
-            CREATE INDEX IF NOT EXISTS idx_{table_name}_vector 
-            ON {table_name} USING ivfflat (vector vector_cosine_ops) 
+            CREATE INDEX IF NOT EXISTS idx_{table_name}_vector
+            ON {table_name} USING ivfflat (vector vector_cosine_ops)
             WITH (lists = 100);
         """
         )
@@ -105,7 +105,7 @@ def benchmark_vector_operations(
         formatted_vector = format_vector_for_db(vector, use_pgvector)
         cur.execute(
             f"""
-            INSERT INTO {table_name} (vector, metadata) 
+            INSERT INTO {table_name} (vector, metadata)
             VALUES (%s, %s)
         """,
             (formatted_vector, json.dumps({"index": i})),
@@ -182,7 +182,7 @@ def benchmark_vector_operations(
 
     cur.execute(
         f"""
-        INSERT INTO {table_name} (vector, metadata) 
+        INSERT INTO {table_name} (vector, metadata)
         VALUES {','.join(query_parts)}
     """,
         params,

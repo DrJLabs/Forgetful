@@ -38,13 +38,13 @@ async def get_memory(memory_id: str):
     """Get a specific memory by ID"""
     try:
         memory_client = get_memory_client()
-        
+
         # Use mem0's get method to retrieve the memory
         memory = memory_client.get(memory_id)
-        
+
         if not memory:
             raise HTTPException(status_code=404, detail="Memory not found")
-        
+
         # Transform to expected response format
         return {
             "id": memory.get("id", memory_id),
@@ -117,4 +117,4 @@ All tests now pass successfully!
 ## Technical Details
 - The mem0 library does have a `get(memory_id)` method that retrieves a specific memory by ID
 - The update endpoint now properly accepts a JSON request body with the expected fields
-- Both endpoints now correctly integrate with the mem0 memory client 
+- Both endpoints now correctly integrate with the mem0 memory client

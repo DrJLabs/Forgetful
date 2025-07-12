@@ -156,7 +156,7 @@ so that {{value_delivered}}.
 Standard structure:
 
 1. New functionality works as specified
-2. Existing {{affected feature}} continues to work unchanged  
+2. Existing {{affected feature}} continues to work unchanged
 3. Integration with {{existing system}} maintains current behavior
 4. No regression in {{related area}}
 5. Performance remains within acceptable bounds
@@ -190,10 +190,10 @@ If critical information is missing, pause and ask:
 ```
 To complete the technical guidance for this story, I need:
 
-1. **{{Missing Category}}**: 
+1. **{{Missing Category}}**:
    - Specifically: {{what you need to know}}
    - Why needed: {{how it impacts implementation}}
-   
+
 Can you provide this information or point me to relevant code/docs?
 ```
 
@@ -314,7 +314,7 @@ Key Integration Points Identified:
 Risks Noted:
 - {{primary risk}}
 
-{{If missing info}}: 
+{{If missing info}}:
 Note: Some technical details were unclear. The story includes exploration tasks to gather needed information during implementation.
 
 Next Steps:

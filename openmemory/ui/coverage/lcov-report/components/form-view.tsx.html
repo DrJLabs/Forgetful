@@ -15,41 +15,41 @@
         }
     </style>
 </head>
-    
+
 <body>
 <div class='wrapper'>
     <div class='pad1'>
         <h1><a href="../index.html">All files</a> / <a href="index.html">components</a> form-view.tsx</h1>
         <div class='clearfix'>
-            
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">79.06% </span>
                 <span class="quiet">Statements</span>
                 <span class='fraction'>34/43</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">82.85% </span>
                 <span class="quiet">Branches</span>
                 <span class='fraction'>29/35</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">52.63% </span>
                 <span class="quiet">Functions</span>
                 <span class='fraction'>10/19</span>
             </div>
-        
-            
+
+
             <div class='fl pad1y space-right2'>
                 <span class="strong">79.06% </span>
                 <span class="quiet">Lines</span>
                 <span class='fraction'>34/43</span>
             </div>
-        
-            
+
+
         </div>
         <p class="quiet">
             Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
@@ -855,7 +855,7 @@ export function FormView({ settings, onChange }: FormViewProps) {
 &nbsp;
   const LLM_PROVIDERS = {
     "OpenAI": "openai",
-    "Anthropic": "anthropic", 
+    "Anthropic": "anthropic",
     "Azure OpenAI": "azure_openai",
     "Ollama": "ollama",
     "Together": "together",
@@ -873,7 +873,7 @@ export function FormView({ settings, onChange }: FormViewProps) {
 &nbsp;
   const EMBEDDER_PROVIDERS = {
     "OpenAI": "openai",
-    "Azure OpenAI": "azure_openai", 
+    "Azure OpenAI": "azure_openai",
     "Ollama": "ollama",
     "Hugging Face": "huggingface",
     "Vertex AI": "vertexai",
@@ -918,7 +918,7 @@ export function FormView({ settings, onChange }: FormViewProps) {
         &lt;CardContent className="space-y-6"&gt;
           &lt;div className="space-y-2"&gt;
             &lt;Label htmlFor="llm-provider"&gt;LLM Provider&lt;/Label&gt;
-            &lt;Select 
+            &lt;Select
               value={settings.mem0?.llm?.provider || ""}
               onValueChange={handleLlmProviderChange}
             &gt;
@@ -971,10 +971,10 @@ export function FormView({ settings, onChange }: FormViewProps) {
                   value={settings.mem0?.llm?.config?.api_key || ""}
                   onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >handleLlmConfigChange("api_key", e.target.value)}</span>
                 /&gt;
-                &lt;Button 
-                  variant="ghost" 
-                  size="icon" 
-                  type="button" 
+                &lt;Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7"
                   onClick={() =&gt; setShowLlmApiKey(!showLlmApiKey)}
                 &gt;
@@ -1032,8 +1032,8 @@ export function FormView({ settings, onChange }: FormViewProps) {
         &lt;CardContent className="space-y-6"&gt;
           &lt;div className="space-y-2"&gt;
             &lt;Label htmlFor="embedder-provider"&gt;Embedder Provider&lt;/Label&gt;
-            &lt;Select 
-              value={settings.mem0?.embedder?.provider || ""} 
+            &lt;Select
+              value={settings.mem0?.embedder?.provider || ""}
               onValueChange={handleEmbedderProviderChange}
             &gt;
               &lt;SelectTrigger id="embedder-provider"&gt;
@@ -1085,10 +1085,10 @@ export function FormView({ settings, onChange }: FormViewProps) {
                   value={settings.mem0?.embedder?.config?.api_key || ""}
                   onChange={<span class="fstat-no" title="function not covered" >(e</span>) =&gt; <span class="cstat-no" title="statement not covered" >handleEmbedderConfigChange("api_key", e.target.value)}</span>
                 /&gt;
-                &lt;Button 
-                  variant="ghost" 
-                  size="icon" 
-                  type="button" 
+                &lt;Button
+                  variant="ghost"
+                  size="icon"
+                  type="button"
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7"
                   onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etShowEmbedderApiKey(!showEmbedderApiKey)}</span>
                 &gt;
@@ -1123,4 +1123,3 @@ export function FormView({ settings, onChange }: FormViewProps) {
         <script src="../block-navigation.js"></script>
     </body>
 </html>
-    

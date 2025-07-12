@@ -143,17 +143,17 @@ curl -X POST "https://api.mem0.ai/v1/memories/" \
 
 <Note>
     When passing `user_id`, memories are primarily created based on user messages, but may be influenced by assistant messages for contextual understanding. For example, in a conversation about food preferences, both the user's stated preferences and their responses to the assistant's questions would form user memories. Similarly, when using `agent_id`, assistant messages are prioritized, but user messages might influence the agent's memories based on context. This approach ensures comprehensive memory creation while maintaining appropriate attribution to either users or agents.
-    
+
     **Example:**
     ```
     User: My favorite cuisine is Italian
     Assistant: Nice! What about Indian cuisine?
     User: Don't like it much since I cannot eat spicy food
-    
+
     Resulting user memories:
     memory1 - Likes Italian food
-    memory2 - Doesn't like Indian food since cannot eat spicy 
-    
+    memory2 - Doesn't like Indian food since cannot eat spicy
+
     (memory2 comes from user's response about Indian cuisine)
     ```
 </Note>
@@ -224,7 +224,7 @@ curl -X POST "https://api.mem0.ai/v1/memories/" \
 </CodeGroup>
 
 #### Long-term memory for agents
-Add a memory layer for the assistants and agents so that their responses remain consistent across sessions. 
+Add a memory layer for the assistants and agents so that their responses remain consistent across sessions.
 
 <CodeGroup>
 
@@ -951,7 +951,7 @@ Fetch all memories for a user, agent, or run using the getAll() method.
 <Note> The `get_all` method supports two output formats: `v1.0` (default) and `v1.1`. To use the latest format, which provides more detailed information about each memory operation, set the `output_format` parameter to `v1.1`: </Note>
 <Note> We're soon deprecating the default output format for get_all() method, which returned a list. Once the changes are live, paginated response will be the only supported format, with 100 memories per page by default. You can customize this using the `page` and `page_size` parameters. </Note>
 
-The following examples showcase the paginated output format. 
+The following examples showcase the paginated output format.
 
 #### Get all memories of a user
 
@@ -977,7 +977,7 @@ curl -X GET "https://api.mem0.ai/v1/memories/?user_id=alex&page=1&page_size=50" 
     "count": 204,
     "next": "https://api.mem0.ai/v1/memories/?user_id=alex&output_format=v1.1&page=2&page_size=50",
     "previous": null,
-    "results": 
+    "results":
     [
             {
                 "id":"f38b689d-6b24-45b7-bced-17fbb4d8bac7",
@@ -1034,7 +1034,7 @@ curl -X GET "https://api.mem0.ai/v1/memories/?agent_id=ai-tutor&page=1&page_size
     "count": 78,
     "next": "https://api.mem0.ai/v1/memories/?agent_id=ai-tutor&output_format=v1.1&page=2&page_size=50",
     "previous": null,
-    "results": 
+    "results":
     [
             {
                 "id": "f38b689d-6b24-45b7-bced-17fbb4d8bac7",
@@ -1088,7 +1088,7 @@ curl -X GET "https://api.mem0.ai/v1/memories/?user_id=alex&run_id=trip-planning-
     "count": 18,
     "next": null,
     "previous": null,
-    "results": 
+    "results":
        [
             {
                 "id": "06d8df63-7bd2-4fad-9acb-60871bcecee0",
@@ -1840,7 +1840,7 @@ Update a memory with new data. You can update the memory's text, metadata, or bo
 ```python Python
 client.update(
     memory_id="<memory-id-here>",
-    text="I am now a vegetarian.", 
+    text="I am now a vegetarian.",
     metadata={"diet": "vegetarian"}
 )
 ```
@@ -2166,7 +2166,7 @@ const searchOptions: SearchOptions = {
       threshold: 0.1,
       api_version: 'v2'
 }
-  
+
 client.search(query, searchOptions)
 .then(results => console.log(results))
 .catch(error => console.error(error));

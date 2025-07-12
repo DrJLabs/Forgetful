@@ -24,31 +24,31 @@ sections:
         name: {{team_display_name}}
         icon: {{team_emoji}}
         description: {{team_description}}
-      
+
       agents:
         {{agent_list}}
-      
+
       workflows:
         {{workflow_list}}
     instruction: |
       Use format "Team [Descriptor]" for generic teams or "[Domain] Team" for specialized teams. Examples: "Team Fullstack", "Healthcare Team", "Legal Team"
-      
+
       Choose a single emoji that best represents the team's function or name
-      
+
       Write a concise description (1 sentence) that explains:
       1. The team's primary purpose
       2. What types of projects they handle
       3. Any special capabilities or focus areas
       4. Keep it short as its displayed in menus
       Example: "Full Stack Ideation Web App Team." or "Startup Business Coaching team"
-      
+
       List the agents that make up this team. Guidelines:
       - Use shortened agent names (e.g., 'analyst' not 'business-analyst')
       - Include 'bmad-orchestrator' for bmad-core teams as the coordinator
       - Only use '*' for an all-inclusive team (rare)
       - Order agents logically by workflow (analysis → design → development → testing)
       - For expansion packs, include both core agents and custom agents
-      
+
       Define the workflows this team can execute that will guide the user through a multi-step multi agent process. Guidelines:
       - Use null if the team doesn't have predefined workflows
       - Workflow names should be descriptive
@@ -92,7 +92,7 @@ sections:
           - greenfield-fullstack  # New full-stack application
           - greenfield-service    # New backend service
           - greenfield-ui         # New frontend application
-          
+
           # Existing project workflows
           - brownfield-fullstack  # Enhance existing full-stack app
           - brownfield-service    # Enhance existing service
@@ -168,7 +168,7 @@ sections:
   - id: creation-instructions
     instruction: |
       When creating a new team configuration:
-      
+
       1. Choose the most appropriate condition block based on team type
       2. Remove all unused condition blocks
       3. Replace all placeholders with actual values

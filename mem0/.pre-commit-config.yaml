@@ -6,7 +6,7 @@ repos:
         entry: ruff check
         language: system
         types: [python]
-        args: [--fix] 
+        args: [--fix]
 
       - id: isort
         name: isort

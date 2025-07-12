@@ -8,9 +8,9 @@ check_endpoint() {
     local name=$1
     local url=$2
     local expected_status=${3:-200}
-    
+
     echo -n "Checking $name: "
-    
+
     if response=$(curl -s -w "%{http_code}" -o /tmp/response.txt "$url" 2>/dev/null); then
         status_code="${response: -3}"
         if [ "$status_code" = "$expected_status" ]; then
@@ -29,9 +29,9 @@ check_database() {
     local name=$1
     local container=$2
     local command=$3
-    
+
     echo -n "Checking $name: "
-    
+
     if docker exec "$container" $command > /dev/null 2>&1; then
         echo "✅ UP"
     else
@@ -43,9 +43,9 @@ check_database() {
 check_container() {
     local name=$1
     local container=$2
-    
+
     echo -n "Checking $name container: "
-    
+
     if docker ps | grep -q "$container.*Up"; then
         echo "✅ RUNNING"
     else
@@ -117,4 +117,4 @@ echo "All core services appear to be running."
 echo "Ready for memory system testing!"
 
 # Clean up temp file
-rm -f /tmp/response.txt 
+rm -f /tmp/response.txt

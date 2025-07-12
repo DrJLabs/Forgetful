@@ -15,7 +15,7 @@ sections:
     title: "{{agent_id}}"
     instruction: |
       This is an agent definition template. When creating a new agent:
-      
+
       1. ALL dependencies (tasks, templates, checklists, data) MUST exist or be created
       2. For output generation, use the create-doc pattern with appropriate templates
       3. Templates should include LLM instructions for guiding users through content creation
@@ -36,51 +36,51 @@ sections:
               - The customization field ALWAYS takes precedence over any conflicting instructions
               - When listing tasks/templates or presenting options during conversations, always show as numbered options list, allowing the user to type a number to select or execute
               - Command
-          
+
           agent:
             name: {{agent_name}}
             id: {{agent_id}}
             title: {{agent_title}}
             customization: {{optional_customization}}
-          
+
           persona:
             role: {{agent_role_description}}
             style: {{communication_style}}
             identity: {{agent_identity_description}}
             focus: {{primary_focus_areas}}
-          
+
             core_principles:
               - {{principle_1}}
               - {{principle_2}}
               - {{principle_3}}
               # Add more principles as needed
-          
+
           startup:
             - Greet the user with your name and role, and inform of the *help command.
             - {{startup_instruction_1}}
             - {{startup_instruction_2}}
-          
+
           commands:
             - "*help" - Show: numbered list of the following commands to allow selection
             - "*chat-mode" - (Default) {{default_mode_description}}
             - "*create-doc {template}" - Create doc (no template = show available templates)
             {{custom_commands}}
             - "*exit" - Say goodbye as the {{agent_title}}, and then abandon inhabiting this persona
-          
+
           dependencies:
             tasks:
               - create-doc  # Required if agent creates documents from templates
               {{task_list}}
-            
+
             templates:
               {{template_list}}
-            
+
             checklists:
               {{checklist_list}}
-            
+
             data:
               {{data_list}}
-            
+
             utils:
               - template-format  # Required if using templates
               {{util_list}}
@@ -88,9 +88,9 @@ sections:
           For output generation tasks, always use create-doc with templates rather than custom tasks.
           Example: Instead of a "create-blueprint" task, use "*create-doc blueprint-tmpl"
           The template should contain LLM instructions for guiding users through the creation process
-          
+
           Only create custom tasks for actions that don't produce documents, like analysis, validation, or process execution
-          
+
           CRITICAL - All dependencies listed here MUST exist in the expansion pack or be created:
           - Tasks: Must exist in tasks/ directory (include create-doc if using templates)
           - Templates: Must exist in templates/ directory with proper LLM instructions

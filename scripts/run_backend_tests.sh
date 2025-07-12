@@ -104,4 +104,4 @@ echo "✅ Lint: PASSED"
 echo "✅ Type Checking: PASSED"
 
 echo -e "${GREEN}🎉 All Backend Tests Completed Successfully!${NC}"
-echo -e "${BLUE}📊 Open htmlcov/index.html to view detailed coverage report${NC}" 
+echo -e "${BLUE}📊 Open htmlcov/index.html to view detailed coverage report${NC}"

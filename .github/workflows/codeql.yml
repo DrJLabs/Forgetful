@@ -64,12 +64,12 @@ jobs:
         if [ -f openmemory/ui/package.json ]; then
           cd openmemory/ui && npm ci
         fi
-        
+
         # Install dependencies for mem0-ts
         if [ -f mem0/mem0-ts/package.json ]; then
           cd mem0/mem0-ts && npm ci
         fi
-        
+
         # Install dependencies for vercel-ai-sdk
         if [ -f mem0/vercel-ai-sdk/package.json ]; then
           cd mem0/vercel-ai-sdk && npm ci
@@ -81,4 +81,4 @@ jobs:
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
-        category: "/language:${{matrix.language}}" 
+        category: "/language:${{matrix.language}}"

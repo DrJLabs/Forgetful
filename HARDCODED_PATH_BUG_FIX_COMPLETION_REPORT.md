@@ -17,7 +17,7 @@
 
 ### **Files Successfully Fixed** ✅
 1. ✅ `mem0/server/cache_layer.py:20` - Removed hardcoded path
-2. ✅ `shared/batching.py:28` - Removed hardcoded path  
+2. ✅ `shared/batching.py:28` - Removed hardcoded path
 3. ✅ `shared/connection_pool.py:26` - Removed hardcoded path
 4. ✅ `openmemory/api/app/utils/memory.py:41` - Removed hardcoded path
 5. ✅ `openmemory/api/app/routers/memories.py:15` - Removed hardcoded path

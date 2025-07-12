@@ -3,7 +3,7 @@ Database Framework Tests - Step 1.2: Database Testing Framework
 
 This module provides comprehensive testing for database operations including:
 - Transaction rollback testing
-- Database integrity testing 
+- Database integrity testing
 - Connection management testing
 - Performance monitoring
 - Concurrent access testing
@@ -59,7 +59,7 @@ class TestDatabaseFramework:
             result = conn.execute(
                 text(
                     """
-                SELECT table_name FROM information_schema.tables 
+                SELECT table_name FROM information_schema.tables
                 WHERE table_schema = 'public'
             """
                 )
@@ -555,7 +555,7 @@ class TestDatabaseInspection:
                 text(
                     """
                 SELECT indexname, tablename, indexdef
-                FROM pg_indexes 
+                FROM pg_indexes
                 WHERE tablename IN ('users', 'apps', 'memories')
                 ORDER BY tablename, indexname
             """
@@ -571,7 +571,7 @@ class TestDatabaseInspection:
             result = conn.execute(
                 text(
                     """
-                SELECT 
+                SELECT
                     tc.constraint_name,
                     tc.table_name,
                     tc.constraint_type,

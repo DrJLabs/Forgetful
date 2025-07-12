@@ -69,11 +69,11 @@ backup_requirements() {
 # Update Python dependencies
 update_python_deps() {
     echo -e "${BLUE}Updating Python dependencies...${NC}"
-    
+
     # Main requirements
     if [[ -f "$PROJECT_ROOT/requirements.txt" ]]; then
         backup_requirements "$PROJECT_ROOT/requirements.txt"
-        
+
         # Try to update using pip-tools if available
         if command -v pip-compile &> /dev/null; then
             log_info "Using pip-tools to update requirements.txt"
@@ -87,19 +87,19 @@ update_python_deps() {
             log_info "pip-tools not available, manual update recommended"
         fi
     fi
-    
+
     # Test requirements
     if [[ -f "$PROJECT_ROOT/requirements-test.txt" ]]; then
         backup_requirements "$PROJECT_ROOT/requirements-test.txt"
         log_info "Test requirements backed up"
     fi
-    
+
     # API requirements
     if [[ -f "$PROJECT_ROOT/openmemory/api/requirements.txt" ]]; then
         backup_requirements "$PROJECT_ROOT/openmemory/api/requirements.txt"
         log_info "API requirements backed up"
     fi
-    
+
     # Install updated dependencies
     if [[ -f "$PROJECT_ROOT/requirements.txt" ]]; then
         echo -e "${YELLOW}Installing updated Python dependencies...${NC}"
@@ -116,25 +116,25 @@ echo -e "\n## 📊 NPM Dependencies" >> "$UPDATE_REPORT"
 # Update NPM dependencies
 update_npm_deps() {
     echo -e "${BLUE}Updating NPM dependencies...${NC}"
-    
+
     # Main package.json
     if [[ -f "$PROJECT_ROOT/package.json" ]]; then
         cd "$PROJECT_ROOT"
         if command -v npm &> /dev/null; then
             echo -e "${YELLOW}Updating main package.json...${NC}"
-            
+
             # Backup package-lock.json
             if [[ -f "package-lock.json" ]]; then
                 cp package-lock.json "package-lock.json.backup.$(date +%Y%m%d_%H%M%S)"
             fi
-            
+
             # Update dependencies
             if npm update 2>/dev/null; then
                 log_update "Main NPM dependencies updated"
             else
                 log_error "Failed to update main NPM dependencies"
             fi
-            
+
             # Audit and fix vulnerabilities
             if npm audit fix --force 2>/dev/null; then
                 log_update "NPM vulnerabilities fixed"
@@ -145,25 +145,25 @@ update_npm_deps() {
             log_error "NPM not available"
         fi
     fi
-    
+
     # UI package.json
     if [[ -f "$PROJECT_ROOT/openmemory/ui/package.json" ]]; then
         cd "$PROJECT_ROOT/openmemory/ui"
         if command -v npm &> /dev/null; then
             echo -e "${YELLOW}Updating UI package.json...${NC}"
-            
+
             # Backup package-lock.json
             if [[ -f "package-lock.json" ]]; then
                 cp package-lock.json "package-lock.json.backup.$(date +%Y%m%d_%H%M%S)"
             fi
-            
+
             # Update dependencies
             if npm update 2>/dev/null; then
                 log_update "UI NPM dependencies updated"
             else
                 log_error "Failed to update UI NPM dependencies"
             fi
-            
+
             # Audit and fix vulnerabilities
             if npm audit fix --force 2>/dev/null; then
                 log_update "UI NPM vulnerabilities fixed"
@@ -180,7 +180,7 @@ echo -e "\n## 🔧 Pre-commit Updates" >> "$UPDATE_REPORT"
 # Update pre-commit hooks
 update_precommit() {
     echo -e "${BLUE}Updating pre-commit hooks...${NC}"
-    
+
     if command -v pre-commit &> /dev/null; then
         if pre-commit autoupdate 2>/dev/null; then
             log_update "Pre-commit hooks updated"
@@ -197,7 +197,7 @@ echo -e "\n## 🧪 Testing Updates" >> "$UPDATE_REPORT"
 # Test updated dependencies
 test_updates() {
     echo -e "${BLUE}Testing updated dependencies...${NC}"
-    
+
     # Test Python imports
     if python3 -c "
 import sys
@@ -214,14 +214,14 @@ except ImportError as e:
     else
         log_error "Python dependency test failed"
     fi
-    
+
     # Test formatting tools
     if black --version &>/dev/null && python3 -c "import isort" 2>/dev/null; then
         log_update "Formatting tools working"
     else
         log_error "Formatting tools not working"
     fi
-    
+
     # Test if npm packages work (if applicable)
     if [[ -f "$PROJECT_ROOT/package.json" ]] && command -v npm &> /dev/null; then
         cd "$PROJECT_ROOT"
@@ -308,4 +308,4 @@ elif [[ $ERROR_COUNT -lt 3 ]]; then
 else
     echo -e "${RED}🚨 Multiple errors during dependency update${NC}"
     exit 2
-fi 
+fi

@@ -64,6 +64,6 @@ echo
 echo "==============================================="
 echo "For detailed logs, check:"
 echo "- Maintenance: $PROJECT_DIR/data/maintenance.log"
-echo "- Monitoring: $PROJECT_DIR/data/monitor.log" 
+echo "- Monitoring: $PROJECT_DIR/data/monitor.log"
 echo "- Alerts: $PROJECT_DIR/data/alerts.log"
 echo "==============================================="

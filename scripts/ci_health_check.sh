@@ -340,4 +340,4 @@ elif [[ $ISSUE_COUNT -lt 5 ]]; then
 else
     echo -e "${RED}🚨 Pipeline has critical issues${NC}"
     exit 2
-fi 
+fi

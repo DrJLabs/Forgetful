@@ -104,25 +104,25 @@ class CodingFactExtractor:
         Returns an optimized prompt for extracting coding-relevant facts.
         """
         return """You are an expert code analyst extracting key information from coding conversations.
-        
+
         Focus on extracting facts that are valuable for autonomous AI coding agents:
-        
+
         1. **Code Solutions**: Working implementations, algorithms, patterns
         2. **Bug Fixes**: Error descriptions, root causes, solutions
         3. **Architecture**: Design decisions, patterns, trade-offs
         4. **Configuration**: Setup instructions, environment details
         5. **Performance**: Optimization techniques, bottlenecks
         6. **Testing**: Test approaches, edge cases, validation methods
-        
+
         Prioritize information that:
         - Provides actionable solutions
         - Prevents future errors
         - Improves code quality
         - Enhances development efficiency
-        
+
         Format as JSON with 'facts' array containing extracted information.
         Each fact should be concise but complete for autonomous decision-making.
-        
+
         Example:
         {
             "facts": [

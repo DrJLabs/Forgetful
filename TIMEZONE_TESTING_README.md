@@ -73,7 +73,7 @@ python run_timezone_tests.py
 # Unit tests only
 pytest tests/test_storage_optimization_timezone.py::TestTimezoneEdgeCases -v
 
-# Integration tests only  
+# Integration tests only
 pytest tests/test_storage_optimization_timezone.py::TestStorageOptimizationIntegration -v
 
 # Regression tests only
@@ -245,4 +245,4 @@ The timezone fixes are considered successful when:
 
 ---
 
-**Note**: These tests are critical for ensuring the stability and correctness of the memory storage optimization system. Run them before any deployment to production. 
+**Note**: These tests are critical for ensuring the stability and correctness of the memory storage optimization system. Run them before any deployment to production.

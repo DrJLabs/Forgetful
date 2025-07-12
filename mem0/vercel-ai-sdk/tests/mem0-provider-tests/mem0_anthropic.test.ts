@@ -32,7 +32,7 @@ describe("ANTHROPIC MEM0 Tests", () => {
         ],
       },
     ];
-    
+
     const { text } = await generateText({
       // @ts-ignore
       model: mem0("claude-3-haiku-20240307"),

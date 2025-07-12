@@ -411,7 +411,7 @@ class MemoryGraph:
             (m:Entity {{name: $dest_name, user_id: $user_id}})
             WHERE 1=1 {agent_filter}
             DELETE r
-            RETURN 
+            RETURN
                 n.name AS source,
                 m.name AS target,
                 type(r) AS relationship
@@ -467,7 +467,7 @@ class MemoryGraph:
                         destination.embedding = $destination_embedding,
                         destination:Entity
                     MERGE (source)-[r:{relationship}]->(destination)
-                    ON CREATE SET 
+                    ON CREATE SET
                         r.created = timestamp()
                     RETURN source.name AS source, type(r) AS relationship, destination.name AS target
                     """
@@ -491,7 +491,7 @@ class MemoryGraph:
                         source.embedding = $source_embedding,
                         source:Entity
                     MERGE (source)-[r:{relationship}]->(destination)
-                    ON CREATE SET 
+                    ON CREATE SET
                         r.created = timestamp()
                     RETURN source.name AS source, type(r) AS relationship, destination.name AS target
                     """
@@ -514,7 +514,7 @@ class MemoryGraph:
                     MATCH (destination:Entity)
                     WHERE id(destination) = $destination_id
                     MERGE (source)-[r:{relationship}]->(destination)
-                    ON CREATE SET 
+                    ON CREATE SET
                         r.created_at = timestamp(),
                         r.updated_at = timestamp()
                     RETURN source.name AS source, type(r) AS relationship, destination.name AS target
@@ -569,11 +569,11 @@ class MemoryGraph:
 
         if agent_id:
             cypher = """
-                CALL vector_search.search("memzero", 1, $source_embedding) 
+                CALL vector_search.search("memzero", 1, $source_embedding)
                 YIELD distance, node, similarity
                 WITH node AS source_candidate, similarity
-                WHERE source_candidate.user_id = $user_id 
-                AND source_candidate.agent_id = $agent_id 
+                WHERE source_candidate.user_id = $user_id
+                AND source_candidate.agent_id = $agent_id
                 AND similarity >= $threshold
                 RETURN id(source_candidate);
                 """
@@ -585,10 +585,10 @@ class MemoryGraph:
             }
         else:
             cypher = """
-                CALL vector_search.search("memzero", 1, $source_embedding) 
+                CALL vector_search.search("memzero", 1, $source_embedding)
                 YIELD distance, node, similarity
                 WITH node AS source_candidate, similarity
-                WHERE source_candidate.user_id = $user_id 
+                WHERE source_candidate.user_id = $user_id
                 AND similarity >= $threshold
                 RETURN id(source_candidate);
                 """
@@ -608,11 +608,11 @@ class MemoryGraph:
 
         if agent_id:
             cypher = """
-                CALL vector_search.search("memzero", 1, $destination_embedding) 
+                CALL vector_search.search("memzero", 1, $destination_embedding)
                 YIELD distance, node, similarity
                 WITH node AS destination_candidate, similarity
-                WHERE node.user_id = $user_id 
-                AND node.agent_id = $agent_id 
+                WHERE node.user_id = $user_id
+                AND node.agent_id = $agent_id
                 AND similarity >= $threshold
                 RETURN id(destination_candidate);
                 """
@@ -624,10 +624,10 @@ class MemoryGraph:
             }
         else:
             cypher = """
-                CALL vector_search.search("memzero", 1, $destination_embedding) 
+                CALL vector_search.search("memzero", 1, $destination_embedding)
                 YIELD distance, node, similarity
                 WITH node AS destination_candidate, similarity
-                WHERE node.user_id = $user_id 
+                WHERE node.user_id = $user_id
                 AND similarity >= $threshold
                 RETURN id(destination_candidate);
                 """

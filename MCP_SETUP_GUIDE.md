@@ -121,4 +121,4 @@ Mem0 Memory Client
 PostgreSQL + Neo4j
 ```
 
-Both MCP and API interfaces use the exact same backend, ensuring consistency across all access methods. 
+Both MCP and API interfaces use the exact same backend, ensuring consistency across all access methods.

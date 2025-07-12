@@ -32,7 +32,7 @@ SHELL=/bin/bash
 # Database Monitoring - Every 5 minutes
 */5 * * * * cd /home/drj/projects/mem0-stack && ./scripts/db_monitor.sh >/dev/null 2>&1
 
-# Health Checks - Every 2 minutes  
+# Health Checks - Every 2 minutes
 */2 * * * * cd /home/drj/projects/mem0-stack && ./scripts/db_monitor.sh health >/dev/null 2>&1
 
 # Vacuum and analyze - Every 6 hours
@@ -75,7 +75,7 @@ export BACKUP_RETENTION_DAYS=30
 export BACKUP_VERIFY=true
 export BACKUP_COMPRESS=true
 
-# Maintenance Configuration  
+# Maintenance Configuration
 export VACUUM_THRESHOLD_MB=100
 export STATS_AGE_HOURS=24
 export REINDEX_THRESHOLD_MB=100
@@ -96,7 +96,7 @@ export POSTGRES_CONTAINER="postgres-mem0"
 export POSTGRES_USER="drj"
 export POSTGRES_DB="mem0"
 
-# Neo4j Configuration  
+# Neo4j Configuration
 export NEO4J_CONTAINER="neo4j-mem0"
 export NEO4J_USERNAME="neo4j"
 
@@ -188,7 +188,7 @@ echo
 echo "==============================================="
 echo "For detailed logs, check:"
 echo "- Maintenance: $PROJECT_DIR/data/maintenance.log"
-echo "- Monitoring: $PROJECT_DIR/data/monitor.log" 
+echo "- Monitoring: $PROJECT_DIR/data/monitor.log"
 echo "- Alerts: $PROJECT_DIR/data/alerts.log"
 echo "==============================================="
 EOF
@@ -210,7 +210,7 @@ echo "   - Reports: Daily at 6 AM"
 echo
 echo "📁 Files created:"
 echo "   - $SCRIPT_DIR/db_backup.sh"
-echo "   - $SCRIPT_DIR/db_maintenance.sh" 
+echo "   - $SCRIPT_DIR/db_maintenance.sh"
 echo "   - $SCRIPT_DIR/db_monitor.sh"
 echo "   - $SCRIPT_DIR/maintenance_status.sh"
 echo "   - $PROJECT_DIR/maintenance_config.sh"
@@ -225,4 +225,4 @@ echo "📊 View cron jobs: crontab -l"
 echo "📈 Monitor logs: tail -f data/maintenance.log"
 echo "🚨 Check alerts: tail -f data/alerts.log"
 echo
-echo "⚠️  Note: Ensure containers are running before maintenance tasks execute" 
+echo "⚠️  Note: Ensure containers are running before maintenance tasks execute"

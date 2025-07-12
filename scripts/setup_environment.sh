@@ -2,7 +2,7 @@
 # ================================================================
 # mem0-stack Environment Setup Script
 # ================================================================
-# 
+#
 # This script automates the setup of environment configuration
 # for the mem0-stack project, ensuring consistent deployments
 # and reducing configuration errors.
@@ -83,7 +83,7 @@ prompt_with_default() {
     local default="$2"
     local var_name="$3"
     local is_secret="${4:-false}"
-    
+
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
         if [[ "$is_secret" == "true" ]]; then
             echo -n "$prompt [$default]: "
@@ -93,7 +93,7 @@ prompt_with_default() {
             echo -n "$prompt [$default]: "
             read user_input
         fi
-        
+
         if [[ -n "$user_input" ]]; then
             eval "$var_name='$user_input'"
         else
@@ -123,9 +123,9 @@ generate_password() {
 
 validate_prerequisites() {
     log_section "Checking Prerequisites"
-    
+
     local errors=0
-    
+
     # Check Docker
     if ! command_exists docker; then
         log_error "Docker is not installed. Please install Docker first."
@@ -133,7 +133,7 @@ validate_prerequisites() {
     else
         log_success "Docker is installed"
     fi
-    
+
     # Check Docker Compose
     if ! docker compose version >/dev/null 2>&1; then
         log_error "Docker Compose is not available. Please install Docker Compose V2."
@@ -141,14 +141,14 @@ validate_prerequisites() {
     else
         log_success "Docker Compose is available"
     fi
-    
+
     # Check Python
     if ! command_exists python3; then
         log_warning "Python 3 is not installed. Some validation features will be limited."
     else
         log_success "Python 3 is available"
     fi
-    
+
     # Check required directories
     if [[ ! -f "$ENV_TEMPLATE" ]]; then
         log_error "Environment template file not found: $ENV_TEMPLATE"
@@ -156,18 +156,18 @@ validate_prerequisites() {
     else
         log_success "Environment template found"
     fi
-    
+
     return $errors
 }
 
 validate_environment_file() {
     log_section "Validating Environment Configuration"
-    
+
     if [[ ! -f "$ENV_FILE" ]]; then
         log_error "Environment file not found: $ENV_FILE"
         return 1
     fi
-    
+
     # Check for required variables
     local required_vars=(
         "DATABASE_USER"
@@ -176,15 +176,15 @@ validate_environment_file() {
         "OPENAI_API_KEY"
         "APP_USER_ID"
     )
-    
+
     local missing_vars=()
-    
+
     for var in "${required_vars[@]}"; do
         if ! grep -q "^${var}=" "$ENV_FILE" || grep -q "^${var}=.*your_.*here" "$ENV_FILE"; then
             missing_vars+=("$var")
         fi
     done
-    
+
     if [[ ${#missing_vars[@]} -eq 0 ]]; then
         log_success "All required variables are configured"
         return 0
@@ -200,7 +200,7 @@ validate_environment_file() {
 
 create_data_directories() {
     log_section "Creating Data Directories"
-    
+
     local directories=(
         "data"
         "data/postgres"
@@ -208,7 +208,7 @@ create_data_directories() {
         "data/mem0"
         "data/mem0/history"
     )
-    
+
     for dir in "${directories[@]}"; do
         local full_path="${PROJECT_ROOT}/${dir}"
         if [[ ! -d "$full_path" ]]; then
@@ -217,7 +217,7 @@ create_data_directories() {
         else
             log_info "Directory already exists: $dir"
         fi
-        
+
         # Set appropriate permissions
         chmod 755 "$full_path"
     done
@@ -225,7 +225,7 @@ create_data_directories() {
 
 setup_environment_file() {
     log_section "Setting Up Environment File"
-    
+
     # Check if .env already exists
     if [[ -f "$ENV_FILE" && "$FORCE_OVERWRITE" != "true" ]]; then
         if [[ "$INTERACTIVE_MODE" == "true" ]]; then
@@ -240,23 +240,23 @@ setup_environment_file() {
             return 0
         fi
     fi
-    
+
     # Copy template to .env
     cp "$ENV_TEMPLATE" "$ENV_FILE"
     log_success "Created environment file from template"
-    
+
     # Collect configuration values
     collect_configuration_values
-    
+
     # Apply configuration to .env file
     apply_configuration_values
-    
+
     log_success "Environment file configured successfully"
 }
 
 collect_configuration_values() {
     log_section "Collecting Configuration Values"
-    
+
     # Database configuration
     if [[ "$PRODUCTION_MODE" == "true" ]]; then
         DATABASE_USER="prod_user"
@@ -275,14 +275,14 @@ collect_configuration_values() {
         APP_DEBUG="true"
         APP_LOG_LEVEL="INFO"
     fi
-    
+
     # Interactive prompts
     if [[ "$INTERACTIVE_MODE" == "true" ]]; then
         echo -e "\n${CYAN}📝 Configuration Setup${NC}"
         echo "Please provide the following configuration values:"
         echo "(Press Enter to use default values shown in brackets)"
         echo
-        
+
         prompt_with_default "Database username" "$DATABASE_USER" "DATABASE_USER"
         prompt_with_default "Database password" "$DATABASE_PASSWORD" "DATABASE_PASSWORD" "true"
         prompt_with_default "Neo4j password" "$NEO4J_PASSWORD" "NEO4J_PASSWORD" "true"
@@ -303,13 +303,13 @@ collect_configuration_values() {
             fi
         fi
     fi
-    
+
     log_info "Configuration values collected"
 }
 
 apply_configuration_values() {
     log_section "Applying Configuration Values"
-    
+
     # Replace template values in .env file
     local replacements=(
         "s/DATABASE_USER=your_username_here/DATABASE_USER=$DATABASE_USER/g"
@@ -321,20 +321,20 @@ apply_configuration_values() {
         "s/APP_DEBUG=false/APP_DEBUG=$APP_DEBUG/g"
         "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$APP_LOG_LEVEL/g"
     )
-    
+
     for replacement in "${replacements[@]}"; do
         sed -i.bak "$replacement" "$ENV_FILE"
     done
-    
+
     # Remove backup file
     rm -f "${ENV_FILE}.bak"
-    
+
     log_success "Configuration applied to environment file"
 }
 
 setup_service_environments() {
     log_section "Setting Up Service-Specific Environment Files"
-    
+
     # OpenMemory API environment
     local api_env="${PROJECT_ROOT}/openmemory/api/.env"
     if [[ ! -f "$api_env" ]]; then
@@ -368,7 +368,7 @@ EOF
     else
         log_info "OpenMemory API environment file already exists"
     fi
-    
+
     # OpenMemory UI environment
     local ui_env="${PROJECT_ROOT}/openmemory/ui/.env"
     if [[ ! -f "$ui_env" ]]; then
@@ -392,9 +392,9 @@ EOF
 
 validate_docker_configuration() {
     log_section "Validating Docker Configuration"
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # Test docker-compose configuration
     if docker compose config >/dev/null 2>&1; then
         log_success "Docker Compose configuration is valid"
@@ -402,10 +402,10 @@ validate_docker_configuration() {
         log_error "Docker Compose configuration has errors"
         return 1
     fi
-    
+
     # Check if required images can be built/pulled
     local services=("postgres" "neo4j" "mem0" "openmemory-mcp" "openmemory-ui")
-    
+
     for service in "${services[@]}"; do
         if docker compose config --services | grep -q "^${service}$"; then
             log_success "Service '$service' is configured"
@@ -417,7 +417,7 @@ validate_docker_configuration() {
 
 run_configuration_validation() {
     log_section "Running Configuration Validation"
-    
+
     if command_exists python3 && [[ -f "${PROJECT_ROOT}/scripts/validate_config.py" ]]; then
         if python3 "${PROJECT_ROOT}/scripts/validate_config.py" --skip-connections; then
             log_success "Configuration validation passed"
@@ -469,7 +469,7 @@ EOF
 main() {
     echo -e "${PURPLE}🚀 mem0-stack Environment Setup${NC}"
     echo "================================================================"
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -504,13 +504,13 @@ main() {
                 ;;
         esac
     done
-    
+
     # Validate prerequisites
     if ! validate_prerequisites; then
         log_error "Prerequisites not met. Please fix the issues above."
         exit 1
     fi
-    
+
     # Validate-only mode
     if [[ "$VALIDATE_ONLY" == "true" ]]; then
         if validate_environment_file && run_configuration_validation; then
@@ -521,33 +521,33 @@ main() {
             exit 1
         fi
     fi
-    
+
     # Create necessary directories
     create_data_directories
-    
+
     # Setup environment files
     setup_environment_file
     setup_service_environments
-    
+
     # Docker validation
     if [[ "$SKIP_DOCKER" != "true" ]]; then
         validate_docker_configuration
     fi
-    
+
     # Final validation
     if validate_environment_file && run_configuration_validation; then
         log_success "Environment setup completed successfully!"
     else
         log_warning "Setup completed but validation found issues"
     fi
-    
+
     # Show next steps
     echo -e "\n${CYAN}🎯 Next Steps:${NC}"
     echo "1. Review the generated .env file and update values as needed"
     echo "2. Run: docker-compose up -d"
     echo "3. Test: python test_memory_system.py"
     echo "4. Monitor: docker-compose logs -f"
-    
+
     if [[ "$PRODUCTION_MODE" == "true" ]]; then
         echo -e "\n${YELLOW}⚠️  Production Notes:${NC}"
         echo "• Secure the generated passwords in a safe location"
@@ -555,7 +555,7 @@ main() {
         echo "• Set up proper backup procedures"
         echo "• Review security settings in docker-compose.yml"
     fi
-    
+
     echo -e "\n${GREEN}✨ Environment setup complete!${NC}"
 }
 

@@ -114,7 +114,7 @@ describe('FormView', () => {
   describe('Basic Rendering', () => {
     it('renders all main sections', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       expect(screen.getByText('OpenMemory Settings')).toBeInTheDocument()
       expect(screen.getByText('LLM Settings')).toBeInTheDocument()
       expect(screen.getByText('Embedder Settings')).toBeInTheDocument()
@@ -122,7 +122,7 @@ describe('FormView', () => {
 
     it('renders with empty settings', () => {
       render(<FormView settings={{}} onChange={mockOnChange} />)
-      
+
       expect(screen.getByText('OpenMemory Settings')).toBeInTheDocument()
       expect(screen.getByText('LLM Settings')).toBeInTheDocument()
       expect(screen.getByText('Embedder Settings')).toBeInTheDocument()
@@ -132,7 +132,7 @@ describe('FormView', () => {
   describe('OpenMemory Settings', () => {
     it('renders custom instructions textarea', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       const textarea = screen.getByDisplayValue('')
       expect(textarea).toBeInTheDocument()
     })
@@ -140,10 +140,10 @@ describe('FormView', () => {
     it('handles custom instructions change', async () => {
       const user = userEvent.setup()
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       const textarea = screen.getByDisplayValue('')
       await user.type(textarea, 'Custom memory instructions')
-      
+
       expect(mockOnChange).toHaveBeenCalledWith({
         ...defaultSettings,
         openmemory: {
@@ -157,17 +157,17 @@ describe('FormView', () => {
   describe('LLM Settings', () => {
     it('renders LLM provider selection', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       const selects = screen.getAllByTestId('select-trigger')
       expect(selects).toHaveLength(2) // LLM and Embedder
     })
 
     it('handles LLM provider change', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       const select = screen.getAllByTestId('select-trigger')[0]
       fireEvent.change(select, { target: { value: 'anthropic' } })
-      
+
       expect(mockOnChange).toHaveBeenCalledWith({
         ...defaultSettings,
         mem0: {
@@ -182,7 +182,7 @@ describe('FormView', () => {
 
     it('shows API key field for non-Ollama providers', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       expect(screen.getByText('API Key')).toBeInTheDocument()
     })
 
@@ -197,9 +197,9 @@ describe('FormView', () => {
           },
         },
       }
-      
+
       render(<FormView settings={ollamaSettings} onChange={mockOnChange} />)
-      
+
       // Should not show API key for LLM when using Ollama
       const apiKeyLabels = screen.queryAllByText('API Key')
       expect(apiKeyLabels).toHaveLength(1) // Only for embedder, not LLM
@@ -216,21 +216,21 @@ describe('FormView', () => {
           },
         },
       }
-      
+
       render(<FormView settings={ollamaSettings} onChange={mockOnChange} />)
-      
+
       expect(screen.getByText('Ollama Base URL')).toBeInTheDocument()
     })
 
     it('toggles API key visibility', async () => {
       const user = userEvent.setup()
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
-      const eyeButton = screen.getAllByTestId('button').find(button => 
+
+      const eyeButton = screen.getAllByTestId('button').find(button =>
         button.textContent?.includes('👁') || button.textContent?.includes('🙈')
       )
       expect(eyeButton).toBeInTheDocument()
-      
+
       await user.click(eyeButton!)
       // The eye icon should toggle (implementation detail, but shows interaction works)
       expect(eyeButton).toBeInTheDocument()
@@ -239,10 +239,10 @@ describe('FormView', () => {
     it('toggles advanced settings', async () => {
       const user = userEvent.setup()
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       const advancedToggle = screen.getByTestId('switch')
       await user.click(advancedToggle)
-      
+
       // Should show temperature and max tokens when advanced is enabled
       await waitFor(() => {
         expect(screen.getByText(/Temperature:/)).toBeInTheDocument()
@@ -253,15 +253,15 @@ describe('FormView', () => {
     it('handles temperature change in advanced settings', async () => {
       const user = userEvent.setup()
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       // Enable advanced settings first
       const advancedToggle = screen.getByTestId('switch')
       await user.click(advancedToggle)
-      
+
       await waitFor(() => {
         const temperatureSlider = screen.getByTestId('slider')
         fireEvent.change(temperatureSlider, { target: { value: '0.9' } })
-        
+
         expect(mockOnChange).toHaveBeenCalledWith({
           ...defaultSettings,
           mem0: {
@@ -282,10 +282,10 @@ describe('FormView', () => {
   describe('Embedder Settings', () => {
     it('handles embedder provider change', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       const select = screen.getAllByTestId('select-trigger')[1] // Second select is embedder
       fireEvent.change(select, { target: { value: 'huggingface' } })
-      
+
       expect(mockOnChange).toHaveBeenCalledWith({
         ...defaultSettings,
         mem0: {
@@ -301,14 +301,14 @@ describe('FormView', () => {
     it('handles embedder model change', async () => {
       const user = userEvent.setup()
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       // Find the embedder model input (should be the second model input)
       const inputs = screen.getAllByDisplayValue('text-embedding-ada-002')
       expect(inputs).toHaveLength(1)
-      
+
       await user.clear(inputs[0])
       await user.type(inputs[0], 'new-embedding-model')
-      
+
       expect(mockOnChange).toHaveBeenCalledWith({
         ...defaultSettings,
         mem0: {
@@ -334,13 +334,13 @@ describe('FormView', () => {
           embedder: { provider: 'ollama', config: {} },
         },
       }
-      
+
       render(<FormView settings={ollamaSettings} onChange={mockOnChange} />)
-      
+
       // Should show Ollama URL fields for both LLM and Embedder
       const ollamaUrlLabels = screen.getAllByText('Ollama Base URL')
       expect(ollamaUrlLabels).toHaveLength(2)
-      
+
       // Should not show API Key fields
       const apiKeyLabels = screen.queryAllByText('API Key')
       expect(apiKeyLabels).toHaveLength(0)
@@ -354,9 +354,9 @@ describe('FormView', () => {
           embedder: { provider: 'ollama', config: {} },
         },
       }
-      
+
       render(<FormView settings={mixedSettings} onChange={mockOnChange} />)
-      
+
       // Should show one API key (for LLM) and one Ollama URL (for embedder)
       expect(screen.getByText('API Key')).toBeInTheDocument()
       expect(screen.getByText('Ollama Base URL')).toBeInTheDocument()
@@ -370,7 +370,7 @@ describe('FormView', () => {
           llm: {}
         }
       }
-      
+
       expect(() => {
         render(<FormView settings={incompleteSettings} onChange={mockOnChange} />)
       }).not.toThrow()
@@ -383,13 +383,13 @@ describe('FormView', () => {
           embedder: { provider: 'openai' }
         }
       }
-      
+
       render(<FormView settings={incompleteSettings} onChange={mockOnChange} />)
-      
+
       // Should be able to change model even when config is undefined
       const modelInputs = screen.getAllByPlaceholderText('Enter model name')
       fireEvent.change(modelInputs[0], { target: { value: 'gpt-4' } })
-      
+
       expect(mockOnChange).toHaveBeenCalled()
     })
   })
@@ -397,7 +397,7 @@ describe('FormView', () => {
   describe('Accessibility', () => {
     it('has proper labels for form inputs', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       expect(screen.getByText('Custom Instructions')).toBeInTheDocument()
       expect(screen.getByText('LLM Provider')).toBeInTheDocument()
       expect(screen.getByText('Model')).toBeInTheDocument()
@@ -406,9 +406,9 @@ describe('FormView', () => {
 
     it('provides help text for important fields', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
-      
+
       expect(screen.getByText(/Custom instructions that will be used to guide memory processing/)).toBeInTheDocument()
       expect(screen.getByText(/Use "env:API_KEY" to load from environment variable/)).toBeInTheDocument()
     })
   })
-}) 
+})

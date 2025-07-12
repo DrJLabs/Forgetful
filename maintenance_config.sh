@@ -6,7 +6,7 @@ export BACKUP_RETENTION_DAYS=30
 export BACKUP_VERIFY=true
 export BACKUP_COMPRESS=true
 
-# Maintenance Configuration  
+# Maintenance Configuration
 export VACUUM_THRESHOLD_MB=100
 export STATS_AGE_HOURS=24
 export REINDEX_THRESHOLD_MB=100
@@ -27,7 +27,7 @@ export POSTGRES_CONTAINER="postgres-mem0"
 export POSTGRES_USER="drj"
 export POSTGRES_DB="mem0"
 
-# Neo4j Configuration  
+# Neo4j Configuration
 export NEO4J_CONTAINER="neo4j-mem0"
 export NEO4J_USERNAME="neo4j"
 

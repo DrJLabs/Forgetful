@@ -49,4 +49,4 @@ The MCP server now properly exposes 4 tools:
 ## Technical Details
 - The HTTP/SSE endpoint (`http://localhost:8765/mcp/...`) remains available for other clients
 - The stdio-based server runs inside the Docker container to access all dependencies
-- Both interfaces use the same backend storage (PostgreSQL + Neo4j) 
+- Both interfaces use the same backend storage (PostgreSQL + Neo4j)

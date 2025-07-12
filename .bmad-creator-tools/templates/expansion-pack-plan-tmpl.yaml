@@ -50,28 +50,28 @@ sections:
               - Tasks used: {{task_list}}
               - Templates used: {{template_list}}
               - Data required: {{data_requirements}}
-      
+
       - id: tasks
         title: Tasks
         type: checklist
         instruction: List all tasks to be created
         repeatable: true
         template: "`{{task_name}}.md` - {{purpose}} (used by: {{using_agents}})"
-      
+
       - id: templates
         title: Templates
         type: checklist
         instruction: List all templates to be created
         repeatable: true
         template: "`{{template_name}}-tmpl.md` - {{document_type}} (used by: {{using_components}})"
-      
+
       - id: checklists
         title: Checklists
         type: checklist
         instruction: List all checklists to be created
         repeatable: true
         template: "`{{checklist_name}}-checklist.md` - {{validation_purpose}}"
-      
+
       - id: data-files
         title: Data Files Required from User
         instruction: |
@@ -116,5 +116,5 @@ sections:
   - id: next-steps
     content: |
       ---
-      
+
       **Next Steps**: Once approved, proceed with Phase 3 implementation starting with the orchestrator agent.

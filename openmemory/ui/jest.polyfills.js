@@ -35,4 +35,4 @@ Object.defineProperties(globalThis, {
   URLSearchParams: { value: URLSearchParams },
 })
 
-// Add other polyfills as needed 
+// Add other polyfills as needed

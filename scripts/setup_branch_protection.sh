@@ -55,14 +55,14 @@ check_github_cli() {
         print_colored "${YELLOW}" "Please install it: https://cli.github.com/"
         exit 1
     fi
-    
+
     # Check if authenticated
     if ! gh auth status &> /dev/null; then
         print_colored "${RED}" "❌ GitHub CLI is not authenticated"
         print_colored "${YELLOW}" "Please authenticate: gh auth login"
         exit 1
     fi
-    
+
     print_colored "${GREEN}" "✅ GitHub CLI is installed and authenticated"
 }
 
@@ -83,10 +83,10 @@ build_contexts_json() {
 apply_branch_protection() {
     local branch=$1
     local contexts_json=$(build_contexts_json)
-    
+
     print_colored "${BLUE}" "📋 Applying branch protection rules for: $branch"
     print_colored "${BLUE}" "🔐 Required status checks: ${#QUALITY_GATES[@]} quality gates"
-    
+
     # Create the JSON payload
     local protection_json=$(cat <<EOF
 {
@@ -112,7 +112,7 @@ apply_branch_protection() {
 }
 EOF
 )
-    
+
     # Apply the protection rules
     if gh api "repos/$REPO_OWNER/$REPO_NAME/branches/$branch/protection" \
         --method PUT \
@@ -127,25 +127,25 @@ EOF
 # Function to verify branch protection rules
 verify_branch_protection() {
     local branch=$1
-    
+
     print_colored "${BLUE}" "🔍 Verifying branch protection rules for: $branch"
-    
+
     # Get current protection rules
     local protection_info=$(gh api "repos/$REPO_OWNER/$REPO_NAME/branches/$branch/protection" 2>/dev/null || echo "")
-    
+
     if [[ -z "$protection_info" ]]; then
         print_colored "${RED}" "❌ No branch protection rules found for $branch"
         return 1
     fi
-    
+
     # Extract status checks
     local status_checks=$(echo "$protection_info" | jq -r '.required_status_checks.contexts[]' 2>/dev/null || echo "")
-    
+
     if [[ -z "$status_checks" ]]; then
         print_colored "${RED}" "❌ No required status checks found for $branch"
         return 1
     fi
-    
+
     # Verify all quality gates are present
     local missing_gates=()
     for gate in "${QUALITY_GATES[@]}"; do
@@ -153,7 +153,7 @@ verify_branch_protection() {
             missing_gates+=("$gate")
         fi
     done
-    
+
     if [[ ${#missing_gates[@]} -gt 0 ]]; then
         print_colored "${RED}" "❌ Missing quality gates for $branch:"
         for gate in "${missing_gates[@]}"; do
@@ -161,29 +161,29 @@ verify_branch_protection() {
         done
         return 1
     fi
-    
+
     print_colored "${GREEN}" "✅ All quality gates are properly configured for $branch"
     print_colored "${GREEN}" "📊 Protected status checks: ${#QUALITY_GATES[@]} quality gates"
-    
+
     return 0
 }
 
 # Function to show protection summary
 show_protection_summary() {
     print_header "🛡️  Branch Protection Summary"
-    
+
     print_colored "${BLUE}" "Repository: $REPO_OWNER/$REPO_NAME"
     print_colored "${BLUE}" "Protected Branches: $MAIN_BRANCH, $DEVELOP_BRANCH"
     print_colored "${BLUE}" "Quality Gates: ${#QUALITY_GATES[@]} gates"
     echo ""
-    
+
     print_colored "${YELLOW}" "Quality Gates Configuration:"
     for i in "${!QUALITY_GATES[@]}"; do
         local gate_num=$((i + 1))
         print_colored "${YELLOW}" "  $gate_num. ${QUALITY_GATES[$i]}"
     done
     echo ""
-    
+
     print_colored "${YELLOW}" "Merge Blocking Conditions:"
     print_colored "${YELLOW}" "  • Any quality gate fails"
     print_colored "${YELLOW}" "  • Coverage below 80% threshold"
@@ -193,7 +193,7 @@ show_protection_summary() {
     print_colored "${YELLOW}" "  • Performance regressions"
     print_colored "${YELLOW}" "  • Code quality violations"
     echo ""
-    
+
     print_colored "${GREEN}" "🚫 Merges will be BLOCKED until ALL quality gates pass"
     print_colored "${GREEN}" "✅ This ensures zero major bugs reach the main branch"
 }
@@ -201,26 +201,26 @@ show_protection_summary() {
 # Function to test branch protection
 test_branch_protection() {
     print_header "🧪 Testing Branch Protection"
-    
+
     local test_passed=true
-    
+
     for branch in "$MAIN_BRANCH" "$DEVELOP_BRANCH"; do
         print_colored "${BLUE}" "Testing branch: $branch"
-        
+
         # Test 1: Check if branch exists
         if ! gh api "repos/$REPO_OWNER/$REPO_NAME/branches/$branch" &>/dev/null; then
             print_colored "${RED}" "❌ Branch $branch does not exist"
             test_passed=false
             continue
         fi
-        
+
         # Test 2: Check if protection is enabled
         if ! gh api "repos/$REPO_OWNER/$REPO_NAME/branches/$branch/protection" &>/dev/null; then
             print_colored "${RED}" "❌ Branch protection not enabled for $branch"
             test_passed=false
             continue
         fi
-        
+
         # Test 3: Verify quality gates
         if verify_branch_protection "$branch"; then
             print_colored "${GREEN}" "✅ Branch protection working correctly for $branch"
@@ -228,10 +228,10 @@ test_branch_protection() {
             print_colored "${RED}" "❌ Branch protection issues found for $branch"
             test_passed=false
         fi
-        
+
         echo ""
     done
-    
+
     if [[ "$test_passed" == "true" ]]; then
         print_colored "${GREEN}" "🎉 All branch protection tests passed!"
         return 0
@@ -274,7 +274,7 @@ EOF
 main() {
     local action=""
     local dry_run=false
-    
+
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -309,12 +309,12 @@ main() {
                 ;;
         esac
     done
-    
+
     # Default action if none specified
     if [[ -z "$action" ]]; then
         action="show"
     fi
-    
+
     # Print header
     print_header "🚀 mem0-stack Branch Protection Setup"
     print_colored "${BLUE}" "Step 2.3: CI/CD Integration with Quality Gates"
@@ -323,10 +323,10 @@ main() {
         print_colored "${YELLOW}" "Mode: DRY RUN (no changes will be made)"
     fi
     echo ""
-    
+
     # Check prerequisites
     check_github_cli
-    
+
     # Execute action
     case "$action" in
         "apply")
@@ -357,7 +357,7 @@ main() {
             exit 1
             ;;
     esac
-    
+
     echo ""
     print_colored "${GREEN}" "🎉 Branch protection setup completed!"
     print_colored "${GREEN}" "🚫 Merges will now be blocked until ALL quality gates pass"
@@ -365,4 +365,4 @@ main() {
 }
 
 # Run main function
-main "$@" 
+main "$@"

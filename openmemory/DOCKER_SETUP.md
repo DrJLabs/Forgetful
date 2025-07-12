@@ -68,4 +68,4 @@ These are automatically started when you run the OpenMemory services.
 
 - The old `docker-compose.yml` in this directory has been renamed to `docker-compose.yml.old`
 - All services now use the main project's docker network (traefik)
-- Container names are simplified (no more project prefix) 
+- Container names are simplified (no more project prefix)

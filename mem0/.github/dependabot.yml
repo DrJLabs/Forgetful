@@ -104,4 +104,4 @@ updates:
       - "maintainers"
     labels:
       - "dependencies"
-      - "github-actions" 
+      - "github-actions"

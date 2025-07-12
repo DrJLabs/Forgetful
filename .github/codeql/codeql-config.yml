@@ -29,4 +29,4 @@ paths-ignore:
   - "**/.next/**"
   - "**/docs/**"
   - "mem0/embedchain/**"
-  - "openmemory/ui/public/**" 
+  - "openmemory/ui/public/**"

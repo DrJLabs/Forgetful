@@ -410,7 +410,7 @@ When updating the mem0-stack:
 This comprehensive maintenance system provides:
 
 ✅ **Automated backup and restore capabilities**
-✅ **Proactive monitoring and alerting**  
+✅ **Proactive monitoring and alerting**
 ✅ **Performance optimization**
 ✅ **Capacity planning support**
 ✅ **Emergency recovery procedures**
@@ -418,4 +418,4 @@ This comprehensive maintenance system provides:
 
 The system is designed to maintain optimal performance of your mem0-stack deployment while providing the tools and information needed for effective database administration.
 
-For questions or issues, refer to the log files in the `data/` directory or run the status dashboard for current system information. 
+For questions or issues, refer to the log files in the `data/` directory or run the status dashboard for current system information.

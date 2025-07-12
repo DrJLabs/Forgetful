@@ -89,7 +89,7 @@ describe('Button', () => {
     it('handles onClick events', () => {
       const handleClick = jest.fn()
       render(<Button onClick={handleClick}>Clickable</Button>)
-      
+
       fireEvent.click(screen.getByRole('button'))
       expect(handleClick).toHaveBeenCalledTimes(1)
     })
@@ -97,11 +97,11 @@ describe('Button', () => {
     it('handles disabled state', () => {
       const handleClick = jest.fn()
       render(<Button disabled onClick={handleClick}>Disabled</Button>)
-      
+
       const button = screen.getByRole('button')
       expect(button).toBeDisabled()
       expect(button).toHaveClass('disabled:pointer-events-none', 'disabled:opacity-50')
-      
+
       fireEvent.click(button)
       expect(handleClick).not.toHaveBeenCalled()
     })
@@ -133,7 +133,7 @@ describe('Button', () => {
           <a href="/test">Link Button</a>
         </Button>
       )
-      
+
       const link = screen.getByRole('link')
       expect(link).toBeInTheDocument()
       expect(link).toHaveAttribute('href', '/test')
@@ -146,7 +146,7 @@ describe('Button', () => {
           <a href="/test">Outline Link</a>
         </Button>
       )
-      
+
       const link = screen.getByRole('link')
       expect(link).toHaveClass('border', 'border-input', 'h-11', 'rounded-md', 'px-8')
     })
@@ -162,13 +162,13 @@ describe('Button', () => {
     it('supports keyboard navigation', () => {
       const handleClick = jest.fn()
       render(<Button onClick={handleClick}>Keyboard Button</Button>)
-      
+
       const button = screen.getByRole('button')
       button.focus()
-      
+
       fireEvent.keyDown(button, { key: 'Enter' })
       expect(handleClick).toHaveBeenCalledTimes(1)
-      
+
       fireEvent.keyDown(button, { key: ' ' })
       expect(handleClick).toHaveBeenCalledTimes(2)
     })
@@ -204,11 +204,11 @@ describe('Button', () => {
       const defaultClasses = buttonVariants()
       expect(defaultClasses).toContain('bg-primary')
       expect(defaultClasses).toContain('h-10')
-      
+
       const outlineSmallClasses = buttonVariants({ variant: 'outline', size: 'sm' })
       expect(outlineSmallClasses).toContain('border')
       expect(outlineSmallClasses).toContain('h-9')
-      
+
       const ghostLargeClasses = buttonVariants({ variant: 'ghost', size: 'lg' })
       expect(ghostLargeClasses).toContain('hover:bg-accent')
       expect(ghostLargeClasses).toContain('h-11')
@@ -217,4 +217,4 @@ describe('Button', () => {
 })
 
 // Additional React import for ref testing
-import * as React from 'react' 
+import * as React from 'react'

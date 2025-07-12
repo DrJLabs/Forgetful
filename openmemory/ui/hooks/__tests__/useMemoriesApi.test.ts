@@ -79,16 +79,16 @@ describe('useMemoriesApi', () => {
   describe('fetchMemories', () => {
     it('should fetch memories successfully', async () => {
       mockedAxios.post.mockResolvedValueOnce({ data: mockApiResponse })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         const response = await result.current.fetchMemories()
         expect(response.total).toBe(1)
         expect(response.memories).toHaveLength(1)
         expect(response.memories[0].memory).toBe('Test memory content')
       })
-      
+
       expect(mockedAxios.post).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/filter',
         {
@@ -107,9 +107,9 @@ describe('useMemoriesApi', () => {
 
     it('should fetch memories with search query and filters', async () => {
       mockedAxios.post.mockResolvedValueOnce({ data: mockApiResponse })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.fetchMemories('test query', 2, 20, {
           apps: ['app1', 'app2'],
@@ -119,7 +119,7 @@ describe('useMemoriesApi', () => {
           showArchived: true
         })
       })
-      
+
       expect(mockedAxios.post).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/filter',
         {
@@ -139,31 +139,31 @@ describe('useMemoriesApi', () => {
     it('should handle fetch memories error', async () => {
       const errorMessage = 'Network error'
       mockedAxios.post.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await expect(result.current.fetchMemories()).rejects.toThrow(errorMessage)
       })
-      
+
       expect(result.current.error).toBe(errorMessage)
       expect(result.current.isLoading).toBe(false)
     })
 
     it('should set loading state correctly', async () => {
       // Mock a delayed response
-      mockedAxios.post.mockImplementation(() => 
+      mockedAxios.post.mockImplementation(() =>
         new Promise(resolve => setTimeout(() => resolve({ data: mockApiResponse }), 100))
       )
-      
+
       const { result } = renderHookWithStore()
-      
+
       act(() => {
         result.current.fetchMemories()
       })
-      
+
       expect(result.current.isLoading).toBe(true)
-      
+
       await waitFor(() => {
         expect(result.current.isLoading).toBe(false)
       })
@@ -173,13 +173,13 @@ describe('useMemoriesApi', () => {
   describe('createMemory', () => {
     it('should create memory successfully', async () => {
       mockedAxios.post.mockResolvedValueOnce({ data: mockMemoryData })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.createMemory('New memory content')
       })
-      
+
       expect(mockedAxios.post).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/',
         {
@@ -194,13 +194,13 @@ describe('useMemoriesApi', () => {
     it('should handle create memory error', async () => {
       const errorMessage = 'Failed to create memory'
       mockedAxios.post.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await expect(result.current.createMemory('New memory')).rejects.toThrow(errorMessage)
       })
-      
+
       expect(result.current.error).toBe(errorMessage)
     })
   })
@@ -208,7 +208,7 @@ describe('useMemoriesApi', () => {
   describe('deleteMemories', () => {
     it('should delete memories successfully', async () => {
       mockedAxios.delete.mockResolvedValueOnce({ data: {} })
-      
+
       const store = createTestStore()
       // Add some memories to the store first
       store.dispatch({
@@ -219,13 +219,13 @@ describe('useMemoriesApi', () => {
           { id: 'mem3', memory: 'Memory 3' }
         ]
       })
-      
+
       const { result } = renderHookWithStore(store)
-      
+
       await act(async () => {
         await result.current.deleteMemories(['mem1', 'mem2'])
       })
-      
+
       expect(mockedAxios.delete).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/',
         {
@@ -235,7 +235,7 @@ describe('useMemoriesApi', () => {
           }
         }
       )
-      
+
       // Check that memories were removed from store
       const state = store.getState()
       expect(state.memories.memories).toHaveLength(1)
@@ -245,13 +245,13 @@ describe('useMemoriesApi', () => {
     it('should handle delete memories error', async () => {
       const errorMessage = 'Failed to delete memories'
       mockedAxios.delete.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await expect(result.current.deleteMemories(['mem1'])).rejects.toThrow(errorMessage)
       })
-      
+
       expect(result.current.error).toBe(errorMessage)
     })
   })
@@ -259,13 +259,13 @@ describe('useMemoriesApi', () => {
   describe('fetchMemoryById', () => {
     it('should fetch memory by ID successfully', async () => {
       mockedAxios.get.mockResolvedValueOnce({ data: mockSimpleMemory })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.fetchMemoryById('mem_123')
       })
-      
+
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/mem_123?user_id=test_user'
       )
@@ -273,24 +273,24 @@ describe('useMemoriesApi', () => {
 
     it('should handle empty memory ID', async () => {
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.fetchMemoryById('')
       })
-      
+
       expect(mockedAxios.get).not.toHaveBeenCalled()
     })
 
     it('should handle fetch memory by ID error', async () => {
       const errorMessage = 'Memory not found'
       mockedAxios.get.mockRejectedValueOnce(new Error(errorMessage))
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await expect(result.current.fetchMemoryById('nonexistent')).rejects.toThrow(errorMessage)
       })
-      
+
       expect(result.current.error).toBe(errorMessage)
     })
   })
@@ -298,13 +298,13 @@ describe('useMemoriesApi', () => {
   describe('updateMemory', () => {
     it('should update memory successfully', async () => {
       mockedAxios.put.mockResolvedValueOnce({ data: {} })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.updateMemory('mem_123', 'Updated content')
       })
-      
+
       expect(mockedAxios.put).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/mem_123',
         {
@@ -313,17 +313,17 @@ describe('useMemoriesApi', () => {
           user_id: 'test_user'
         }
       )
-      
+
       expect(result.current.hasUpdates).toBeGreaterThan(0)
     })
 
     it('should handle empty memory ID', async () => {
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.updateMemory('', 'content')
       })
-      
+
       expect(mockedAxios.put).not.toHaveBeenCalled()
     })
   })
@@ -331,7 +331,7 @@ describe('useMemoriesApi', () => {
   describe('updateMemoryState', () => {
     it('should update memory state successfully', async () => {
       mockedAxios.post.mockResolvedValueOnce({ data: {} })
-      
+
       const store = createTestStore()
       // Add memories to store
       store.dispatch({
@@ -341,13 +341,13 @@ describe('useMemoriesApi', () => {
           { id: 'mem2', memory: 'Memory 2', state: 'active' }
         ]
       })
-      
+
       const { result } = renderHookWithStore(store)
-      
+
       await act(async () => {
         await result.current.updateMemoryState(['mem1'], 'paused')
       })
-      
+
       expect(mockedAxios.post).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/actions/pause',
         {
@@ -357,7 +357,7 @@ describe('useMemoriesApi', () => {
           user_id: 'test_user'
         }
       )
-      
+
       // Check that memory state was updated in store
       const state = store.getState()
       const updatedMemory = state.memories.memories.find(m => m.id === 'mem1')
@@ -366,7 +366,7 @@ describe('useMemoriesApi', () => {
 
     it('should handle archive state by removing from store', async () => {
       mockedAxios.post.mockResolvedValueOnce({ data: {} })
-      
+
       const store = createTestStore()
       store.dispatch({
         type: 'memories/setMemoriesSuccess',
@@ -375,13 +375,13 @@ describe('useMemoriesApi', () => {
           { id: 'mem2', memory: 'Memory 2', state: 'active' }
         ]
       })
-      
+
       const { result } = renderHookWithStore(store)
-      
+
       await act(async () => {
         await result.current.updateMemoryState(['mem1'], 'archived')
       })
-      
+
       // Check that archived memory was removed from store
       const state = store.getState()
       expect(state.memories.memories).toHaveLength(1)
@@ -390,11 +390,11 @@ describe('useMemoriesApi', () => {
 
     it('should handle empty memory IDs array', async () => {
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.updateMemoryState([], 'paused')
       })
-      
+
       expect(mockedAxios.post).not.toHaveBeenCalled()
     })
   })
@@ -407,15 +407,15 @@ describe('useMemoriesApi', () => {
           { id: 'log2', timestamp: '2024-01-02', action: 'update' }
         ]
       }
-      
+
       mockedAxios.get.mockResolvedValueOnce({ data: mockAccessLogs })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.fetchAccessLogs('mem_123', 1, 10)
       })
-      
+
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/mem_123/access-log?page=1&page_size=10'
       )
@@ -423,11 +423,11 @@ describe('useMemoriesApi', () => {
 
     it('should handle empty memory ID', async () => {
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.fetchAccessLogs('', 1, 10)
       })
-      
+
       expect(mockedAxios.get).not.toHaveBeenCalled()
     })
   })
@@ -447,15 +447,15 @@ describe('useMemoriesApi', () => {
           }
         ]
       }
-      
+
       mockedAxios.get.mockResolvedValueOnce({ data: mockRelatedMemories })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.fetchRelatedMemories('mem_123')
       })
-      
+
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'http://localhost:8765/api/v1/memories/mem_123/related?user_id=test_user'
       )
@@ -463,11 +463,11 @@ describe('useMemoriesApi', () => {
 
     it('should handle empty memory ID', async () => {
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await result.current.fetchRelatedMemories('')
       })
-      
+
       expect(mockedAxios.get).not.toHaveBeenCalled()
     })
   })
@@ -477,13 +477,13 @@ describe('useMemoriesApi', () => {
       const networkError = new Error('Network Error')
       networkError.name = 'NetworkError'
       mockedAxios.post.mockRejectedValueOnce(networkError)
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await expect(result.current.fetchMemories()).rejects.toThrow('Network Error')
       })
-      
+
       expect(result.current.error).toBe('Network Error')
       expect(result.current.isLoading).toBe(false)
     })
@@ -492,13 +492,13 @@ describe('useMemoriesApi', () => {
       const timeoutError = new Error('Timeout')
       timeoutError.name = 'TimeoutError'
       mockedAxios.post.mockRejectedValueOnce(timeoutError)
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await expect(result.current.fetchMemories()).rejects.toThrow('Timeout')
       })
-      
+
       expect(result.current.error).toBe('Timeout')
     })
 
@@ -511,9 +511,9 @@ describe('useMemoriesApi', () => {
         message: 'Request failed with status code 400'
       }
       mockedAxios.post.mockRejectedValueOnce(apiError)
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         await expect(result.current.fetchMemories()).rejects.toThrow('Request failed with status code 400')
       })
@@ -523,14 +523,14 @@ describe('useMemoriesApi', () => {
   describe('State Management Integration', () => {
     it('should update Redux store correctly', async () => {
       mockedAxios.post.mockResolvedValueOnce({ data: mockApiResponse })
-      
+
       const store = createTestStore()
       const { result } = renderHookWithStore(store)
-      
+
       await act(async () => {
         await result.current.fetchMemories()
       })
-      
+
       const state = store.getState()
       expect(state.memories.memories).toHaveLength(1)
       expect(state.memories.memories[0].memory).toBe('Test memory content')
@@ -543,15 +543,15 @@ describe('useMemoriesApi', () => {
         type: 'memories/setSelectedMemory',
         payload: { id: 'mem1', text: 'Original content', state: 'active' }
       })
-      
+
       mockedAxios.post.mockResolvedValueOnce({ data: {} })
-      
+
       const { result } = renderHookWithStore(store)
-      
+
       await act(async () => {
         await result.current.updateMemoryState(['mem1'], 'paused')
       })
-      
+
       const state = store.getState()
       expect(state.memories.selectedMemory?.state).toBe('paused')
     })
@@ -572,15 +572,15 @@ describe('useMemoriesApi', () => {
         total: 1,
         pages: 1
       }
-      
+
       mockedAxios.post.mockResolvedValueOnce({ data: apiResponse })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         const response = await result.current.fetchMemories()
         const memory = response.memories[0]
-        
+
         expect(memory.id).toBe('mem_123')
         expect(memory.memory).toBe('Test content')
         expect(memory.created_at).toBeInstanceOf(Number)
@@ -597,9 +597,9 @@ describe('useMemoriesApi', () => {
     it('should handle concurrent API calls', async () => {
       mockedAxios.post.mockResolvedValue({ data: mockApiResponse })
       mockedAxios.get.mockResolvedValue({ data: mockSimpleMemory })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         // Make multiple concurrent calls
         const promises = [
@@ -608,26 +608,26 @@ describe('useMemoriesApi', () => {
           result.current.fetchMemoryById('mem1'),
           result.current.fetchMemoryById('mem2')
         ]
-        
+
         await Promise.all(promises)
       })
-      
+
       expect(mockedAxios.post).toHaveBeenCalledTimes(2)
       expect(mockedAxios.get).toHaveBeenCalledTimes(2)
     })
 
     it('should handle rapid successive calls', async () => {
       mockedAxios.post.mockResolvedValue({ data: mockApiResponse })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         // Make rapid successive calls
         for (let i = 0; i < 5; i++) {
           result.current.fetchMemories(`query${i}`)
         }
       })
-      
+
       // Should handle all calls without errors
       expect(result.current.error).toBeNull()
     })
@@ -642,11 +642,11 @@ describe('useMemoriesApi', () => {
         total: 1000,
         pages: 100
       }
-      
+
       mockedAxios.post.mockResolvedValueOnce({ data: largeDataset })
-      
+
       const { result } = renderHookWithStore()
-      
+
       await act(async () => {
         const response = await result.current.fetchMemories()
         expect(response.memories).toHaveLength(1000)
@@ -654,4 +654,4 @@ describe('useMemoriesApi', () => {
       })
     })
   })
-}) 
+})

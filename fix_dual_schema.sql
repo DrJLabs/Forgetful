@@ -26,7 +26,7 @@ BEGIN
     -- Get default user and app
     SELECT id INTO default_user_id FROM users WHERE user_id = COALESCE(NEW.payload->>'user_id', 'drj');
     SELECT id INTO default_app_id FROM apps WHERE name = 'openmemory' AND owner_id = default_user_id;
-    
+
     -- Insert into memories table
     INSERT INTO memories (id, user_id, app_id, content, metadata, state, created_at)
     VALUES (
@@ -42,7 +42,7 @@ BEGIN
         content = EXCLUDED.content,
         metadata = EXCLUDED.metadata,
         updated_at = CURRENT_TIMESTAMP;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -56,7 +56,7 @@ EXECUTE FUNCTION sync_mem0_to_openmemory();
 
 -- Ensure all existing mem0_memories are synced
 INSERT INTO memories (id, user_id, app_id, content, metadata, state, created_at)
-SELECT 
+SELECT
     m.id,
     u.id,
     a.id,
@@ -67,4 +67,4 @@ SELECT
 FROM mem0_memories m
 JOIN users u ON u.user_id = COALESCE(m.payload->>'user_id', 'drj')
 JOIN apps a ON a.name = 'openmemory' AND a.owner_id = u.id
-ON CONFLICT (id) DO NOTHING; 
+ON CONFLICT (id) DO NOTHING;

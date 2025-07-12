@@ -10,7 +10,7 @@ Generate comprehensive documentation for existing projects optimized for AI deve
 
 [[LLM: First, check if a PRD or requirements document exists in context. If yes, use it to focus your documentation efforts on relevant areas only.
 
-**IF PRD EXISTS**: 
+**IF PRD EXISTS**:
 
 - Review the PRD to understand what enhancement/feature is planned
 - Identify which modules, services, or areas will be affected

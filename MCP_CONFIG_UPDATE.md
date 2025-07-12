@@ -39,4 +39,4 @@ To use the mem0 MCP tools in Cursor:
    - `list_memories`
    - `delete_all_memories`
 
-**Note**: The MCP configuration is now active in `~/.cursor/mcp.json` 
+**Note**: The MCP configuration is now active in `~/.cursor/mcp.json`

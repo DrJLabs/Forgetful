@@ -14,4 +14,4 @@ docker exec -i \
   -e USER_ID="$USER_ID" \
   -e CLIENT_NAME="$CLIENT_NAME" \
   openmemory-mcp \
-  python /usr/src/openmemory/mcp_standalone.py 
+  python /usr/src/openmemory/mcp_standalone.py

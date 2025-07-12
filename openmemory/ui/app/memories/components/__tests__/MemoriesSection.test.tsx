@@ -38,8 +38,8 @@ jest.mock('../CreateMemoryDialog', () => ({
 
 jest.mock('../PageSizeSelector', () => ({
   PageSizeSelector: ({ pageSize, onPageSizeChange }: any) => (
-    <select 
-      data-testid="page-size-selector" 
+    <select
+      data-testid="page-size-selector"
       value={pageSize}
       onChange={(e) => onPageSizeChange(Number(e.target.value))}
     >
@@ -67,7 +67,7 @@ const mockMemories = [
     app_name: 'test_app'
   },
   {
-    id: 'mem2', 
+    id: 'mem2',
     memory: 'Test memory 2',
     created_at: 1640995300000,
     state: 'active' as const,
@@ -114,7 +114,7 @@ describe('MemoriesSection', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     // Mock router
     ;(useRouter as jest.Mock).mockReturnValue({
       push: mockPush
@@ -146,18 +146,18 @@ describe('MemoriesSection', () => {
   describe('Rendering', () => {
     it('renders loading skeleton when loading', () => {
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       expect(screen.getByTestId('memory-table-skeleton')).toBeInTheDocument()
     })
 
     it('renders memory table when memories are loaded', async () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 2, pages: 1 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('memory-table')).toBeInTheDocument()
       })
@@ -166,9 +166,9 @@ describe('MemoriesSection', () => {
     it('renders pagination controls when memories exist', async () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 2, pages: 1 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('memory-pagination')).toBeInTheDocument()
         expect(screen.getByTestId('page-size-selector')).toBeInTheDocument()
@@ -178,9 +178,9 @@ describe('MemoriesSection', () => {
     it('displays memory count information', async () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 25, pages: 3 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         expect(screen.getByText(/Showing 1 to 10 of 25 memories/)).toBeInTheDocument()
       })
@@ -190,9 +190,9 @@ describe('MemoriesSection', () => {
   describe('Empty State', () => {
     it('renders empty state when no memories exist', async () => {
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       await waitFor(() => {
         expect(screen.getByText('No memories found')).toBeInTheDocument()
         expect(screen.getByText('Create your first memory to see it here')).toBeInTheDocument()
@@ -202,9 +202,9 @@ describe('MemoriesSection', () => {
 
     it('renders filtered empty state with clear filters option', async () => {
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       await waitFor(() => {
         // This would be triggered when filters are applied but no results
         // The component checks selectedCategory and selectedClient state
@@ -216,9 +216,9 @@ describe('MemoriesSection', () => {
   describe('Data Fetching', () => {
     it('fetches memories on mount', () => {
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       expect(mockFetchMemories).toHaveBeenCalledWith('', 1, 10)
     })
 
@@ -231,11 +231,11 @@ describe('MemoriesSection', () => {
           default: return null
         }
       })
-      
+
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       expect(mockFetchMemories).toHaveBeenCalledWith('test query', 1, 10)
     })
 
@@ -248,24 +248,24 @@ describe('MemoriesSection', () => {
           default: return null
         }
       })
-      
+
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       expect(mockFetchMemories).toHaveBeenCalledWith('', 3, 25)
     })
 
     it('handles fetch memories error gracefully', async () => {
       const consoleError = jest.spyOn(console, 'error').mockImplementation()
       mockFetchMemories.mockRejectedValue(new Error('Fetch failed'))
-      
+
       renderWithStore()
-      
+
       await waitFor(() => {
         expect(consoleError).toHaveBeenCalledWith('Failed to fetch memories:', expect.any(Error))
       })
-      
+
       consoleError.mockRestore()
     })
   })
@@ -274,28 +274,28 @@ describe('MemoriesSection', () => {
     it('updates URL when page changes', async () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 20, pages: 2 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         const nextButton = screen.getByText('Next')
         fireEvent.click(nextButton)
       })
-      
+
       expect(mockPush).toHaveBeenCalledWith('?page=2&size=10')
     })
 
     it('updates URL when page size changes', async () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 20, pages: 2 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         const pageSizeSelector = screen.getByTestId('page-size-selector')
         fireEvent.change(pageSizeSelector, { target: { value: '20' } })
       })
-      
+
       expect(mockPush).toHaveBeenCalledWith('?page=1&size=20')
     })
 
@@ -311,14 +311,14 @@ describe('MemoriesSection', () => {
 
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 100, pages: 10 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         const pageSizeSelector = screen.getByTestId('page-size-selector')
         fireEvent.change(pageSizeSelector, { target: { value: '50' } })
       })
-      
+
       expect(mockPush).toHaveBeenCalledWith('?page=1&size=50')
     })
   })
@@ -327,9 +327,9 @@ describe('MemoriesSection', () => {
     it('handles missing URL parameters gracefully', () => {
       mockGet.mockReturnValue(null)
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       expect(mockFetchMemories).toHaveBeenCalledWith('', 1, 10)
     })
 
@@ -342,11 +342,11 @@ describe('MemoriesSection', () => {
           default: return null
         }
       })
-      
+
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       renderWithStore()
-      
+
       // Should fallback to defaults
       expect(mockFetchMemories).toHaveBeenCalledWith('', 1, 10)
     })
@@ -356,9 +356,9 @@ describe('MemoriesSection', () => {
     it('reads memories from Redux store', () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 2, pages: 1 })
-      
+
       renderWithStore(store)
-      
+
       const state = store.getState()
       expect(state.memories.memories).toEqual(mockMemories)
     })
@@ -366,21 +366,21 @@ describe('MemoriesSection', () => {
     it('handles store updates correctly', async () => {
       const store = createTestStore({ memories: [] })
       mockFetchMemories.mockResolvedValue({ total: 1, pages: 1 })
-      
+
       const { rerender } = renderWithStore(store)
-      
+
       // Update store with new memories
       store.dispatch({
         type: 'memories/setMemoriesSuccess',
         payload: mockMemories
       })
-      
+
       rerender(
         <Provider store={store}>
           <MemoriesSection />
         </Provider>
       )
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('memory-table')).toBeInTheDocument()
       })
@@ -389,33 +389,33 @@ describe('MemoriesSection', () => {
 
   describe('Loading States', () => {
     it('shows loading state during initial fetch', () => {
-      mockFetchMemories.mockImplementation(() => 
+      mockFetchMemories.mockImplementation(() =>
         new Promise(resolve => setTimeout(() => resolve({ total: 0, pages: 0 }), 100))
       )
-      
+
       renderWithStore()
-      
+
       expect(screen.getByTestId('memory-table-skeleton')).toBeInTheDocument()
     })
 
     it('shows loading state during pagination', async () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 20, pages: 2 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('memory-table')).toBeInTheDocument()
       })
-      
+
       // Simulate pagination causing loading
-      mockFetchMemories.mockImplementation(() => 
+      mockFetchMemories.mockImplementation(() =>
         new Promise(resolve => setTimeout(() => resolve({ total: 20, pages: 2 }), 100))
       )
-      
+
       const nextButton = screen.getByText('Next')
       fireEvent.click(nextButton)
-      
+
       // Component should show loading skeleton again
       expect(screen.getByTestId('memory-table-skeleton')).toBeInTheDocument()
     })
@@ -425,9 +425,9 @@ describe('MemoriesSection', () => {
     it('correctly passes pagination props to MemoryPagination', async () => {
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 50, pages: 5 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         expect(screen.getByText('Page 1 of 5')).toBeInTheDocument()
       })
@@ -442,12 +442,12 @@ describe('MemoriesSection', () => {
           default: return null
         }
       })
-      
+
       const store = createTestStore({ memories: mockMemories })
       mockFetchMemories.mockResolvedValue({ total: 50, pages: 2 })
-      
+
       renderWithStore(store)
-      
+
       await waitFor(() => {
         const selector = screen.getByTestId('page-size-selector') as HTMLSelectElement
         expect(selector.value).toBe('25')
@@ -458,18 +458,18 @@ describe('MemoriesSection', () => {
   describe('Error Scenarios', () => {
     it('handles component mount/unmount correctly', () => {
       mockFetchMemories.mockResolvedValue({ total: 0, pages: 0 })
-      
+
       const { unmount } = renderWithStore()
-      
+
       expect(() => unmount()).not.toThrow()
     })
 
     it('handles rapid state changes', async () => {
       const store = createTestStore({ memories: [] })
       mockFetchMemories.mockResolvedValue({ total: 2, pages: 1 })
-      
+
       renderWithStore(store)
-      
+
       // Rapidly update store multiple times
       for (let i = 0; i < 5; i++) {
         store.dispatch({
@@ -477,7 +477,7 @@ describe('MemoriesSection', () => {
           payload: mockMemories.slice(0, i % 2)
         })
       }
-      
+
       // Should handle rapid updates without errors
       await waitFor(() => {
         expect(screen.queryByTestId('memory-table-skeleton')).not.toBeInTheDocument()
@@ -497,20 +497,20 @@ describe('MemoriesSection', () => {
         client: 'api' as const,
         app_name: 'test_app'
       }))
-      
+
       const store = createTestStore({ memories: largeMemorySet })
       mockFetchMemories.mockResolvedValue({ total: 1000, pages: 100 })
-      
+
       const startTime = performance.now()
       renderWithStore(store)
       const endTime = performance.now()
-      
+
       // Should render within reasonable time (under 100ms)
       expect(endTime - startTime).toBeLessThan(100)
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('memory-table')).toBeInTheDocument()
       })
     })
   })
-}) 
+})

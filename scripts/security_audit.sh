@@ -93,7 +93,7 @@ echo -e "\n## 📊 NPM Dependencies" >> "$SECURITY_REPORT"
 # Check NPM dependencies if package.json exists
 if [[ -f "$PROJECT_ROOT/package.json" ]] || [[ -f "$PROJECT_ROOT/openmemory/ui/package.json" ]]; then
     echo -e "${BLUE}Checking NPM dependencies...${NC}"
-    
+
     # Check main package.json
     if [[ -f "$PROJECT_ROOT/package.json" ]]; then
         cd "$PROJECT_ROOT"
@@ -111,7 +111,7 @@ if [[ -f "$PROJECT_ROOT/package.json" ]] || [[ -f "$PROJECT_ROOT/openmemory/ui/p
             fi
         fi
     fi
-    
+
     # Check UI package.json
     if [[ -f "$PROJECT_ROOT/openmemory/ui/package.json" ]]; then
         cd "$PROJECT_ROOT/openmemory/ui"
@@ -234,7 +234,7 @@ if [[ -f "$PROJECT_ROOT/Dockerfile" ]] || [[ -f "$PROJECT_ROOT/docker-compose.ym
     else
         log_info "Docker containers not explicitly running as root"
     fi
-    
+
     # Check for --privileged flag
     if grep -q "privileged.*true\|--privileged" "$PROJECT_ROOT/docker-compose.yml" 2>/dev/null; then
         log_vulnerability "Docker containers running with privileged access"
@@ -356,4 +356,4 @@ elif [[ $VULN_COUNT -lt 3 ]]; then
 else
     echo -e "${RED}🚨 High security risk detected${NC}"
     exit 2
-fi 
+fi
