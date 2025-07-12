@@ -241,6 +241,9 @@ class TestAppPermissionValidation:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
 
+        # Mock the AccessControl query to return an empty list (no access rules)
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
         app_id = uuid4()
         check_memory_access_permissions(mock_db, mock_memory, app_id)
 
@@ -401,6 +404,9 @@ class TestSecurityEdgeCases:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
 
+        # Mock the AccessControl query to return an empty list (no access rules)
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
         # Attempt SQL injection in app_id
         malicious_app_id = "'; DROP TABLE memories; --"
 
@@ -422,15 +428,13 @@ class TestSecurityEdgeCases:
         mock_app.is_active = True
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
+        # Mock the AccessControl query to return an empty list (no access rules)
+        mock_db.query.return_value.filter.return_value.all.return_value = []
+
         app_id = uuid4()
-        with patch(
-            "app.routers.memories.get_accessible_memory_ids"
-        ) as mock_get_accessible:
-            mock_get_accessible.return_value = []  # No access
+        result = check_memory_access_permissions(mock_db, mock_memory, app_id)
 
-            result = check_memory_access_permissions(mock_db, mock_memory, app_id)
-
-            assert result is False
+        assert result is False
 
     def test_memory_state_tampering_protection(self):
         """Test protection against memory state tampering"""

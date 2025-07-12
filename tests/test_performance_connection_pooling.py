@@ -165,7 +165,7 @@ class TestConnectionPoolPerformance:
     @pytest.mark.asyncio
     async def test_neo4j_pool_performance(self, pool_config, database_config):
         """Test Neo4j connection pool performance."""
-        # Mock Neo4j driver and session 
+        # Mock Neo4j driver and session
         mock_driver = AsyncMock()
         mock_session = AsyncMock()
         mock_result = AsyncMock()
@@ -174,7 +174,7 @@ class TestConnectionPoolPerformance:
         mock_session_cm = AsyncMock()
         mock_session_cm.__aenter__ = AsyncMock(return_value=mock_session)
         mock_session_cm.__aexit__ = AsyncMock(return_value=None)
-        
+
         # Setup mock behavior
         mock_driver.session.return_value = mock_session_cm
         mock_driver.close = AsyncMock()
@@ -254,7 +254,7 @@ class TestConnectionPoolPerformance:
         # Skip this test in CI environments where Redis is not available
         pytest.skip("Redis not available in CI environment")
 
-    @pytest.mark.asyncio  
+    @pytest.mark.asyncio
     async def test_connection_pool_manager_performance(self, pool_config):
         """Test connection pool manager performance."""
         # Mock configurations
@@ -368,7 +368,7 @@ class TestConnectionPoolPerformance:
             acquisition_count += 1
             if acquisition_count > pool_config.postgres_max_size:
                 raise asyncio.TimeoutError("Connection pool exhausted")
-            
+
             mock_acquire_cm = AsyncMock()
             mock_acquire_cm.__aenter__ = AsyncMock(return_value=mock_conn)
             mock_acquire_cm.__aexit__ = AsyncMock(return_value=None)
