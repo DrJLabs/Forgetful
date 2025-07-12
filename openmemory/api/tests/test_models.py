@@ -2,12 +2,12 @@
 Unit tests for database models
 """
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.models import User, App, Memory, MemoryState, Category, MemoryAccessLog
+import pytest
 from app.database import Base
+from app.models import App, Category, Memory, MemoryAccessLog, MemoryState, User
 
 
 @pytest.mark.unit

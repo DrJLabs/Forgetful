@@ -14,14 +14,14 @@ Test Coverage Areas:
 6. Data Integrity & Validation
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
-from sqlalchemy.exc import IntegrityError, DatabaseError
 
-from app.utils.db import get_or_create_user, get_or_create_app, get_user_and_app
-from app.models import User, App
+import pytest
+from app.models import App, User
+from app.utils.db import get_or_create_app, get_or_create_user, get_user_and_app
+from sqlalchemy.exc import DatabaseError, IntegrityError
 
 
 @pytest.mark.unit

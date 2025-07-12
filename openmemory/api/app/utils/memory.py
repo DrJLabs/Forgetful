@@ -27,21 +27,22 @@ Example configuration that will be automatically adjusted:
 }
 """
 
-import os
-import json
 import hashlib
-import socket
+import json
+import os
 import platform
+import socket
 
-from mem0 import Memory
 from app.database import SessionLocal
 from app.models import Config as ConfigModel
 
+from mem0 import Memory
+from shared.caching import cache_manager, cached
+from shared.errors import ExternalServiceError, handle_error
+
 # Agent 4 Integration - Structured Logging and Error Handling
 from shared.logging_system import get_logger, performance_logger
-from shared.errors import ExternalServiceError, handle_error
-from shared.resilience import retry, RetryPolicy, circuit_breaker, CircuitBreakerConfig
-from shared.caching import cached, cache_manager
+from shared.resilience import CircuitBreakerConfig, RetryPolicy, circuit_breaker, retry
 
 # Replace standard logging with structured logging
 logger = get_logger("memory_utils")

@@ -14,13 +14,13 @@ This test suite ensures:
 5. Performance remains acceptable with large content
 """
 
-import unittest
-import sys
-import os
 import hashlib
+import os
+import sys
 import time
+import unittest
+from typing import Any, Dict, List
 from unittest.mock import Mock, patch
-from typing import Dict, Any, List
 
 # Add the mem0 directory to Python path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../mem0"))
@@ -114,7 +114,7 @@ class DataProcessor:
     def __init__(self, config):
         self.config = config
         self.cache = {}
-    
+
     def process(self, item):
         key = f"{item['type']}_{item['id']}"
         if key not in self.cache:
@@ -178,53 +178,53 @@ const DataComponent = ({ apiUrl }) => {
         procedural_content = (
             """
         DETAILED PROCEDURAL MEMORY:
-        
+
         User Session: Complex API Integration Task
         Duration: 2.5 hours
         Context: Building microservices authentication system
-        
+
         Problem Statement:
         - Need to integrate multiple authentication providers
         - Require session management across distributed services
         - Must handle token refresh automatically
         - Need comprehensive audit logging
-        
+
         Solution Development Process:
         1. Analysis Phase (30 min)
            - Researched OAuth 2.0 best practices
            - Evaluated existing authentication libraries
            - Identified session storage requirements
-        
+
         2. Architecture Design (45 min)
            - Designed token refresh mechanism
            - Planned session store with Redis
            - Created audit event structure
            - Defined service communication patterns
-        
+
         3. Implementation (90 min)
            - Built AuthenticationService class
            - Implemented token refresh background job
            - Created session middleware
            - Added comprehensive logging
-        
+
         4. Testing & Validation (25 min)
            - Unit tests for all auth flows
            - Integration tests with mock providers
            - Performance testing with concurrent users
            - Security validation of token handling
-        
+
         Key Insights Learned:
         - JWT tokens need careful expiration handling
         - Redis session storage requires connection pooling
         - Background jobs need proper error handling
         - Audit logs must be structured for compliance
-        
+
         Technical Decisions Made:
         - Chose Redis over database for session storage (performance)
         - Implemented background token refresh (user experience)
         - Used structured logging with correlation IDs (debugging)
         - Added circuit breaker for external auth providers (reliability)
-        
+
         Code Patterns Established:
         - Dependency injection for testability
         - Event-driven architecture for audit logging
@@ -361,19 +361,19 @@ class TestRegressionIntegration(unittest.TestCase):
             """
         COMPREHENSIVE SYSTEM ANALYSIS REPORT
         ===================================
-        
+
         Executive Summary:
         This report provides a detailed analysis of the current system architecture,
         performance bottlenecks, security vulnerabilities, and recommended improvements
         for the distributed microservices platform currently supporting our production
         applications serving over 1 million daily active users.
-        
+
         Current Architecture Overview:
         The system consists of 15 microservices deployed across 3 AWS regions,
         utilizing a combination of containerized applications running on Kubernetes,
         serverless functions for specific workflows, and managed database services
         including RDS PostgreSQL clusters and ElastiCache Redis instances.
-        
+
         Performance Analysis:
         Current system performance metrics indicate several areas requiring optimization:
         1. Database query performance - 95th percentile response time: 450ms
@@ -381,7 +381,7 @@ class TestRegressionIntegration(unittest.TestCase):
         3. Cache hit ratio - Current: 78%, Target: 95%
         4. Memory utilization - Average: 68%, Peak: 92%
         5. CPU utilization - Average: 45%, Peak: 88%
-        
+
         Security Assessment:
         Recent security audit identified the following concerns:
         - Authentication tokens with insufficient entropy
@@ -389,48 +389,48 @@ class TestRegressionIntegration(unittest.TestCase):
         - Outdated SSL/TLS configurations
         - Insufficient audit logging for sensitive operations
         - Lack of input validation on several user-facing APIs
-        
+
         Recommended Improvements:
         Based on the analysis, we recommend the following prioritized improvements:
-        
+
         High Priority:
         1. Implement enhanced authentication with rotating secrets
         2. Add comprehensive rate limiting across all endpoints
         3. Upgrade SSL/TLS to latest standards with perfect forward secrecy
         4. Implement structured audit logging with correlation IDs
         5. Add input validation and sanitization for all user inputs
-        
+
         Medium Priority:
         1. Optimize database queries using indexing and query restructuring
         2. Implement distributed caching strategy with cache warming
         3. Add horizontal scaling triggers for peak traffic handling
         4. Implement circuit breakers for external service dependencies
         5. Add comprehensive monitoring and alerting for all critical paths
-        
+
         Low Priority:
         1. Migrate legacy services to newer runtime versions
         2. Implement blue-green deployment strategies
         3. Add automated performance testing in CI/CD pipeline
         4. Implement advanced logging aggregation and analysis
         5. Add predictive scaling based on historical patterns
-        
+
         Implementation Timeline:
         Phase 1 (Weeks 1-4): High priority security and authentication improvements
         Phase 2 (Weeks 5-8): Performance optimization and caching enhancements
         Phase 3 (Weeks 9-12): Monitoring, alerting, and operational improvements
         Phase 4 (Weeks 13-16): Advanced features and optimization refinements
-        
+
         Budget Considerations:
         The estimated cost for implementing these improvements is $150,000 spread
         across the 16-week timeline, with the majority of costs associated with
         additional infrastructure requirements and security tool licensing.
-        
+
         Risk Assessment:
         Implementation risks include potential service disruptions during upgrades,
         data migration challenges, and temporary performance impacts during the
         transition period. Mitigation strategies include phased rollouts, extensive
         testing in staging environments, and maintaining rollback capabilities.
-        
+
         Success Metrics:
         We will measure success through the following key performance indicators:
         - 99.9% uptime target (current: 99.5%)

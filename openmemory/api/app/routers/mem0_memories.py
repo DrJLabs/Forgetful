@@ -3,14 +3,15 @@ Simplified memory router that bridges OpenMemory API to main mem0 system
 This replaces the complex SQLite-based memories.py router
 """
 
+import json
+import logging
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
-import logging
-import json
-from fastapi import APIRouter, Query, HTTPException
-from pydantic import BaseModel
+
 from app.mem0_client import get_memory_client
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/v1/memories", tags=["memories"])
 logger = logging.getLogger(__name__)

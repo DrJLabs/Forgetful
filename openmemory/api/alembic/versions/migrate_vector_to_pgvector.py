@@ -6,10 +6,11 @@ Create Date: 2025-01-10 10:00:00.000000
 
 """
 
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 import json
+
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "migrate_vector_to_pgvector"
@@ -33,15 +34,15 @@ def upgrade():
     # This handles vectors stored as JSON strings or arrays
     op.execute(
         """
-        UPDATE memories 
-        SET vector_temp = CASE 
+        UPDATE memories
+        SET vector_temp = CASE
             WHEN vector IS NULL THEN NULL
             WHEN vector = '' THEN NULL
-            WHEN vector LIKE '[%]' THEN 
+            WHEN vector LIKE '[%]' THEN
                 -- Handle JSON array format: "[1.0, 2.0, 3.0]"
-                (SELECT array_to_string(array_agg(value::text), ',') 
+                (SELECT array_to_string(array_agg(value::text), ',')
                  FROM json_array_elements_text(vector::json) AS value)::vector
-            WHEN vector LIKE '%,%' THEN 
+            WHEN vector LIKE '%,%' THEN
                 -- Handle comma-separated format: "1.0,2.0,3.0"
                 ('[' || vector || ']')::vector
             ELSE NULL
@@ -60,8 +61,8 @@ def upgrade():
     # Using IVFFlat index for good balance of performance and accuracy
     op.execute(
         """
-        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memory_vector_cosine 
-        ON memories USING ivfflat (vector vector_cosine_ops) 
+        CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memory_vector_cosine
+        ON memories USING ivfflat (vector vector_cosine_ops)
         WITH (lists = 100);
     """
     )
@@ -70,8 +71,8 @@ def upgrade():
     try:
         op.execute(
             """
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memory_vector_hnsw 
-            ON memories USING hnsw (vector vector_cosine_ops) 
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_memory_vector_hnsw
+            ON memories USING hnsw (vector vector_cosine_ops)
             WITH (m = 16, ef_construction = 64);
         """
         )
@@ -98,8 +99,8 @@ def downgrade():
     # Convert vector arrays back to JSON strings
     op.execute(
         """
-        UPDATE memories 
-        SET vector_temp = CASE 
+        UPDATE memories
+        SET vector_temp = CASE
             WHEN vector IS NULL THEN NULL
             ELSE vector::text
         END

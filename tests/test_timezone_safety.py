@@ -4,31 +4,34 @@ Comprehensive timezone safety tests for mem0 memory modules.
 This test suite ensures proper timezone handling across all modules.
 """
 
-import pytest
-import sys
 import os
+import sys
 from datetime import datetime, timedelta
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
+import pytest
 
 # Add project root to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 try:
     from mem0.mem0.memory.confidence_scoring import (
-        _safe_datetime_now as conf_safe_now,
         _safe_datetime_diff as conf_safe_diff,
     )
-    from mem0.mem0.memory.metadata_tagging import (
-        _safe_datetime_now as tag_safe_now,
-        _safe_datetime_diff as tag_safe_diff,
+    from mem0.mem0.memory.confidence_scoring import _safe_datetime_now as conf_safe_now
+    from mem0.mem0.memory.enhanced_deduplication import (
+        _safe_datetime_diff as dedup_safe_diff,
     )
     from mem0.mem0.memory.enhanced_deduplication import (
         _safe_datetime_now as dedup_safe_now,
-        _safe_datetime_diff as dedup_safe_diff,
+    )
+    from mem0.mem0.memory.metadata_tagging import _safe_datetime_diff as tag_safe_diff
+    from mem0.mem0.memory.metadata_tagging import _safe_datetime_now as tag_safe_now
+    from mem0.mem0.memory.storage_optimization import (
+        _safe_datetime_diff as storage_safe_diff,
     )
     from mem0.mem0.memory.storage_optimization import (
         _safe_datetime_now as storage_safe_now,
-        _safe_datetime_diff as storage_safe_diff,
     )
 except ImportError as e:
     pytest.skip(f"Cannot import memory modules: {e}", allow_module_level=True)

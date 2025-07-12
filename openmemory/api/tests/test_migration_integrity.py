@@ -9,24 +9,24 @@ This module provides comprehensive testing for database migration integrity incl
 - Migration dependency validation
 """
 
-import pytest
-import tempfile
-import shutil
 import os
+import shutil
+import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
-from datetime import datetime, UTC
-from sqlalchemy import create_engine, text, MetaData, inspect
-from sqlalchemy.orm import sessionmaker
-import alembic.config
+
 import alembic.command
+import alembic.config
 import alembic.script
+import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from alembic.runtime.environment import EnvironmentContext
-
-from app.models import User, App, Memory, Base
 from app.database import get_db
+from app.models import App, Base, Memory, User
+from sqlalchemy import MetaData, create_engine, inspect, text
+from sqlalchemy.orm import sessionmaker
 
 
 class TestMigrationIntegrity:

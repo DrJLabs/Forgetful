@@ -3,18 +3,17 @@ Integration tests for OpenMemory API
 Tests the integration between API, database, and external services
 """
 
-import pytest
 import asyncio
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
-from unittest.mock import patch, MagicMock
 
-from httpx import AsyncClient
-from fastapi import status
-from sqlalchemy import text
-
-from app.models import User, App, Memory, MemoryState
+import pytest
+from app.models import App, Memory, MemoryState, User
 from conftest import TestDataFactory
+from fastapi import status
+from httpx import AsyncClient
+from sqlalchemy import text
 
 
 @pytest.mark.integration

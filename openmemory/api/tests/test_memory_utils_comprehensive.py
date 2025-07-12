@@ -15,23 +15,23 @@ Test Coverage Areas:
 6. Circuit Breaker & Retry Logic
 """
 
-import pytest
-import os
-import json
-import socket
 import hashlib
-from unittest.mock import Mock, patch, MagicMock, mock_open
-from datetime import datetime, UTC
+import json
+import os
+import socket
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, Mock, mock_open, patch
 
+import pytest
 from app.utils.memory import (
-    get_memory_client,
-    get_default_memory_config,
-    reset_memory_client,
+    _fix_ollama_urls,
     _get_config_hash,
     _get_docker_host_url,
-    _fix_ollama_urls,
     _parse_environment_variables,
+    get_default_memory_config,
     get_default_user_id,
+    get_memory_client,
+    reset_memory_client,
 )
 
 

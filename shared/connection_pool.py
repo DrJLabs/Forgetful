@@ -14,17 +14,18 @@ Features:
 """
 
 import asyncio
-import asyncpg
-import time
+import logging
 import threading
-from typing import Dict, Optional, Any, List
+import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import logging
+from typing import Any, Dict, List, Optional
 
-from shared.logging_system import get_logger, performance_logger
+import asyncpg
+
 from shared.config import Config
+from shared.logging_system import get_logger, performance_logger
 
 logger = get_logger("connection_pool")
 

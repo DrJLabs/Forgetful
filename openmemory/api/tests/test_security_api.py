@@ -12,22 +12,23 @@ This module implements comprehensive API security tests including:
 Author: Quinn (QA Agent) - Step 2.2.5 Security Testing Suite
 """
 
-import pytest
-import json
-from unittest.mock import Mock, patch, MagicMock
-from httpx import AsyncClient
-from fastapi import status
-from sqlalchemy.orm import Session
-from app.models import User, App, Memory, MemoryState
-from uuid import uuid4
 import asyncio
+import json
 
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
+from unittest.mock import MagicMock, Mock, patch
+from uuid import uuid4
+
+import pytest
+from app.models import App, Memory, MemoryState, User
+from fastapi import status
+from httpx import AsyncClient
+from sqlalchemy.orm import Session
 
 sys.path.append("/workspace")
+from shared.errors import NotFoundError, ValidationError
 from shared.logging_system import get_logger
-from shared.errors import ValidationError, NotFoundError
 
 logger = get_logger("security_api_tests")
 

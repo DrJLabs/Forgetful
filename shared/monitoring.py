@@ -3,26 +3,26 @@ Shared monitoring utilities for mem0-stack services.
 Provides metrics collection, tracing, and logging instrumentation.
 """
 
-import time
 import functools
+import json
 import logging
 import os
-import json
-from typing import Dict, Any, Optional, List
+import time
 from contextlib import contextmanager
+from typing import Any, Dict, List, Optional
 
 from prometheus_client import (
-    Counter,
-    Histogram,
-    Gauge,
-    Summary,
-    Info,
-    Enum,
-    CollectorRegistry,
     CONTENT_TYPE_LATEST,
+    CollectorRegistry,
+    Counter,
+    Enum,
+    Gauge,
+    Histogram,
+    Info,
+    Summary,
     generate_latest,
-    start_http_server,
     push_to_gateway,
+    start_http_server,
 )
 from prometheus_client.openmetrics.exposition import (
     CONTENT_TYPE_LATEST as OPENMETRICS_CONTENT_TYPE,
@@ -30,18 +30,18 @@ from prometheus_client.openmetrics.exposition import (
 
 # OpenTelemetry imports
 try:
-    from opentelemetry import trace, metrics
+    from opentelemetry import metrics, trace
     from opentelemetry.exporter.jaeger.thrift import JaegerExporter
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.sdk.resources import Resource
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.requests import RequestsInstrumentor
     from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
     from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
     from opentelemetry.propagate import set_global_textmap
     from opentelemetry.propagators.b3 import B3MultiFormat
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
     TRACING_AVAILABLE = True
 except ImportError:

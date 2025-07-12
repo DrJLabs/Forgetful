@@ -8,38 +8,40 @@ This module implements an MCP (Model Context Protocol) server with:
 - Performance monitoring and caching
 """
 
-import logging
+import contextvars
+import datetime
 import json
-from mcp.server.fastmcp import FastMCP
-from mcp.server.sse import SseServerTransport
+import logging
+import os
+import uuid
+
+from app.database import SessionLocal
+from app.models import Memory, MemoryAccessLog, MemoryState, MemoryStatusHistory
+from app.utils.db import get_user_and_app
 from app.utils.memory import get_memory_client
+from app.utils.permissions import check_memory_access_permissions
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.routing import APIRouter
-import contextvars
-import os
-from dotenv import load_dotenv
-from app.database import SessionLocal
-from app.models import Memory, MemoryState, MemoryStatusHistory, MemoryAccessLog
-from app.utils.db import get_user_and_app
-import uuid
-import datetime
-from app.utils.permissions import check_memory_access_permissions
+from mcp.server.fastmcp import FastMCP
+from mcp.server.sse import SseServerTransport
+
+from shared.caching import cache_manager, cached
+from shared.errors import (
+    ExternalServiceError,
+    NotFoundError,
+    ValidationError,
+    create_error_response,
+    handle_error,
+)
 
 # Agent 4 Integration - Structured Logging and Error Handling
 from shared.logging_system import (
-    get_logger,
     CorrelationContextManager,
+    get_logger,
     performance_logger,
 )
-from shared.errors import (
-    ExternalServiceError,
-    ValidationError,
-    handle_error,
-    create_error_response,
-    NotFoundError,
-)
-from shared.resilience import retry, RetryPolicy, resilient
-from shared.caching import cached, cache_manager
+from shared.resilience import RetryPolicy, resilient, retry
 
 # Replace standard logging with structured logging
 logger = get_logger("mcp_server")

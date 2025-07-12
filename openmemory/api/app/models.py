@@ -1,25 +1,25 @@
+import datetime
 import enum
 import uuid
-import datetime
+
 import sqlalchemy as sa
+from app.database import Base
+from app.utils.categorization import get_categories_for_memory
 from sqlalchemy import (
-    Column,
-    String,
-    Boolean,
-    ForeignKey,
-    Enum,
-    Table,
-    DateTime,
     JSON,
-    Integer,
     UUID,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
     Index,
+    Integer,
+    String,
+    Table,
     event,
 )
-from sqlalchemy.orm import relationship
-from app.database import Base
-from sqlalchemy.orm import Session
-from app.utils.categorization import get_categories_for_memory
+from sqlalchemy.orm import Session, relationship
 
 # Import pgvector types for proper vector storage
 try:

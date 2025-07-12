@@ -2,20 +2,21 @@
 Comprehensive tests for coding-specific memory optimizations.
 """
 
-import pytest
 import json
-from unittest.mock import Mock, patch, MagicMock
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from mem0.configs.coding_config import (
-    CodingMemoryConfig,
     CodingFactExtractor,
+    CodingMemoryConfig,
     create_coding_optimized_config,
 )
-from mem0.memory.coding_memory import CodingMemory, AsyncCodingMemory
+from mem0.memory.coding_memory import AsyncCodingMemory, CodingMemory
 from mem0.memory.enhanced_deduplication import (
-    EnhancedDeduplicator,
     AutonomousDeduplicationManager,
+    EnhancedDeduplicator,
 )
 
 

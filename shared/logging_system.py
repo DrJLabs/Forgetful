@@ -7,12 +7,12 @@ correlation tracking, and performance monitoring integration.
 
 import json
 import logging
+import threading
 import time
 import uuid
-import threading
-from datetime import datetime
-from typing import Dict, Any, Optional, Union
 from contextlib import contextmanager
+from datetime import datetime
+from typing import Any, Dict, Optional, Union
 
 # Thread-local storage for correlation context
 _correlation_context = threading.local()

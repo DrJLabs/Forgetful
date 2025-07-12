@@ -5,11 +5,12 @@ Tests all MCP endpoints and operations to verify proper functionality
 """
 
 import asyncio
-import aiohttp
 import json
 import os
-from datetime import datetime
 import sys
+from datetime import datetime
+
+import aiohttp
 
 # Configuration
 MCP_BASE_URL = "http://localhost:8765"

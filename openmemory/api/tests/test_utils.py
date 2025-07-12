@@ -2,13 +2,13 @@
 Unit tests for utility functions
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+from app.models import App, Memory, MemoryState, User
 from app.utils.memory import get_memory_client
 from app.utils.permissions import check_memory_access_permissions
-from app.models import Memory, App, User, MemoryState
 from conftest import TestDataFactory
 
 

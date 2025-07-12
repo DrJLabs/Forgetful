@@ -1,19 +1,17 @@
 import datetime
 import os
-from fastapi import FastAPI
-from app.database import engine, Base, SessionLocal
-from app.mcp_server import setup_mcp_server
-from app.routers import (
-    mem0_memories as memories_router,
-    apps_router,
-    stats_router,
-    config_router,
-)
-from fastapi_pagination import add_pagination
-from fastapi.middleware.cors import CORSMiddleware
-from app.models import User, App
 from uuid import uuid4
-from app.config import USER_ID, DEFAULT_APP_ID
+
+from app.config import DEFAULT_APP_ID, USER_ID
+from app.database import Base, SessionLocal, engine
+from app.mcp_server import setup_mcp_server
+from app.models import App, User
+from app.routers import apps_router, config_router
+from app.routers import mem0_memories as memories_router
+from app.routers import stats_router
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi_pagination import add_pagination
 
 app = FastAPI(title="OpenMemory API")
 

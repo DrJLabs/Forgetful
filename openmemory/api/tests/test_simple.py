@@ -2,9 +2,10 @@
 Simple test to verify testing infrastructure
 """
 
-import pytest
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 
 
 @pytest.mark.unit

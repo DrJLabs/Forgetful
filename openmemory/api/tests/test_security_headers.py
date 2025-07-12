@@ -11,14 +11,15 @@ This module implements comprehensive security headers tests including:
 Author: Quinn (QA Agent) - Step 2.2.4 Security Testing Suite
 """
 
-import pytest
-from unittest.mock import Mock, patch
-from httpx import AsyncClient
-from fastapi import status
 import json
 
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
+from unittest.mock import Mock, patch
+
+import pytest
+from fastapi import status
+from httpx import AsyncClient
 
 sys.path.append("/workspace")
 from shared.logging_system import get_logger

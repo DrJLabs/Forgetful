@@ -3,36 +3,37 @@ Comprehensive test configuration for OpenMemory API
 Provides test database, fixtures, and utilities
 """
 
-import pytest
 import asyncio
 import os
 import tempfile
-import psycopg2
-from typing import AsyncGenerator, Generator
-from uuid import uuid4
-from datetime import datetime, UTC
-from unittest.mock import patch, MagicMock
 from contextlib import contextmanager
-from sqlalchemy import create_engine, text, pool
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
-from testcontainers.postgres import PostgresContainer
-from testcontainers.neo4j import Neo4jContainer
-import alembic.config
+from datetime import UTC, datetime
+from typing import AsyncGenerator, Generator
+from unittest.mock import MagicMock, patch
+from uuid import uuid4
+
 import alembic.command
+import alembic.config
+import psycopg2
+import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
+from sqlalchemy import create_engine, pool, text
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
+from testcontainers.neo4j import Neo4jContainer
+from testcontainers.postgres import PostgresContainer
 
 # Set up test environment BEFORE any imports
 os.environ["TESTING"] = "true"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
+from app.database import Base, get_db
+from app.models import App, Memory, MemoryState, User
 from httpx import AsyncClient
 
 # Import app components after setting environment
 from main import app
-from app.database import get_db, Base
-from app.models import User, App, Memory, MemoryState
 
 # Test configuration
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -48,9 +49,9 @@ def event_loop():
 
 def get_app():
     """Get app components for testing"""
+    from app.database import Base, get_db
+    from app.models import App, Memory, MemoryState, User
     from main import app
-    from app.database import get_db, Base
-    from app.models import User, App, Memory, MemoryState
 
     return app, get_db, Base, User, App, Memory, MemoryState
 
@@ -401,7 +402,7 @@ def performance_monitor():
             result = conn.execute(
                 text(
                     """
-                SELECT 
+                SELECT
                     datname,
                     numbackends,
                     xact_commit,
@@ -413,7 +414,7 @@ def performance_monitor():
                     tup_inserted,
                     tup_updated,
                     tup_deleted
-                FROM pg_stat_database 
+                FROM pg_stat_database
                 WHERE datname = current_database()
             """
                 )

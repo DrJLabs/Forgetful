@@ -10,29 +10,29 @@ This test suite validates:
 - Memory usage and cleanup
 """
 
-import pytest
 import asyncio
-import time
+import os
 import random
 import string
-from unittest.mock import Mock, patch
-from concurrent.futures import ThreadPoolExecutor
-import psutil
-import os
 
 # Add the workspace to the path dynamically
 import sys
-import os
+import time
+from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import Mock, patch
+
+import psutil
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from shared.caching import (
+    CacheConfig,
+    MultiLayerCache,
     MultiLayerCacheConfig,
     OptimizedL1Cache,
     OptimizedL2RedisCache,
     OptimizedL3QueryCache,
-    MultiLayerCache,
-    CacheConfig,
 )
 
 

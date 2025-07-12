@@ -2,15 +2,14 @@
 Unit tests for API router endpoints
 """
 
-import pytest
-from datetime import datetime, UTC
-from uuid import uuid4
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
+from uuid import uuid4
 
-from httpx import AsyncClient
-from fastapi import status
-
+import pytest
 from conftest import TestDataFactory
+from fastapi import status
+from httpx import AsyncClient
 
 
 @pytest.mark.unit

@@ -4,10 +4,12 @@ This module provides a centralized mem0 Memory instance that integrates
 with the main mem0 system instead of using a separate database.
 """
 
-import os
 import logging
-from mem0 import Memory
+import os
+
 from dotenv import load_dotenv
+
+from mem0 import Memory
 
 # Load environment variables
 load_dotenv()

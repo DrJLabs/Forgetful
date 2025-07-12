@@ -2,11 +2,12 @@
 Standalone tests that verify testing infrastructure without complex imports
 """
 
-import pytest
-import sys
 import os
-from datetime import datetime, UTC
+import sys
+from datetime import UTC, datetime
 from uuid import uuid4
+
+import pytest
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

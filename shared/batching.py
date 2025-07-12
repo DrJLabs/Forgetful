@@ -14,19 +14,19 @@ Features:
 """
 
 import asyncio
-import time
+import json
 import threading
-from typing import Dict, List, Optional, Any, Callable, Union
+import time
+import uuid
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-import json
-import uuid
 from functools import wraps
-from collections import defaultdict
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from shared.logging_system import get_logger, performance_logger
 from shared.connection_pool import global_pool_manager
+from shared.logging_system import get_logger, performance_logger
 
 logger = get_logger("batching")
 
@@ -573,9 +573,9 @@ class VectorSearchBatcher:
         """Execute vector similarity search."""
         # Simplified vector search - would integrate with actual pgvector logic
         query = """
-            SELECT id, content, metadata, 
+            SELECT id, content, metadata,
                    (embedding <-> $1::vector) as distance
-            FROM memories 
+            FROM memories
             WHERE user_id = $2
             ORDER BY distance ASC
             LIMIT $3

@@ -12,24 +12,25 @@ This module implements comprehensive security integration tests including:
 Author: Quinn (QA Agent) - Step 2.2.6 Security Testing Suite
 """
 
-import pytest
 import asyncio
-import json
-from unittest.mock import Mock, patch, MagicMock
-from httpx import AsyncClient
-from fastapi import status
-from sqlalchemy.orm import Session
-from app.models import User, App, Memory, MemoryState, AccessControl
-from uuid import uuid4
 import datetime
-import time
+import json
 
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
+import time
+from unittest.mock import MagicMock, Mock, patch
+from uuid import uuid4
+
+import pytest
+from app.models import AccessControl, App, Memory, MemoryState, User
+from fastapi import status
+from httpx import AsyncClient
+from sqlalchemy.orm import Session
 
 sys.path.append("/workspace")
+from shared.errors import ExternalServiceError, NotFoundError, ValidationError
 from shared.logging_system import get_logger
-from shared.errors import ValidationError, NotFoundError, ExternalServiceError
 
 logger = get_logger("security_integration_tests")
 

@@ -1,9 +1,8 @@
+from app.database import get_db
+from app.mem0_client import get_memory_client
+from app.models import App, User
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import User, App
-from app.mem0_client import get_memory_client
-
 
 router = APIRouter(prefix="/api/v1/stats", tags=["stats"])
 
@@ -13,8 +12,8 @@ async def get_profile(user_id: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         # Create user if not exists (for compatibility)
-        from uuid import uuid4
         import datetime
+        from uuid import uuid4
 
         user = User(
             id=uuid4(),

@@ -9,16 +9,16 @@ This module provides comprehensive resilience patterns including:
 """
 
 import asyncio
-import time
 import random
-from typing import Callable, Any, Optional, Dict, List
-from enum import Enum
-from dataclasses import dataclass
-from functools import wraps
 import threading
+import time
 from contextlib import contextmanager
+from dataclasses import dataclass
+from enum import Enum
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional
 
-from .errors import StructuredError, ErrorCategory, ErrorSeverity, ErrorRecovery
+from .errors import ErrorCategory, ErrorRecovery, ErrorSeverity, StructuredError
 from .logging_system import get_logger
 
 logger = get_logger("resilience")

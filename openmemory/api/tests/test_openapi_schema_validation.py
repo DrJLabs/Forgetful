@@ -11,14 +11,15 @@ This module provides comprehensive OpenAPI schema validation tests to ensure:
 Based on OpenAPI Specification and JSON Schema standards from Context7 documentation.
 """
 
-import pytest
 import json
-import jsonschema
-from typing import Dict, Any, List, Optional
-from fastapi.testclient import TestClient
-from jsonschema import validate, ValidationError as JsonSchemaValidationError
+from typing import Any, Dict, List, Optional
 
+import jsonschema
+import pytest
 from app.main import app
+from fastapi.testclient import TestClient
+from jsonschema import ValidationError as JsonSchemaValidationError
+from jsonschema import validate
 
 
 @pytest.mark.openapi

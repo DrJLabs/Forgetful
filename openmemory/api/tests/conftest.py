@@ -3,22 +3,23 @@ Test configuration and fixtures for API contract testing
 """
 
 import os
+from unittest.mock import Mock, patch
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from unittest.mock import Mock, patch
 
 # Set testing environment variable
 os.environ["TESTING"] = "true"
 
-from main import app
-from app.database import Base, get_db
-from app.models import User, App, Memory, MemoryState
-from app.utils.memory import get_memory_client
 from uuid import uuid4
 
+from app.database import Base, get_db
+from app.models import App, Memory, MemoryState, User
+from app.utils.memory import get_memory_client
+from main import app
 
 # Test database configuration
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"

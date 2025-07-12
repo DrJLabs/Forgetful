@@ -4,21 +4,21 @@ Standalone MCP server for OpenMemory that runs via stdio
 This script can be run directly by Cursor MCP configuration
 """
 
+import asyncio
+import json
+import logging
 import os
 import sys
-import asyncio
-import logging
-import json
 from typing import Any, Dict
-
-# Import MCP dependencies
-from mcp.server import Server, NotificationOptions
-from mcp.server.models import InitializationOptions
-from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
 
 # Import OpenMemory dependencies
 from app.utils.memory import get_memory_client
+
+# Import MCP dependencies
+from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
+from mcp.server.stdio import stdio_server
+from mcp.types import TextContent, Tool
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
