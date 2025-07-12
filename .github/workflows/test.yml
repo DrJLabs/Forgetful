@@ -79,6 +79,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
 
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
           # Install API dependencies
           if [ -f openmemory/api/requirements.txt ]; then
             pip install -r openmemory/api/requirements.txt
@@ -171,6 +174,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
           cd openmemory/api
           pip install -r requirements.txt
           pip install -r requirements-test.txt
@@ -239,6 +246,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
           cd openmemory/api
           pip install -r requirements.txt
           pip install -r requirements-test.txt
@@ -307,6 +318,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
           cd openmemory/api
           pip install -r requirements.txt
           pip install -r requirements-test.txt
@@ -387,6 +402,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
           cd openmemory/api
           pip install -r requirements.txt
           pip install -r requirements-test.txt
@@ -471,6 +490,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
           cd openmemory/api
           pip install -r requirements.txt
           pip install -r requirements-test.txt
