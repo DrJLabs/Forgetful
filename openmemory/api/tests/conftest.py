@@ -36,6 +36,70 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 Base.metadata.create_all(bind=engine)
 
 
+# ============================================================================
+# TEST DATA FACTORY
+# ============================================================================
+
+class TestDataFactory:
+    """Factory class for creating test data objects"""
+    
+    @staticmethod
+    def create_user_data(user_id: str = None, name: str = "Test User", email: str = "test@example.com"):
+        """Create user data for testing"""
+        return {
+            "id": uuid4(),
+            "user_id": user_id or f"test_user_{uuid4().hex[:8]}",
+            "name": name,
+            "email": email,
+            "metadata": {"test": True}
+        }
+    
+    @staticmethod
+    def create_app_data(name: str = "Test App", description: str = "Test App Description"):
+        """Create app data for testing"""
+        return {
+            "id": uuid4(),
+            "name": name,
+            "description": description,
+            "metadata": {"test": True},
+            "is_active": True
+        }
+    
+    @staticmethod
+    def create_memory_data(content: str = "Test memory content", user_id: str = None, app_id: str = None):
+        """Create memory data for testing"""
+        return {
+            "id": uuid4(),
+            "user_id": user_id or f"test_user_{uuid4().hex[:8]}",
+            "app_id": app_id or uuid4(),
+            "content": content,
+            "state": MemoryState.active,
+            "metadata_": {"test": True}
+        }
+    
+    @staticmethod
+    def create_test_data():
+        """Create comprehensive test data set"""
+        return {
+            "users": [
+                TestDataFactory.create_user_data("test_user_1", "User One", "user1@example.com"),
+                TestDataFactory.create_user_data("test_user_2", "User Two", "user2@example.com"),
+            ],
+            "apps": [
+                TestDataFactory.create_app_data("Test App 1", "First test app"),
+                TestDataFactory.create_app_data("Test App 2", "Second test app"),
+            ],
+            "memories": [
+                TestDataFactory.create_memory_data("First test memory"),
+                TestDataFactory.create_memory_data("Second test memory"),
+            ]
+        }
+
+
+# ============================================================================
+# PYTEST FIXTURES
+# ============================================================================
+
 @pytest.fixture
 def test_db():
     """Create test database session"""
