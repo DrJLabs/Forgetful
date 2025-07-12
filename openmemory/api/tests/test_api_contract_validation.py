@@ -20,7 +20,7 @@ from uuid import UUID, uuid4
 import jsonschema
 import pytest
 from app.database import SessionLocal, get_db
-from app.main import app
+from main import app
 from app.models import App, Memory, MemoryState, User
 from app.routers.config import ConfigSchema, LLMConfig, LLMProvider
 from app.routers.mem0_memories import CreateMemoryRequest

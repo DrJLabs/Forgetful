@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 import jsonschema
 import pytest
-from app.main import app
+from main import app
 from fastapi.testclient import TestClient
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate
