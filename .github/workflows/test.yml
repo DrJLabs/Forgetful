@@ -13,7 +13,7 @@ on:
   workflow_dispatch: # Enable manual workflow triggering
 
 env:
-  PYTHONPATH: ${{ github.workspace }}
+  PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
   TESTING: 'true'
   DATABASE_URL: 'postgresql://postgres:testpass@localhost:5432/test_db'
   NEO4J_URI: 'bolt://localhost:7687'

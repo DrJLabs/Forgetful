@@ -19,7 +19,7 @@ os.environ["TESTING"] = "true"
 from app.mcp_server import (
     add_memories,
     client_name_var,
-    delete_memories,
+    delete_all_memories,
     get_memory_client_safe,
     list_memories,
     mcp,
@@ -191,15 +191,13 @@ class TestMCPServerFunctionality:
 
         with patch("app.mcp_server.get_memory_client_safe") as mock_client:
             mock_memory_client = MagicMock()
-            mock_memory_client.delete.return_value = {"deleted": True}
+            mock_memory_client.delete_all.return_value = {"deleted": True}
             mock_client.return_value = mock_memory_client
 
-            result = await delete_memories("memory_123")
+            result = await delete_all_memories()
 
-            assert "Successfully deleted memory: memory_123" in result
-            mock_memory_client.delete.assert_called_once_with(
-                "memory_123", user_id="test_user"
-            )
+            assert "Successfully deleted all memories" in result
+            mock_memory_client.delete_all.assert_called_once_with(user_id="test_user")
 
     @pytest.mark.asyncio
     async def test_delete_memories_not_found(self):
@@ -209,13 +207,13 @@ class TestMCPServerFunctionality:
 
         with patch("app.mcp_server.get_memory_client_safe") as mock_client:
             mock_memory_client = MagicMock()
-            mock_memory_client.delete.side_effect = Exception("Memory not found")
+            mock_memory_client.delete_all.side_effect = Exception("Operation failed")
             mock_client.return_value = mock_memory_client
 
-            result = await delete_memories("nonexistent_id")
+            result = await delete_all_memories()
 
-            assert "Error deleting memory" in result
-            assert "Memory not found" in result
+            assert "Error deleting" in result
+            assert "Operation failed" in result
 
 
 @pytest.mark.integration
@@ -314,10 +312,10 @@ class TestMCPErrorScenarios:
         # Test other functions with missing user_id
         user_id_var.delete()
 
-        for func in [search_memory, list_memories, delete_memories]:
+        for func in [search_memory, list_memories, delete_all_memories]:
             try:
-                if func == delete_memories:
-                    result = await func("test_id")
+                if func == delete_all_memories:
+                    result = await func()
                 elif func == search_memory:
                     result = await func("test_query")
                 else:
@@ -342,14 +340,18 @@ class TestMCPErrorScenarios:
                 (add_memories, [""]),
                 (add_memories, [None]),
                 (search_memory, [""]),
-                (delete_memories, [""]),
-                (delete_memories, [None]),
+                (delete_all_memories, []),
             ]:
                 try:
-                    if args[0] is None:
+                    if func == delete_all_memories:
+                        result = await func()
+                    elif len(args) > 0 and args[0] is None:
                         # Some functions might not accept None
                         continue
-                    result = await func(args[0])
+                    elif len(args) > 0:
+                        result = await func(args[0])
+                    else:
+                        result = await func()
                     # Should handle gracefully
                     assert isinstance(result, str)
                 except Exception as e:
