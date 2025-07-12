@@ -35,10 +35,28 @@ print_status "====================================="
 
 # 1. Fix Script Permissions
 print_status "1. Fixing script permissions..."
-chmod +x openmemory/api/run_contract_tests.sh
-chmod +x openmemory/api/run_security_tests.sh
-chmod +x openmemory/api/run_database_tests.sh
-print_success "Test scripts are now executable"
+test_scripts=(
+    "openmemory/api/run_contract_tests.sh"
+    "openmemory/api/run_security_tests.sh"
+    "openmemory/api/run_database_tests.sh"
+)
+
+fixed_scripts=0
+for script in "${test_scripts[@]}"; do
+    if [ -f "$script" ]; then
+        chmod +x "$script"
+        print_success "Made executable: $script"
+        fixed_scripts=$((fixed_scripts + 1))
+    else
+        print_warning "Script not found: $script"
+    fi
+done
+
+if [ $fixed_scripts -gt 0 ]; then
+    print_success "$fixed_scripts test scripts are now executable"
+else
+    print_warning "No test scripts found to make executable"
+fi
 
 # 2. Set Environment Variables
 print_status "2. Setting environment variables..."
