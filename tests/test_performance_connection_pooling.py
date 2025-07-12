@@ -82,7 +82,7 @@ class TestConnectionPoolPerformance:
         class MockPostgresAcquireContextManager:
             async def __aenter__(self):
                 return mock_conn
-            
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
 
@@ -177,7 +177,7 @@ class TestConnectionPoolPerformance:
         class MockSessionContextManager:
             async def __aenter__(self):
                 return mock_session
-            
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
 
@@ -283,12 +283,12 @@ class TestConnectionPoolPerformance:
         # Mock Neo4j driver with proper async context manager
         mock_neo4j_driver = AsyncMock()
         mock_neo4j_session = AsyncMock()
-        
+
         # Create a proper async context manager mock for Neo4j
         class MockNeo4jSessionContextManager:
             async def __aenter__(self):
                 return mock_neo4j_session
-            
+
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
 
