@@ -78,13 +78,16 @@ class TestConnectionPoolPerformance:
         mock_conn = AsyncMock()
         mock_pool = AsyncMock()
 
-        # Configure the mock connection to support async context manager protocol
-        mock_acquire_cm = AsyncMock()
-        mock_acquire_cm.__aenter__ = AsyncMock(return_value=mock_conn)
-        mock_acquire_cm.__aexit__ = AsyncMock(return_value=None)
+        # Create a proper async context manager mock for PostgreSQL pool
+        class MockPostgresAcquireContextManager:
+            async def __aenter__(self):
+                return mock_conn
+            
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
 
         # Configure pool methods
-        mock_pool.acquire.return_value = mock_acquire_cm
+        mock_pool.acquire.return_value = MockPostgresAcquireContextManager()
         mock_pool.get_size.return_value = pool_config.postgres_max_size
         mock_pool.get_idle_size.return_value = pool_config.postgres_max_size // 2
         mock_pool.close = AsyncMock()
@@ -170,13 +173,16 @@ class TestConnectionPoolPerformance:
         mock_session = AsyncMock()
         mock_result = AsyncMock()
 
-        # Configure the mock session to support async context manager protocol
-        mock_session_cm = AsyncMock()
-        mock_session_cm.__aenter__ = AsyncMock(return_value=mock_session)
-        mock_session_cm.__aexit__ = AsyncMock(return_value=None)
+        # Create a proper async context manager mock
+        class MockSessionContextManager:
+            async def __aenter__(self):
+                return mock_session
+            
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
 
         # Setup mock behavior
-        mock_driver.session.return_value = mock_session_cm
+        mock_driver.session.return_value = MockSessionContextManager()
         mock_driver.close = AsyncMock()
         mock_session.run.return_value = mock_result
         mock_result.consume.return_value = None
@@ -274,13 +280,19 @@ class TestConnectionPoolPerformance:
         mock_pg_pool.close = AsyncMock()
         mock_pg_conn.fetchval.return_value = 1
 
-        # Mock Neo4j driver
+        # Mock Neo4j driver with proper async context manager
         mock_neo4j_driver = AsyncMock()
         mock_neo4j_session = AsyncMock()
-        mock_neo4j_session_cm = AsyncMock()
-        mock_neo4j_session_cm.__aenter__ = AsyncMock(return_value=mock_neo4j_session)
-        mock_neo4j_session_cm.__aexit__ = AsyncMock(return_value=None)
-        mock_neo4j_driver.session.return_value = mock_neo4j_session_cm
+        
+        # Create a proper async context manager mock for Neo4j
+        class MockNeo4jSessionContextManager:
+            async def __aenter__(self):
+                return mock_neo4j_session
+            
+            async def __aexit__(self, exc_type, exc_val, exc_tb):
+                return None
+
+        mock_neo4j_driver.session.return_value = MockNeo4jSessionContextManager()
         mock_neo4j_driver.close = AsyncMock()
         mock_neo4j_result = AsyncMock()
         mock_neo4j_session.run.return_value = mock_neo4j_result
