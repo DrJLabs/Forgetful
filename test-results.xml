@@ -1,1 +1,19 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="6.082" timestamp="2025-07-12T15:04:56.995168-04:00" hostname="djin-1"><testcase classname="openmemory.api.tests.test_simple.TestBasicFunctionality" name="test_uuid_generation" time="0.020" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="10" time="5.174" timestamp="2025-07-12T16:04:45.600576-04:00" hostname="djin-1"><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_timeout_handling" time="0.545" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_processor_performance" time="0.038" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_graph_query_batcher_performance" time="0.108" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_memory_write_batcher_performance" time="0.108" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batching_manager_performance" time="0.126"><failure message="AssertionError: Expected 24 results&#10;assert == failed. [pytest-clarity diff shown]&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32m16#x1B[0m&#10;  #x1B[0m#x1B[31m24#x1B[0m&#10;  #x1B[0m">tests/test_performance_batching.py:550: in test_batching_manager_performance
+    assert len(successful_results) == len(
+E   AssertionError: Expected 24 results
+E   assert == failed. [pytest-clarity diff shown]
+E     #x1B[0m
+E     #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below
+E     #x1B[0m
+E     #x1B[0m#x1B[32m16#x1B[0m
+E     #x1B[0m#x1B[31m24#x1B[0m
+E     #x1B[0m</failure></testcase><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_vector_search_batcher_performance" time="0.007"><failure message="AssertionError: Expected 20 results&#10;assert == failed. [pytest-clarity diff shown]&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32m0#x1B[0m&#10;  #x1B[0m#x1B[31m20#x1B[0m&#10;  #x1B[0m">tests/test_performance_batching.py:335: in test_vector_search_batcher_performance
+    assert len(successful_results) == len(
+E   AssertionError: Expected 20 results
+E   assert == failed. [pytest-clarity diff shown]
+E     #x1B[0m
+E     #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below
+E     #x1B[0m
+E     #x1B[0m#x1B[32m0#x1B[0m
+E     #x1B[0m#x1B[31m20#x1B[0m
+E     #x1B[0m</failure></testcase><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_configuration_validation" time="0.001" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_metrics_performance" time="0.006" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_priority_batching_performance" time="0.038" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_error_recovery" time="0.155" /></testsuite></testsuites>

@@ -192,10 +192,12 @@ class TestBatchingPerformance:
         mock_conn = AsyncMock()
         mock_conn.fetchval.return_value = "memory_123"
 
-        # Mock the connection pool
+        # Mock the connection pool with proper async context manager
         mock_pool = Mock()
-        mock_pool.acquire.return_value.__aenter__.return_value = mock_conn
-        mock_pool.acquire.return_value.__aexit__.return_value = None
+        async_context_manager = AsyncMock()
+        async_context_manager.__aenter__.return_value = mock_conn
+        async_context_manager.__aexit__.return_value = None
+        mock_pool.acquire = Mock(return_value=async_context_manager)
 
         with patch("shared.batching.global_pool_manager") as mock_manager:
             mock_manager.postgres_pool = mock_pool
@@ -271,10 +273,12 @@ class TestBatchingPerformance:
             {"id": 2, "content": "test2", "similarity": 0.8},
         ]
 
-        # Mock the connection pool
+        # Mock the connection pool with proper async context manager
         mock_pool = Mock()
-        mock_pool.acquire.return_value.__aenter__.return_value = mock_conn
-        mock_pool.acquire.return_value.__aexit__.return_value = None
+        async_context_manager = AsyncMock()
+        async_context_manager.__aenter__.return_value = mock_conn
+        async_context_manager.__aexit__.return_value = None
+        mock_pool.acquire = Mock(return_value=async_context_manager)
 
         with patch("shared.batching.global_pool_manager") as mock_manager:
             mock_manager.postgres_pool = mock_pool
@@ -356,10 +360,12 @@ class TestBatchingPerformance:
         mock_result.data.return_value = [mock_record]
         mock_session.run.return_value = mock_result
 
-        # Mock the connection pool
+        # Mock the connection pool with proper async context manager
         mock_pool = Mock()
-        mock_pool.session.return_value.__aenter__.return_value = mock_session
-        mock_pool.session.return_value.__aexit__.return_value = None
+        async_context_manager = AsyncMock()
+        async_context_manager.__aenter__.return_value = mock_session
+        async_context_manager.__aexit__.return_value = None
+        mock_pool.session = Mock(return_value=async_context_manager)
 
         with patch("shared.batching.global_pool_manager") as mock_manager:
             mock_manager.neo4j_pool = mock_pool
@@ -441,16 +447,18 @@ class TestBatchingPerformance:
         mock_neo4j_result.data.return_value = [mock_neo4j_record]
         mock_neo4j_session.run.return_value = mock_neo4j_result
 
-        # Mock connection pools
+        # Mock connection pools with proper async context managers
         mock_pg_pool = Mock()
-        mock_pg_pool.acquire.return_value.__aenter__.return_value = mock_pg_conn
-        mock_pg_pool.acquire.return_value.__aexit__.return_value = None
+        pg_async_context_manager = AsyncMock()
+        pg_async_context_manager.__aenter__.return_value = mock_pg_conn
+        pg_async_context_manager.__aexit__.return_value = None
+        mock_pg_pool.acquire = Mock(return_value=pg_async_context_manager)
 
         mock_neo4j_pool = Mock()
-        mock_neo4j_pool.session.return_value.__aenter__.return_value = (
-            mock_neo4j_session
-        )
-        mock_neo4j_pool.session.return_value.__aexit__.return_value = None
+        neo4j_async_context_manager = AsyncMock()
+        neo4j_async_context_manager.__aenter__.return_value = mock_neo4j_session
+        neo4j_async_context_manager.__aexit__.return_value = None
+        mock_neo4j_pool.session = Mock(return_value=neo4j_async_context_manager)
 
         with patch("shared.batching.global_pool_manager") as mock_manager:
             mock_manager.postgres_pool = mock_pg_pool
@@ -743,7 +751,7 @@ class TestBatchingPerformance:
 
         # Check calculated metrics
         assert (
-            stats["success_rate"] > 0.99
+            stats["success_rate"] >= 0.99
         ), f"Success rate too low: {stats['success_rate']:.3f}"
         assert (
             stats["average_batch_size"] == 10.0

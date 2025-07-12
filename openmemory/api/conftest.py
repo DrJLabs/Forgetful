@@ -30,7 +30,7 @@ os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from app.database import Base, get_db
 from app.models import App, Memory, MemoryState, User
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 # Import app components after setting environment
 from main import app
@@ -179,7 +179,9 @@ async def test_client(test_db_session):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         yield client
 
     # Clean up
@@ -199,7 +201,9 @@ async def postgres_test_client(postgres_test_session):
 
     app.dependency_overrides[get_db] = override_get_db
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as client:
         yield client
 
     # Clean up

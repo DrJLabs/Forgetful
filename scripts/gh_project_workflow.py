@@ -4,11 +4,12 @@ GitHub Projects v2 Workflow Automation
 Demonstrates integration with webhooks and automated workflows
 """
 
+import argparse
 import json
 import subprocess
 import sys
-from typing import Dict, List, Any
-import argparse
+from typing import Any, Dict, List
+
 
 class ProjectWorkflowManager:
     """Manage automated workflows for GitHub Projects v2"""
@@ -23,18 +24,18 @@ class ProjectWorkflowManager:
             "issue_auto_assign": {
                 "name": "Auto-assign issues to project",
                 "description": "Automatically add new issues to the project with default values",
-                "trigger": "issues.opened"
+                "trigger": "issues.opened",
             },
             "pr_auto_link": {
                 "name": "Auto-link PRs to project items",
                 "description": "Automatically link PRs to related project items based on keywords",
-                "trigger": "pull_request.opened"
+                "trigger": "pull_request.opened",
             },
             "status_sync": {
                 "name": "Sync issue/PR status with project",
                 "description": "Keep project item status in sync with issue/PR state",
-                "trigger": ["issues.closed", "pull_request.merged"]
-            }
+                "trigger": ["issues.closed", "pull_request.merged"],
+            },
         }
 
     def run_graphql_query(self, query: str, variables: Dict[str, Any] = None) -> Dict:
@@ -83,13 +84,13 @@ class ProjectWorkflowManager:
                     "database": "database_postgresql",
                     "infra": "infrastructure",
                     "test": "testing",
-                    "security": "security"
+                    "security": "security",
                 },
                 "priority_keywords": {
                     "critical": ["critical", "urgent", "blocking", "security"],
                     "high": ["important", "high", "priority"],
                     "medium": ["enhancement", "feature"],
-                    "low": ["cleanup", "refactor", "documentation"]
+                    "low": ["cleanup", "refactor", "documentation"],
                 },
                 "effort_estimation": {
                     "xs": ["typo", "comment", "small"],
@@ -97,8 +98,8 @@ class ProjectWorkflowManager:
                     "m": ["feature", "enhancement"],
                     "l": ["complex", "major", "integration"],
                     "xl": ["epic", "architecture", "migration"],
-                    "xxl": ["platform", "redesign", "complete"]
-                }
+                    "xxl": ["platform", "redesign", "complete"],
+                },
             }
         }
 
@@ -203,7 +204,7 @@ class ProjectWorkflowManager:
             "infrastructure": ["docker", "deploy", "infra", "devops"],
             "monitoring": ["monitoring", "metrics", "observability"],
             "testing": ["test", "testing", "coverage", "qa"],
-            "security": ["security", "auth", "encryption", "vulnerability"]
+            "security": ["security", "auth", "encryption", "vulnerability"],
         }
 
         text = f"{title} {body} {' '.join(labels)}"
@@ -221,7 +222,7 @@ class ProjectWorkflowManager:
             "critical": ["critical", "urgent", "blocking", "security", "production"],
             "high": ["important", "high", "priority", "bug"],
             "medium": ["enhancement", "feature", "improvement"],
-            "low": ["cleanup", "refactor", "documentation", "minor"]
+            "low": ["cleanup", "refactor", "documentation", "minor"],
         }
 
         text = f"{title} {body} {' '.join(labels)}"
@@ -248,7 +249,7 @@ class ProjectWorkflowManager:
             "m": ["feature", "enhancement", "update"],
             "l": ["complex", "major", "integration", "refactor"],
             "xl": ["epic", "architecture", "migration", "redesign"],
-            "xxl": ["platform", "complete rewrite", "major overhaul"]
+            "xxl": ["platform", "complete rewrite", "major overhaul"],
         }
 
         text = f"{title} {body}".lower()
@@ -274,7 +275,7 @@ class ProjectWorkflowManager:
         # Look for patterns like "fixes #123", "closes #456", etc.
         patterns = [
             r"(?:fix|fixes|fixed|close|closes|closed|resolve|resolves|resolved)\s+#(\d+)",
-            r"#(\d+)"
+            r"#(\d+)",
         ]
 
         linked_issues = []
@@ -296,8 +297,8 @@ class ProjectWorkflowManager:
                     "pull_request.opened",
                     "pull_request.merged",
                     "project_v2_item.created",
-                    "project_v2_item.edited"
-                ]
+                    "project_v2_item.edited",
+                ],
             },
             "workflow_templates": self.workflow_templates,
             "automation_rules": self.create_automation_rules(),
@@ -306,37 +307,42 @@ class ProjectWorkflowManager:
                     "addProjectV2ItemById",
                     "updateProjectV2ItemFieldValue",
                     "archiveProjectV2Item",
-                    "deleteProjectV2Item"
+                    "deleteProjectV2Item",
                 ],
                 "queries": [
                     "organization.projectV2",
                     "repository.issue.projectItems",
-                    "repository.pullRequest.projectItems"
-                ]
+                    "repository.pullRequest.projectItems",
+                ],
             },
             "webhook_integration": {
-                "supported_events": [
-                    "issues", "pull_request", "project_v2_item"
-                ],
+                "supported_events": ["issues", "pull_request", "project_v2_item"],
                 "automation_actions": [
                     "Auto-assign to project",
                     "Set default field values",
                     "Link related items",
                     "Update status based on state",
-                    "Generate analytics"
-                ]
-            }
+                    "Generate analytics",
+                ],
+            },
         }
 
         return report
 
+
 def main():
-    parser = argparse.ArgumentParser(description="GitHub Projects v2 Workflow Automation")
-    parser.add_argument("command", choices=[
-        "report", "simulate-webhook", "create-rules", "test-automation"
-    ], help="Command to execute")
+    parser = argparse.ArgumentParser(
+        description="GitHub Projects v2 Workflow Automation"
+    )
+    parser.add_argument(
+        "command",
+        choices=["report", "simulate-webhook", "create-rules", "test-automation"],
+        help="Command to execute",
+    )
     parser.add_argument("--event-file", help="JSON file containing webhook event data")
-    parser.add_argument("--format", choices=["json", "pretty"], default="pretty", help="Output format")
+    parser.add_argument(
+        "--format", choices=["json", "pretty"], default="pretty", help="Output format"
+    )
 
     args = parser.parse_args()
 
@@ -357,12 +363,12 @@ def main():
                         "labels": [
                             {"name": "security"},
                             {"name": "critical"},
-                            {"name": "backend"}
-                        ]
-                    }
+                            {"name": "backend"},
+                        ],
+                    },
                 }
             else:
-                with open(args.event_file, 'r') as f:
+                with open(args.event_file, "r") as f:
                     sample_event = json.load(f)
 
             result = manager.simulate_webhook_processing(sample_event)
@@ -378,25 +384,24 @@ def main():
                     "issue": {
                         "title": "Add database connection pooling",
                         "body": "Implement connection pooling for PostgreSQL to improve performance",
-                        "labels": [{"name": "enhancement"}, {"name": "database"}]
-                    }
+                        "labels": [{"name": "enhancement"}, {"name": "database"}],
+                    },
                 },
                 {
                     "action": "opened",
                     "pull_request": {
                         "title": "Fix authentication bug",
-                        "body": "This PR fixes #123 and resolves the authentication issue"
-                    }
-                }
+                        "body": "This PR fixes #123 and resolves the authentication issue",
+                    },
+                },
             ]
 
             result = {"test_results": []}
             for i, test_case in enumerate(test_cases):
                 test_result = manager.simulate_webhook_processing(test_case)
-                result["test_results"].append({
-                    f"test_case_{i+1}": test_case,
-                    "automation_result": test_result
-                })
+                result["test_results"].append(
+                    {f"test_case_{i+1}": test_case, "automation_result": test_result}
+                )
 
         # Output results
         if args.format == "json":
@@ -407,6 +412,7 @@ def main():
     except Exception as e:
         print(f"Error executing command: {e}")
         sys.exit(1)
+
 
 def print_workflow_report(data: Dict, command: str):
     """Pretty print workflow automation reports"""
@@ -471,6 +477,7 @@ def print_workflow_report(data: Dict, command: str):
             print("Actions:")
             for action in automation_result.get("actions_taken", []):
                 print(f"  ✓ {action}")
+
 
 if __name__ == "__main__":
     main()
