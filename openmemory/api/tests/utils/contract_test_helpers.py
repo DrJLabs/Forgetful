@@ -343,6 +343,20 @@ class TestDataFactory:
         }
 
     @staticmethod
+    def create_memory_data(user_id: str = None) -> Dict[str, Any]:
+        """Create test memory data for unit tests"""
+        return {
+            "user_id": user_id or f"test_user_{uuid4().hex[:8]}",
+            "text": "Test memory content for unit testing",
+            "metadata": {
+                "test": True,
+                "category": "unit_test",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            },
+            "app": f"test_app_{uuid4().hex[:8]}",
+        }
+
+    @staticmethod
     def create_test_memory_response() -> Dict[str, Any]:
         """Create test memory response"""
         return {

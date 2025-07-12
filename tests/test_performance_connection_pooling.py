@@ -82,13 +82,13 @@ class TestConnectionPoolPerformance:
         mock_acquire_cm = AsyncMock()
         mock_acquire_cm.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_acquire_cm.__aexit__ = AsyncMock(return_value=None)
-        
+
         # Configure pool methods
         mock_pool.acquire.return_value = mock_acquire_cm
         mock_pool.get_size.return_value = pool_config.postgres_max_size
         mock_pool.get_idle_size.return_value = pool_config.postgres_max_size // 2
         mock_pool.close = AsyncMock()
-        
+
         # Configure connection methods
         mock_conn.fetchval.return_value = 1
         mock_conn.fetch.return_value = [{"result": 1}]
