@@ -9,7 +9,7 @@ import pytest
 from app.models import App, Memory, MemoryState, User
 from app.utils.memory import get_memory_client
 from app.utils.permissions import check_memory_access_permissions
-from conftest import TestDataFactory
+from tests.utils.contract_test_helpers import TestDataFactory
 
 
 @pytest.mark.unit

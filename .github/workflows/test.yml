@@ -20,7 +20,9 @@ env:
   NEO4J_USERNAME: 'neo4j'
   NEO4J_PASSWORD: 'testpass'
   COVERAGE_THRESHOLD: '80'
-  OPENAI_API_KEY: 'test-key-for-mocking'
+  OPENAI_API_KEY: 'sk-test-key-for-mocking-only'
+  DATABASE_USER: 'postgres'
+  DATABASE_PASSWORD: 'testpass'
 
 jobs:
   # ============================================================================
