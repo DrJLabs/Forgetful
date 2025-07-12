@@ -1,84 +1,119 @@
-name: "CodeQL"
+name: 'CodeQL Advanced Security Analysis'
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: ['main', 'develop']
   pull_request:
-    branches: [ "main" ]
+    branches: ['main', 'develop']
   schedule:
-    - cron: '20 17 * * 1'
+    # Run weekly on Saturdays at 7:41 AM UTC (optimized time)
+    - cron: '41 7 * * 6'
 
 jobs:
   analyze:
-    name: Analyze
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    name: Analyze (${{ matrix.language }})
+    # Using ubuntu-latest for better performance and cost efficiency
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
     permissions:
+      # Required for all workflows
+      security-events: write
+      # Required to fetch internal or private CodeQL packs
+      packages: read
+      # Required for workflows in private repositories
       actions: read
       contents: read
-      security-events: write
 
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python', 'javascript-typescript' ]
+        include:
+          # GitHub Actions workflow analysis (NEW)
+          - language: actions
+            build-mode: none
+          # JavaScript/TypeScript analysis
+          - language: javascript-typescript
+            build-mode: none
+          # Python analysis
+          - language: python
+            build-mode: none
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }}
-        config-file: ./.github/codeql/codeql-config.yml
+      # Setup Python for Python analysis
+      - name: Set up Python 3.11
+        if: matrix.language == 'python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Set up Python 3.11
-      if: matrix.language == 'python'
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      # Install Python dependencies
+      - name: Install Python dependencies
+        if: matrix.language == 'python'
+        run: |
+          python -m pip install --upgrade pip
+          # Install mem0 package
+          if [ -f mem0/pyproject.toml ]; then
+            cd mem0 && pip install -e .
+          fi
+          # Install OpenMemory API requirements
+          if [ -f openmemory/api/requirements.txt ]; then
+            pip install -r openmemory/api/requirements.txt
+          fi
+          # Install shared dependencies
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
 
-    - name: Install Python dependencies
-      if: matrix.language == 'python'
-      run: |
-        python -m pip install --upgrade pip
-        if [ -f mem0/pyproject.toml ]; then
-          cd mem0 && pip install -e .
-        fi
-        if [ -f openmemory/api/requirements.txt ]; then
-          pip install -r openmemory/api/requirements.txt
-        fi
+      # Setup Node.js for JavaScript/TypeScript analysis
+      - name: Set up Node.js
+        if: matrix.language == 'javascript-typescript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-    - name: Set up Node.js
-      if: matrix.language == 'javascript-typescript'
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
+      # Install Node.js dependencies
+      - name: Install Node.js dependencies
+        if: matrix.language == 'javascript-typescript'
+        run: |
+          # Install dependencies for OpenMemory UI
+          if [ -f openmemory/ui/package.json ]; then
+            cd openmemory/ui && npm ci
+          fi
+          # Install dependencies for mem0-ts
+          if [ -f mem0/mem0-ts/package.json ]; then
+            cd mem0/mem0-ts && npm ci
+          fi
+          # Install dependencies for vercel-ai-sdk
+          if [ -f mem0/vercel-ai-sdk/package.json ]; then
+            cd mem0/vercel-ai-sdk && npm ci
+          fi
 
-    - name: Install Node.js dependencies
-      if: matrix.language == 'javascript-typescript'
-      run: |
-        # Install dependencies for main UI
-        if [ -f openmemory/ui/package.json ]; then
-          cd openmemory/ui && npm ci
-        fi
+      # Initialize CodeQL with custom configuration
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+          # Enhanced query packs for comprehensive security analysis
+          queries: +security-extended,security-and-quality
 
-        # Install dependencies for mem0-ts
-        if [ -f mem0/mem0-ts/package.json ]; then
-          cd mem0/mem0-ts && npm ci
-        fi
+      # Manual build step (if needed)
+      - if: matrix.build-mode == 'manual'
+        shell: bash
+        run: |
+          echo 'Manual build mode not currently required for this codebase'
+          echo 'All languages use build-mode: none'
+          exit 1
 
-        # Install dependencies for vercel-ai-sdk
-        if [ -f mem0/vercel-ai-sdk/package.json ]; then
-          cd mem0/vercel-ai-sdk && npm ci
-        fi
-
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{matrix.language}}"
+      # Perform CodeQL Analysis
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{matrix.language}}'
+          upload: true
