@@ -1,45 +1,38 @@
 """
-Security Headers Tests for OpenMemory API
+Security headers testing module.
 
-This module implements comprehensive security headers tests including:
-- CORS (Cross-Origin Resource Sharing) validation
-- CSP (Content Security Policy) headers
-- Security headers compliance
-- HTTP security headers validation
-- Response header security
-
-Author: Quinn (QA Agent) - Step 2.2.4 Security Testing Suite
+Comprehensive tests for CORS, security headers, and response security
+validation in the OpenMemory API.
 """
 
-import json
-
-# Agent 4 Integration - Structured Logging for Security Events
-import sys
-from unittest.mock import Mock, patch
+import asyncio
+import logging
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi import status
 from httpx import AsyncClient
 
-sys.path.append("/workspace")
-from shared.logging_system import get_logger
+# Import after setting test environment
+from main import app  # noqa: E402
 
-logger = get_logger("security_headers_tests")
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.security
 @pytest.mark.unit
 class TestCORSValidation:
-    """Test CORS (Cross-Origin Resource Sharing) validation"""
+    """Test CORS configuration and validation."""
 
     @pytest.mark.asyncio
     async def test_cors_headers_present(self, test_client: AsyncClient):
-        """Test CORS headers are present for allowed origins"""
+        """Test CORS headers are present for allowed origins."""
         # Test with an allowed origin
         response = await test_client.get(
             "/api/v1/memories/",
             params={"user_id": "test"},
-            headers={"Origin": "http://localhost:3000"},  # Use allowed origin
+            headers={"Origin": "http://localhost:3000"}  # Use allowed origin
         )
 
         # Check for CORS headers
@@ -48,14 +41,13 @@ class TestCORSValidation:
         # Access-Control-Allow-Origin should be present for allowed origins
         if "access-control-allow-origin" in headers:
             assert headers["access-control-allow-origin"] in [
-                "http://localhost:3000",
-                "http://127.0.0.1:3000",
+                "http://localhost:3000", "http://127.0.0.1:3000"
             ]
             logger.info(
                 f"CORS Allow-Origin: {headers.get('access-control-allow-origin')}"
             )
         else:
-            # CORS headers might not be present if origin validation fails, which is acceptable
+            # CORS headers might not be present if origin validation fails
             logger.info("CORS headers not present - origin may not be allowed")
 
         # Check if other CORS headers are present
@@ -71,7 +63,7 @@ class TestCORSValidation:
 
     @pytest.mark.asyncio
     async def test_cors_preflight_request(self, test_client: AsyncClient):
-        """Test CORS preflight request handling"""
+        """Test CORS preflight request handling."""
         # Send OPTIONS request (preflight) with allowed origin
         response = await test_client.options(
             "/api/v1/memories/",
@@ -96,7 +88,7 @@ class TestCORSValidation:
 
     @pytest.mark.asyncio
     async def test_cors_origin_validation(self, test_client: AsyncClient):
-        """Test CORS origin validation"""
+        """Test CORS origin validation."""
         test_origins = [
             ("http://localhost:3000", True),  # Should be allowed
             ("http://127.0.0.1:3000", True),  # Should be allowed
@@ -118,10 +110,11 @@ class TestCORSValidation:
 
             if should_allow:
                 # Allowed origins should get CORS headers
-                assert allow_origin == origin or allow_origin in [
-                    "http://localhost:3000",
-                    "http://127.0.0.1:3000",
-                ]
+                assert (
+                    allow_origin == origin or allow_origin in [
+                        "http://localhost:3000", "http://127.0.0.1:3000"
+                    ]
+                )
                 logger.info(f"✓ Origin {origin} correctly allowed: {allow_origin}")
             else:
                 # Disallowed origins should not get CORS headers or get null
@@ -131,7 +124,7 @@ class TestCORSValidation:
 
     @pytest.mark.asyncio
     async def test_cors_credentials_handling(self, test_client: AsyncClient):
-        """Test CORS credentials handling"""
+        """Test CORS credentials handling."""
         response = await test_client.get(
             "/api/v1/memories/",
             params={"user_id": "test"},
@@ -152,8 +145,7 @@ class TestCORSValidation:
                     allow_origin != "*"
                 ), "CORS should not allow credentials with wildcard origin"
                 assert allow_origin in [
-                    "http://localhost:3000",
-                    "http://127.0.0.1:3000",
+                    "http://localhost:3000", "http://127.0.0.1:3000"
                 ], f"Unexpected allow-origin: {allow_origin}"
                 logger.info(
                     "✓ CORS credentials properly configured with specific origin"
@@ -165,11 +157,11 @@ class TestCORSValidation:
 @pytest.mark.security
 @pytest.mark.unit
 class TestSecurityHeaders:
-    """Test security headers compliance"""
+    """Test security headers compliance."""
 
     @pytest.mark.asyncio
     async def test_security_headers_present(self, test_client: AsyncClient):
-        """Test that security headers are present"""
+        """Test that security headers are present."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -199,14 +191,16 @@ class TestSecurityHeaders:
                         logger.info(f"✓ Security header {header}: {header_value}")
                     else:
                         logger.warning(
-                            f"⚠ Security header {header} present but value may be weak: {header_value}"
+                            f"⚠ Security header {header} present but value may be "
+                            f"weak: {header_value}"
                         )
                 elif isinstance(expected_value, str):
                     if expected_value in header_value:
                         logger.info(f"✓ Security header {header}: {header_value}")
                     else:
                         logger.warning(
-                            f"⚠ Security header {header} present but value may be weak: {header_value}"
+                            f"⚠ Security header {header} present but value may be "
+                            f"weak: {header_value}"
                         )
             else:
                 missing_headers.append(header)
@@ -220,7 +214,7 @@ class TestSecurityHeaders:
 
     @pytest.mark.asyncio
     async def test_content_security_policy(self, test_client: AsyncClient):
-        """Test Content Security Policy (CSP) headers"""
+        """Test Content Security Policy (CSP) headers."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -265,7 +259,7 @@ class TestSecurityHeaders:
 
     @pytest.mark.asyncio
     async def test_hsts_header(self, test_client: AsyncClient):
-        """Test HTTP Strict Transport Security (HSTS) header"""
+        """Test HTTP Strict Transport Security (HSTS) header."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -308,7 +302,7 @@ class TestSecurityHeaders:
 
     @pytest.mark.asyncio
     async def test_xss_protection_header(self, test_client: AsyncClient):
-        """Test X-XSS-Protection header"""
+        """Test X-XSS-Protection header."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -333,7 +327,7 @@ class TestSecurityHeaders:
 
     @pytest.mark.asyncio
     async def test_content_type_options_header(self, test_client: AsyncClient):
-        """Test X-Content-Type-Options header"""
+        """Test X-Content-Type-Options header."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -352,7 +346,7 @@ class TestSecurityHeaders:
 
     @pytest.mark.asyncio
     async def test_frame_options_header(self, test_client: AsyncClient):
-        """Test X-Frame-Options header"""
+        """Test X-Frame-Options header."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -375,11 +369,11 @@ class TestSecurityHeaders:
 @pytest.mark.security
 @pytest.mark.unit
 class TestResponseHeaderSecurity:
-    """Test response header security"""
+    """Test response header security."""
 
     @pytest.mark.asyncio
     async def test_server_header_disclosure(self, test_client: AsyncClient):
-        """Test server header information disclosure"""
+        """Test server header information disclosure."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -409,7 +403,7 @@ class TestResponseHeaderSecurity:
 
     @pytest.mark.asyncio
     async def test_powered_by_header_disclosure(self, test_client: AsyncClient):
-        """Test X-Powered-By header disclosure"""
+        """Test X-Powered-By header disclosure."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -424,7 +418,7 @@ class TestResponseHeaderSecurity:
 
     @pytest.mark.asyncio
     async def test_version_header_disclosure(self, test_client: AsyncClient):
-        """Test version header disclosure"""
+        """Test version header disclosure."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -440,14 +434,15 @@ class TestResponseHeaderSecurity:
         for header in version_headers:
             if header in response.headers:
                 logger.warning(
-                    f"⚠ Version header present: {header}: {response.headers[header]}"
+                    f"⚠ Version header present: {header}: "
+                    f"{response.headers[header]}"
                 )
             else:
                 logger.info(f"✓ Version header {header} not present")
 
     @pytest.mark.asyncio
     async def test_cache_control_headers(self, test_client: AsyncClient):
-        """Test cache control headers"""
+        """Test cache control headers."""
         response = await test_client.get(
             "/api/v1/memories/", params={"user_id": "test"}
         )
@@ -476,11 +471,11 @@ class TestResponseHeaderSecurity:
 @pytest.mark.security
 @pytest.mark.integration
 class TestSecurityHeadersIntegration:
-    """Integration tests for security headers"""
+    """Integration tests for security headers."""
 
     @pytest.mark.asyncio
     async def test_security_headers_across_endpoints(self, test_client: AsyncClient):
-        """Test security headers across different endpoints"""
+        """Test security headers across different endpoints."""
         endpoints = [
             "/api/v1/memories/",
             "/api/v1/apps/",
@@ -490,7 +485,9 @@ class TestSecurityHeadersIntegration:
 
         for endpoint in endpoints:
             try:
-                response = await test_client.get(endpoint, params={"user_id": "test"})
+                response = await test_client.get(
+                    endpoint, params={"user_id": "test"}
+                )
 
                 # Check basic security headers
                 security_headers = [
@@ -505,7 +502,8 @@ class TestSecurityHeadersIntegration:
                         present_headers.append(header)
 
                 logger.info(
-                    f"Endpoint {endpoint}: {len(present_headers)}/{len(security_headers)} security headers present"
+                    f"Endpoint {endpoint}: {len(present_headers)}/"
+                    f"{len(security_headers)} security headers present"
                 )
 
                 # All endpoints should have consistent security headers
@@ -516,7 +514,7 @@ class TestSecurityHeadersIntegration:
 
     @pytest.mark.asyncio
     async def test_security_headers_consistency(self, test_client: AsyncClient):
-        """Test security headers consistency across requests"""
+        """Test security headers consistency across requests."""
         # Make multiple requests to the same endpoint
         responses = []
 
@@ -544,9 +542,10 @@ class TestSecurityHeadersIntegration:
 
     @pytest.mark.asyncio
     async def test_post_request_security_headers(self, test_client: AsyncClient):
-        """Test security headers on POST requests"""
+        """Test security headers on POST requests."""
         response = await test_client.post(
-            "/api/v1/memories/", json={"user_id": "test", "text": "test", "app": "test"}
+            "/api/v1/memories/",
+            json={"user_id": "test", "text": "test", "app": "test"}
         )
 
         # Check security headers on POST response

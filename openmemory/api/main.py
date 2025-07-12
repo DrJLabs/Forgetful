@@ -1,3 +1,9 @@
+"""
+OpenMemory API main application module.
+
+FastAPI application setup with CORS middleware, database initialization,
+and router configuration for the OpenMemory API service.
+"""
 import datetime
 import os
 from uuid import uuid4
@@ -17,18 +23,11 @@ app = FastAPI(title="OpenMemory API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],  # Specific origins instead of wildcard
+    # Specific origins instead of wildcard
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
-    allow_methods=[
-        "GET",
-        "POST",
-        "PUT",
-        "DELETE",
-        "OPTIONS",
-    ],  # Specific methods instead of wildcard
+    # Specific methods instead of wildcard
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -39,6 +38,7 @@ if os.getenv("TESTING") != "true":
 
     # Check for USER_ID and create default user if needed
     def create_default_user():
+        """Create default user if it doesn't exist."""
         db = SessionLocal()
         try:
             # Check if user exists
@@ -57,6 +57,7 @@ if os.getenv("TESTING") != "true":
             db.close()
 
     def create_default_app():
+        """Create default application if it doesn't exist."""
         db = SessionLocal()
         try:
             user = db.query(User).filter(User.user_id == USER_ID).first()

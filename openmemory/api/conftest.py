@@ -1,39 +1,33 @@
 """
-Comprehensive test configuration for OpenMemory API
-Provides test database, fixtures, and utilities
+Comprehensive test configuration for OpenMemory API.
+
+Provides test database, fixtures, and utilities.
 """
 
 import asyncio
 import os
-import tempfile
-from contextlib import contextmanager
 from datetime import UTC, datetime
-from typing import AsyncGenerator, Generator
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import alembic.command
 import alembic.config
-import psycopg2
 import pytest
-from alembic.migration import MigrationContext
-from alembic.operations import Operations
-from sqlalchemy import create_engine, pool, text
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from testcontainers.neo4j import Neo4jContainer
 from testcontainers.postgres import PostgresContainer
 
 # Set up test environment BEFORE any imports
 os.environ["TESTING"] = "true"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
-from app.database import Base, get_db
-from app.models import App, Memory, MemoryState, User
-from httpx import ASGITransport, AsyncClient
+from app.database import Base, get_db  # noqa: E402
+from app.models import App, Memory, MemoryState, User  # noqa: E402
+from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 # Import app components after setting environment
-from main import app
+from main import app  # noqa: E402
 
 # Test configuration
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -48,7 +42,7 @@ def event_loop():
 
 
 def get_app():
-    """Get app components for testing"""
+    """Get app components for testing."""
     from app.database import Base, get_db
     from app.models import App, Memory, MemoryState, User
     from main import app
@@ -311,7 +305,9 @@ def test_user_factory():
     """Factory for creating test users."""
 
     def create_user(
-        user_id: str = None, name: str = "Test User", email: str = "test@example.com"
+        user_id: str = None,
+        name: str = "Test User",
+        email: str = "test@example.com"
     ) -> User:
         return User(
             id=uuid4(),
@@ -344,7 +340,9 @@ def test_memory_factory():
     """Factory for creating test memories."""
 
     def create_memory(
-        content: str = "Test memory content", user_id: str = None, app_id: str = None
+        content: str = "Test memory content",
+        user_id: str = None,
+        app_id: str = None
     ) -> Memory:
         return Memory(
             id=uuid4(),
@@ -387,7 +385,11 @@ def db_inspector():
                 if table_name not in tables:
                     tables[table_name] = []
                 tables[table_name].append(
-                    {"column": row[1], "type": row[2], "nullable": row[3] == "YES"}
+                    {
+                        "column": row[1],
+                        "type": row[2],
+                        "nullable": row[3] == "YES"
+                    }
                 )
 
             return tables
@@ -457,8 +459,10 @@ def mock_openai_client():
         )
 
         # Mock chat completion response
-        mock_client.return_value.chat.completions.create.return_value = MagicMock(
-            choices=[MagicMock(message=MagicMock(content="Test response"))]
+        mock_client.return_value.chat.completions.create.return_value = (
+            MagicMock(
+                choices=[MagicMock(message=MagicMock(content="Test response"))]
+            )
         )
 
         yield mock_client
@@ -476,13 +480,8 @@ def mock_neo4j_driver():
 
 
 # ============================================================================
-# CLEANUP FIXTURES
-# ============================================================================
-
-# ============================================================================
 # DIRECT TEST FIXTURES
 # ============================================================================
-
 
 @pytest.fixture
 def test_user(test_db_session):
