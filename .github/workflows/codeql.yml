@@ -74,7 +74,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
+
+      # Setup pnpm
+      - name: Setup pnpm
+        if: matrix.language == 'javascript-typescript'
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
 
       # Install Node.js dependencies
       - name: Install Node.js dependencies
@@ -82,15 +89,15 @@ jobs:
         run: |
           # Install dependencies for OpenMemory UI
           if [ -f openmemory/ui/package.json ]; then
-            cd openmemory/ui && npm ci
+            cd openmemory/ui && pnpm install --frozen-lockfile
           fi
           # Install dependencies for mem0-ts
           if [ -f mem0/mem0-ts/package.json ]; then
-            cd mem0/mem0-ts && npm ci
+            cd mem0/mem0-ts && pnpm install --frozen-lockfile
           fi
           # Install dependencies for vercel-ai-sdk
           if [ -f mem0/vercel-ai-sdk/package.json ]; then
-            cd mem0/vercel-ai-sdk && npm ci
+            cd mem0/vercel-ai-sdk && pnpm install --frozen-lockfile
           fi
 
       # Initialize CodeQL with custom configuration
