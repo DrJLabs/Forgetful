@@ -479,6 +479,63 @@ def mock_neo4j_driver():
 # CLEANUP FIXTURES
 # ============================================================================
 
+# ============================================================================
+# DIRECT TEST FIXTURES
+# ============================================================================
+
+
+@pytest.fixture
+def test_user(test_db_session):
+    """Create a test user instance."""
+    user = User(
+        id=uuid4(),
+        user_id="test_user",
+        name="Test User",
+        created_at=datetime.now(UTC),
+    )
+    test_db_session.add(user)
+    test_db_session.commit()
+    test_db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def test_app(test_db_session, test_user):
+    """Create a test app instance."""
+    app_obj = App(
+        id=uuid4(),
+        name="test_app",
+        owner_id=test_user.id,
+        is_active=True,
+        created_at=datetime.now(UTC),
+    )
+    test_db_session.add(app_obj)
+    test_db_session.commit()
+    test_db_session.refresh(app_obj)
+    return app_obj
+
+
+@pytest.fixture
+def test_memory(test_db_session, test_user, test_app):
+    """Create a test memory instance."""
+    memory = Memory(
+        id=uuid4(),
+        content="Test memory content",
+        user_id=test_user.id,
+        app_id=test_app.id,
+        state=MemoryState.active,
+        created_at=datetime.now(UTC),
+    )
+    test_db_session.add(memory)
+    test_db_session.commit()
+    test_db_session.refresh(memory)
+    return memory
+
+
+# ============================================================================
+# CLEANUP FIXTURES
+# ============================================================================
+
 
 @pytest.fixture(autouse=True)
 def cleanup_test_data():

@@ -1,22 +1,27 @@
 {
-  "name": "mem0-stack-e2e-tests",
-  "version": "1.0.0",
+  "author": "Quality Assurance Agent 2",
   "description": "End-to-end testing for mem0-stack with Playwright",
-  "scripts": {
-    "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:report": "playwright show-report",
-    "test:e2e:install": "playwright install",
-    "test:e2e:codegen": "playwright codegen"
-  },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
     "@types/node": "^22.16.2",
     "typescript": "^5.8.3"
   },
-  "keywords": ["e2e", "testing", "playwright", "mem0"],
-  "author": "Quality Assurance Agent 2",
-  "license": "MIT"
+  "keywords": [
+    "e2e",
+    "testing",
+    "playwright",
+    "mem0"
+  ],
+  "license": "MIT",
+  "name": "mem0-stack-e2e-tests",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:codegen": "playwright codegen",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "version": "1.0.0"
 }
