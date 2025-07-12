@@ -68,6 +68,13 @@ jobs:
             pip install -r requirements.txt
           fi
 
+      # Setup pnpm first
+      - name: Setup pnpm
+        if: matrix.language == 'javascript-typescript'
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
       # Setup Node.js for JavaScript/TypeScript analysis
       - name: Set up Node.js
         if: matrix.language == 'javascript-typescript'
@@ -75,13 +82,6 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-
-      # Setup pnpm
-      - name: Setup pnpm
-        if: matrix.language == 'javascript-typescript'
-        uses: pnpm/action-setup@v4
-        with:
-          version: latest
 
       # Install Node.js dependencies
       - name: Install Node.js dependencies
