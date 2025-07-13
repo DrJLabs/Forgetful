@@ -623,13 +623,13 @@ jobs:
           echo "🚦 Evaluating all quality gates..."
           
           # Check if all required tests passed
-          if [ "${{ needs.unit-tests.result }}" == "success" ] && 
-             [ "${{ needs.contract-tests.result }}" == "success" ] && 
-             [ "${{ needs.security-tests.result }}" == "success" ] && 
-             [ "${{ needs.database-tests.result }}" == "success" ] && 
-             [ "${{ needs.integration-tests.result }}" == "success" ] && 
-             [ "${{ needs.performance-tests.result }}" == "success" ] && 
-             [ "${{ needs.code-quality.result }}" == "success" ]; then
+          if [ "${{ needs.unit-tests.result }}" == "success" ] \
+             && [ "${{ needs.contract-tests.result }}" == "success" ] \
+             && [ "${{ needs.security-tests.result }}" == "success" ] \
+             && [ "${{ needs.database-tests.result }}" == "success" ] \
+             && [ "${{ needs.integration-tests.result }}" == "success" ] \
+             && [ "${{ needs.performance-tests.result }}" == "success" ] \
+             && [ "${{ needs.code-quality.result }}" == "success" ]; then
             echo "✅ All quality gates passed - Ready for merge"
             exit 0
           else
