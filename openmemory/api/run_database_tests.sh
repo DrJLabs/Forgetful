@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Database Testing Framework Runner - Step 1.2
-# Comprehensive test runner for database testing framework
+# Database Test Runner Script
+# Runs comprehensive database tests with proper environment setup
 
 set -e
 
@@ -14,402 +14,376 @@ NC='\033[0m' # No Color
 
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Test configuration
+TEST_DB_NAME="test_db"
+TEST_USER="postgres"
+TEST_PASSWORD="testpass"
+TEST_HOST="localhost"
+TEST_PORT="5432"
 
 # Default values
-ENVIRONMENT="test"
+RUN_MIGRATION_TESTS=false
+RUN_TRANSACTION_TESTS=false
+RUN_PERFORMANCE_TESTS=false
+CLEAN_DATABASE=false
 VERBOSE=false
-PARALLEL=false
-COVERAGE=true
-MARKERS=""
-PATTERN=""
-TIMEOUT=300
-DOCKER_CLEANUP=true
-REPORT_DIR="test-reports"
+COVERAGE=false
 
-# Function to display usage
-usage() {
-    echo "Database Testing Framework Runner"
-    echo ""
+# Function to print colored output
+print_info() {
+    echo -e "${BLUE}ℹ️  $1${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠️  $1${NC}"
+}
+
+print_error() {
+    echo -e "${RED}❌ $1${NC}"
+}
+
+print_header() {
+    echo -e "\n${BLUE}============================================${NC}"
+    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}============================================${NC}\n"
+}
+
+# Function to show usage
+show_usage() {
     echo "Usage: $0 [OPTIONS]"
-    echo ""
-    echo "OPTIONS:"
-    echo "  -h, --help                Show this help message"
-    echo "  -e, --environment ENV     Test environment (test, docker, ci) [default: test]"
-    echo "  -v, --verbose             Verbose output"
-    echo "  -p, --parallel            Run tests in parallel"
-    echo "  -c, --no-coverage         Skip coverage reporting"
-    echo "  -m, --markers MARKERS     Run tests with specific markers"
-    echo "  -k, --pattern PATTERN     Run tests matching pattern"
-    echo "  -t, --timeout TIMEOUT     Test timeout in seconds [default: 300]"
-    echo "  --no-cleanup              Don't cleanup Docker containers"
-    echo "  --report-dir DIR          Report directory [default: test-reports]"
-    echo ""
-    echo "EXAMPLES:"
-    echo "  $0                        Run all tests"
-    echo "  $0 -m unit                Run only unit tests"
-    echo "  $0 -m \"database and postgres\" Run PostgreSQL database tests"
-    echo "  $0 -k transaction         Run transaction tests"
-    echo "  $0 -e docker -p           Run tests with Docker in parallel"
-    echo "  $0 -m migration           Run migration tests"
-    echo ""
-    echo "AVAILABLE MARKERS:"
-    echo "  unit                      Fast, isolated unit tests"
-    echo "  integration               Integration tests with dependencies"
-    echo "  database                  Database tests with containers"
-    echo "  migration                 Database migration tests"
-    echo "  performance               Performance and benchmark tests"
-    echo "  transaction               Transaction rollback tests"
-    echo "  concurrent                Concurrent access tests"
-    echo "  postgres                  PostgreSQL specific tests"
-    echo "  sqlite                    SQLite specific tests"
-    echo "  slow                      Slow running tests"
-    echo ""
+    echo
+    echo "Options:"
+    echo "  --migration-tests     Run migration integrity tests"
+    echo "  --transaction-tests   Run transaction rollback tests"
+    echo "  --performance-tests   Run database performance tests"
+    echo "  --clean              Clean database before running tests"
+    echo "  --verbose            Enable verbose output"
+    echo "  --coverage           Generate coverage reports"
+    echo "  --all                Run all test types"
+    echo "  --help               Show this help message"
+    echo
+    echo "Examples:"
+    echo "  $0 --migration-tests --verbose"
+    echo "  $0 --all --coverage"
+    echo "  $0 --clean --transaction-tests"
 }
-
-# Function to log messages
-log() {
-    local level=$1
-    shift
-    local message="$@"
-
-    case $level in
-        "INFO")
-            echo -e "${GREEN}[INFO]${NC} $message"
-            ;;
-        "WARN")
-            echo -e "${YELLOW}[WARN]${NC} $message"
-            ;;
-        "ERROR")
-            echo -e "${RED}[ERROR]${NC} $message"
-            ;;
-        "DEBUG")
-            if [ "$VERBOSE" = true ]; then
-                echo -e "${BLUE}[DEBUG]${NC} $message"
-            fi
-            ;;
-    esac
-}
-
-# Function to check prerequisites
-check_prerequisites() {
-    log "INFO" "Checking prerequisites..."
-
-    # Check if we're in the correct directory
-    if [ ! -f "pytest.ini" ]; then
-        log "ERROR" "pytest.ini not found. Please run from the API directory."
-        exit 1
-    fi
-
-    # Check if Python is available
-    if ! command -v python3 &> /dev/null; then
-        log "ERROR" "Python 3 is required but not found."
-        exit 1
-    fi
-
-    # Check if pip is available
-    if ! command -v pip &> /dev/null; then
-        log "ERROR" "pip is required but not found."
-        exit 1
-    fi
-
-    # Check if Docker is available for Docker tests
-    if [ "$ENVIRONMENT" = "docker" ] && ! command -v docker &> /dev/null; then
-        log "ERROR" "Docker is required for Docker environment tests."
-        exit 1
-    fi
-
-    log "INFO" "Prerequisites check passed."
-}
-
-# Function to setup test environment
-setup_environment() {
-    log "INFO" "Setting up test environment..."
-
-    # Create virtual environment if it doesn't exist
-    if [ ! -d "venv" ]; then
-        log "INFO" "Creating virtual environment..."
-        python3 -m venv venv
-    fi
-
-    # Activate virtual environment
-    source venv/bin/activate
-
-    # Install/upgrade pip
-    pip install --upgrade pip
-
-    # Install test dependencies
-    log "INFO" "Installing test dependencies..."
-    pip install -r requirements-test.txt
-
-    # Install main dependencies
-    if [ -f "requirements.txt" ]; then
-        pip install -r requirements.txt
-    fi
-
-    # Create report directory
-    mkdir -p "$REPORT_DIR"
-
-    log "INFO" "Test environment setup completed."
-}
-
-# Function to cleanup Docker containers
-cleanup_docker() {
-    if [ "$DOCKER_CLEANUP" = true ]; then
-        log "INFO" "Cleaning up Docker containers..."
-
-        # Stop and remove test containers
-        docker container prune -f --filter "label=testcontainer=true" 2>/dev/null || true
-
-        # Remove test networks
-        docker network prune -f 2>/dev/null || true
-
-        # Remove test volumes
-        docker volume prune -f 2>/dev/null || true
-
-        log "INFO" "Docker cleanup completed."
-    fi
-}
-
-# Function to run tests
-run_tests() {
-    log "INFO" "Running database tests..."
-
-    # Build pytest command
-    local pytest_cmd="python -m pytest"
-
-    # Add verbosity
-    if [ "$VERBOSE" = true ]; then
-        pytest_cmd="$pytest_cmd -vv"
-    fi
-
-    # Add parallel execution
-    if [ "$PARALLEL" = true ]; then
-        pytest_cmd="$pytest_cmd -n auto"
-    fi
-
-    # Add coverage
-    if [ "$COVERAGE" = true ]; then
-        pytest_cmd="$pytest_cmd --cov=app --cov-report=html:$REPORT_DIR/htmlcov --cov-report=term-missing --cov-report=xml:$REPORT_DIR/coverage.xml"
-    fi
-
-    # Add markers
-    if [ -n "$MARKERS" ]; then
-        pytest_cmd="$pytest_cmd -m \"$MARKERS\""
-    fi
-
-    # Add pattern
-    if [ -n "$PATTERN" ]; then
-        pytest_cmd="$pytest_cmd -k \"$PATTERN\""
-    fi
-
-    # Add timeout
-    pytest_cmd="$pytest_cmd --timeout=$TIMEOUT"
-
-    # Add report outputs
-    pytest_cmd="$pytest_cmd --junit-xml=$REPORT_DIR/test-results.xml --html=$REPORT_DIR/test-report.html --self-contained-html"
-
-    # Set environment variables based on test environment
-    case $ENVIRONMENT in
-        "test")
-            export TESTING=true
-            export DATABASE_URL="sqlite:///:memory:"
-            ;;
-        "docker")
-            export TESTING=true
-            export USE_DOCKER_CONTAINERS=true
-            ;;
-        "ci")
-            export TESTING=true
-            export CI=true
-            export DATABASE_URL="sqlite:///:memory:"
-            ;;
-    esac
-
-    # Run the tests
-    log "INFO" "Executing: $pytest_cmd"
-    log "INFO" "Test environment: $ENVIRONMENT"
-    log "INFO" "Timeout: ${TIMEOUT}s"
-
-    if eval "$pytest_cmd"; then
-        log "INFO" "Tests completed successfully!"
-
-        # Display coverage summary if available
-        if [ "$COVERAGE" = true ] && [ -f "$REPORT_DIR/coverage.xml" ]; then
-            log "INFO" "Coverage report generated: $REPORT_DIR/htmlcov/index.html"
-        fi
-
-        # Display test report
-        if [ -f "$REPORT_DIR/test-report.html" ]; then
-            log "INFO" "Test report generated: $REPORT_DIR/test-report.html"
-        fi
-
-        return 0
-    else
-        log "ERROR" "Tests failed!"
-        return 1
-    fi
-}
-
-# Function to run specific test suites
-run_test_suite() {
-    local suite=$1
-
-    case $suite in
-        "unit")
-            log "INFO" "Running unit tests..."
-            MARKERS="unit"
-            ;;
-        "integration")
-            log "INFO" "Running integration tests..."
-            MARKERS="integration"
-            ;;
-        "database")
-            log "INFO" "Running database tests..."
-            MARKERS="database"
-            ENVIRONMENT="docker"
-            ;;
-        "migration")
-            log "INFO" "Running migration tests..."
-            MARKERS="migration"
-            ENVIRONMENT="docker"
-            ;;
-        "performance")
-            log "INFO" "Running performance tests..."
-            MARKERS="performance"
-            TIMEOUT=600
-            ;;
-        "transaction")
-            log "INFO" "Running transaction tests..."
-            MARKERS="transaction"
-            ENVIRONMENT="docker"
-            ;;
-        "all")
-            log "INFO" "Running all tests..."
-            MARKERS=""
-            ENVIRONMENT="docker"
-            ;;
-    esac
-}
-
-# Function to display test results summary
-display_summary() {
-    log "INFO" "=== Test Results Summary ==="
-
-    if [ -f "$REPORT_DIR/test-results.xml" ]; then
-        # Parse JUnit XML for summary (simplified)
-        if command -v xmllint &> /dev/null; then
-            local tests=$(xmllint --xpath "string(//testsuite/@tests)" "$REPORT_DIR/test-results.xml" 2>/dev/null || echo "N/A")
-            local failures=$(xmllint --xpath "string(//testsuite/@failures)" "$REPORT_DIR/test-results.xml" 2>/dev/null || echo "N/A")
-            local errors=$(xmllint --xpath "string(//testsuite/@errors)" "$REPORT_DIR/test-results.xml" 2>/dev/null || echo "N/A")
-            local time=$(xmllint --xpath "string(//testsuite/@time)" "$REPORT_DIR/test-results.xml" 2>/dev/null || echo "N/A")
-
-            log "INFO" "Total Tests: $tests"
-            log "INFO" "Failures: $failures"
-            log "INFO" "Errors: $errors"
-            log "INFO" "Execution Time: ${time}s"
-        fi
-    fi
-
-    # Report locations
-    log "INFO" "Reports generated in: $REPORT_DIR/"
-    log "INFO" "- HTML Report: $REPORT_DIR/test-report.html"
-    log "INFO" "- Coverage Report: $REPORT_DIR/htmlcov/index.html"
-    log "INFO" "- JUnit XML: $REPORT_DIR/test-results.xml"
-    log "INFO" "- Coverage XML: $REPORT_DIR/coverage.xml"
-}
-
-# Trap to cleanup on exit
-cleanup() {
-    log "INFO" "Performing cleanup..."
-    cleanup_docker
-}
-
-trap cleanup EXIT
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -h|--help)
-            usage
-            exit 0
+        --migration-tests)
+            RUN_MIGRATION_TESTS=true
+            shift
             ;;
-        -e|--environment)
-            ENVIRONMENT="$2"
-            shift 2
+        --transaction-tests)
+            RUN_TRANSACTION_TESTS=true
+            shift
             ;;
-        -v|--verbose)
+        --performance-tests)
+            RUN_PERFORMANCE_TESTS=true
+            shift
+            ;;
+        --clean)
+            CLEAN_DATABASE=true
+            shift
+            ;;
+        --verbose)
             VERBOSE=true
             shift
             ;;
-        -p|--parallel)
-            PARALLEL=true
+        --coverage)
+            COVERAGE=true
             shift
             ;;
-        -c|--no-coverage)
-            COVERAGE=false
+        --all)
+            RUN_MIGRATION_TESTS=true
+            RUN_TRANSACTION_TESTS=true
+            RUN_PERFORMANCE_TESTS=true
             shift
             ;;
-        -m|--markers)
-            MARKERS="$2"
-            shift 2
-            ;;
-        -k|--pattern)
-            PATTERN="$2"
-            shift 2
-            ;;
-        -t|--timeout)
-            TIMEOUT="$2"
-            shift 2
-            ;;
-        --no-cleanup)
-            DOCKER_CLEANUP=false
-            shift
-            ;;
-        --report-dir)
-            REPORT_DIR="$2"
-            shift 2
-            ;;
-        --suite)
-            run_test_suite "$2"
-            shift 2
+        --help)
+            show_usage
+            exit 0
             ;;
         *)
-            log "ERROR" "Unknown option: $1"
-            usage
+            print_error "Unknown option: $1"
+            show_usage
             exit 1
             ;;
     esac
 done
 
-# Main execution
-main() {
-    log "INFO" "Starting Database Testing Framework..."
-    log "INFO" "Environment: $ENVIRONMENT"
-    log "INFO" "Verbose: $VERBOSE"
-    log "INFO" "Parallel: $PARALLEL"
-    log "INFO" "Coverage: $COVERAGE"
-    log "INFO" "Markers: ${MARKERS:-'all'}"
-    log "INFO" "Pattern: ${PATTERN:-'all'}"
-    log "INFO" "Timeout: ${TIMEOUT}s"
-    log "INFO" "Report Directory: $REPORT_DIR"
+# If no specific tests selected, run basic tests
+if [[ "$RUN_MIGRATION_TESTS" == false && "$RUN_TRANSACTION_TESTS" == false && "$RUN_PERFORMANCE_TESTS" == false ]]; then
+    RUN_MIGRATION_TESTS=true
+    RUN_TRANSACTION_TESTS=true
+fi
 
-    # Check prerequisites
-    check_prerequisites
+# Function to check prerequisites
+check_prerequisites() {
+    print_header "CHECKING PREREQUISITES"
+    
+    # Check if we're in the right directory
+    if [[ ! -f "main.py" ]]; then
+        print_error "main.py not found. Please run from the OpenMemory API directory."
+        exit 1
+    fi
+    
+    # Check if pytest is available
+    if ! command -v pytest &> /dev/null; then
+        print_error "pytest not found. Please install pytest."
+        exit 1
+    fi
+    
+    # Check if PostgreSQL client is available
+    if ! command -v psql &> /dev/null; then
+        print_warning "psql not found. Some database operations may fail."
+    fi
+    
+    print_success "Prerequisites check completed"
+}
 
-    # Setup environment
-    setup_environment
+# Function to detect environment
+detect_environment() {
+    print_header "DETECTING ENVIRONMENT"
+    
+    IS_CI=${CI:-false}
+    IS_TESTING=${TESTING:-false}
+    IS_DOCKER=false
+    
+    if [[ -f /.dockerenv ]]; then
+        IS_DOCKER=true
+    fi
+    
+    print_info "Environment: CI=$IS_CI, Testing=$IS_TESTING, Docker=$IS_DOCKER"
+    
+    # Set database connection parameters based on environment
+    if [[ "$IS_CI" == "true" ]]; then
+        TEST_HOST="localhost"
+        print_info "Using CI configuration: $TEST_HOST:$TEST_PORT"
+    elif [[ "$IS_TESTING" == "true" ]]; then
+        TEST_HOST=${POSTGRES_HOST:-postgres-mem0}
+        print_info "Using testing configuration: $TEST_HOST:$TEST_PORT"
+    fi
+    
+    # Set environment variables
+    export DATABASE_URL="postgresql://$TEST_USER:$TEST_PASSWORD@$TEST_HOST:$TEST_PORT/$TEST_DB_NAME"
+    export TESTING=true
+    export PYTHONPATH="$PROJECT_ROOT:$SCRIPT_DIR"
+    
+    print_success "Environment detection completed"
+}
 
-    # Run tests
-    if run_tests; then
-        display_summary
-        log "INFO" "Database testing completed successfully!"
-        exit 0
+# Function to setup test database
+setup_test_database() {
+    print_header "SETTING UP TEST DATABASE"
+    
+    # Run the database setup script
+    if [[ "$CLEAN_DATABASE" == "true" ]]; then
+        print_info "Setting up test database with clean option..."
+        python3 setup_test_database.py --clean
     else
-        log "ERROR" "Database testing failed!"
+        print_info "Setting up test database..."
+        python3 setup_test_database.py
+    fi
+    
+    if [[ $? -eq 0 ]]; then
+        print_success "Test database setup completed"
+    else
+        print_error "Test database setup failed"
         exit 1
     fi
 }
 
-# Run main function
+# Function to run migration tests
+run_migration_tests() {
+    print_header "RUNNING MIGRATION TESTS"
+    
+    local pytest_args=()
+    pytest_args+=("tests/test_migration_integrity.py")
+    pytest_args+=("-v")
+    
+    if [[ "$VERBOSE" == "true" ]]; then
+        pytest_args+=("-s")
+    fi
+    
+    if [[ "$COVERAGE" == "true" ]]; then
+        pytest_args+=("--cov=app.database")
+        pytest_args+=("--cov=app.models")
+        pytest_args+=("--cov-report=term-missing")
+        pytest_args+=("--cov-report=html:htmlcov-migration")
+    fi
+    
+    print_info "Running migration integrity tests..."
+    pytest "${pytest_args[@]}"
+    
+    if [[ $? -eq 0 ]]; then
+        print_success "Migration tests completed successfully"
+    else
+        print_error "Migration tests failed"
+        return 1
+    fi
+}
+
+# Function to run transaction tests
+run_transaction_tests() {
+    print_header "RUNNING TRANSACTION TESTS"
+    
+    local pytest_args=()
+    pytest_args+=("tests/test_database_framework.py")
+    pytest_args+=("-v")
+    pytest_args+=("-k" "transaction")
+    
+    if [[ "$VERBOSE" == "true" ]]; then
+        pytest_args+=("-s")
+    fi
+    
+    if [[ "$COVERAGE" == "true" ]]; then
+        pytest_args+=("--cov=app.database")
+        pytest_args+=("--cov-report=term-missing")
+        pytest_args+=("--cov-report=html:htmlcov-transaction")
+    fi
+    
+    print_info "Running transaction rollback tests..."
+    pytest "${pytest_args[@]}"
+    
+    if [[ $? -eq 0 ]]; then
+        print_success "Transaction tests completed successfully"
+    else
+        print_error "Transaction tests failed"
+        return 1
+    fi
+}
+
+# Function to run performance tests
+run_performance_tests() {
+    print_header "RUNNING PERFORMANCE TESTS"
+    
+    local pytest_args=()
+    pytest_args+=("tests/test_database_framework.py")
+    pytest_args+=("-v")
+    pytest_args+=("-k" "performance")
+    pytest_args+=("--benchmark-only")
+    
+    if [[ "$VERBOSE" == "true" ]]; then
+        pytest_args+=("-s")
+    fi
+    
+    print_info "Running database performance tests..."
+    pytest "${pytest_args[@]}"
+    
+    if [[ $? -eq 0 ]]; then
+        print_success "Performance tests completed successfully"
+    else
+        print_error "Performance tests failed"
+        return 1
+    fi
+}
+
+# Function to generate test report
+generate_test_report() {
+    print_header "GENERATING TEST REPORT"
+    
+    local report_file="database-test-report.html"
+    
+    cat > "$report_file" << EOF
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Test Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background-color: #f0f0f0; padding: 10px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Database Test Report</h1>
+        <p>Generated: $(date)</p>
+        <p>Environment: CI=$IS_CI, Testing=$IS_TESTING, Docker=$IS_DOCKER</p>
+    </div>
+    
+    <h2>Test Summary</h2>
+    <ul>
+        <li>Migration Tests: $(if [[ "$RUN_MIGRATION_TESTS" == "true" ]]; then echo "✅ Run"; else echo "⏭️ Skipped"; fi)</li>
+        <li>Transaction Tests: $(if [[ "$RUN_TRANSACTION_TESTS" == "true" ]]; then echo "✅ Run"; else echo "⏭️ Skipped"; fi)</li>
+        <li>Performance Tests: $(if [[ "$RUN_PERFORMANCE_TESTS" == "true" ]]; then echo "✅ Run"; else echo "⏭️ Skipped"; fi)</li>
+    </ul>
+    
+    <h2>Coverage Reports</h2>
+    <p>Coverage reports are available in the htmlcov-* directories.</p>
+    
+    <h2>Database Configuration</h2>
+    <ul>
+        <li>Host: $TEST_HOST</li>
+        <li>Port: $TEST_PORT</li>
+        <li>Database: $TEST_DB_NAME</li>
+        <li>User: $TEST_USER</li>
+    </ul>
+</body>
+</html>
+EOF
+    
+    print_success "Test report generated: $report_file"
+}
+
+# Main execution
+main() {
+    print_header "DATABASE TEST RUNNER"
+    
+    # Check prerequisites
+    check_prerequisites
+    
+    # Detect environment
+    detect_environment
+    
+    # Setup test database
+    setup_test_database
+    
+    # Run selected tests
+    local test_failures=0
+    
+    if [[ "$RUN_MIGRATION_TESTS" == "true" ]]; then
+        if ! run_migration_tests; then
+            ((test_failures++))
+        fi
+    fi
+    
+    if [[ "$RUN_TRANSACTION_TESTS" == "true" ]]; then
+        if ! run_transaction_tests; then
+            ((test_failures++))
+        fi
+    fi
+    
+    if [[ "$RUN_PERFORMANCE_TESTS" == "true" ]]; then
+        if ! run_performance_tests; then
+            ((test_failures++))
+        fi
+    fi
+    
+    # Generate test report
+    generate_test_report
+    
+    # Final summary
+    print_header "TEST SUMMARY"
+    
+    if [[ $test_failures -eq 0 ]]; then
+        print_success "All database tests completed successfully! 🎉"
+        exit 0
+    else
+        print_error "$test_failures test suite(s) failed"
+        exit 1
+    fi
+}
+
+# Execute main function
 main "$@"
