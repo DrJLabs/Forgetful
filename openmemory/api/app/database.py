@@ -80,7 +80,7 @@ def create_database_engine(database_url: str) -> Engine:
 
 # Initialize database components
 DATABASE_URL = get_database_url()
-logger.info(f"Using database URL: {DATABASE_URL.split('@')[0]}@[REDACTED]")
+logger.info("Database connection initialized successfully.")
 
 engine = create_database_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
