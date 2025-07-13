@@ -697,7 +697,7 @@ USER=test_user
 API_KEY=sk-test-key-for-mocking-only
 
 # CI-specific Configuration
-PYTHONPATH=\${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
+PYTHONPATH=\${PWD}:\${PWD}/openmemory/api
 CI_DATABASE_URL=postgresql://postgres:testpass@localhost:5432/test_db
 CI_NEO4J_URI=bolt://localhost:7687
 CI_COVERAGE_THRESHOLD=80
@@ -761,7 +761,7 @@ env:
   API_KEY: sk-test-key-for-mocking-only
   
   # CI-specific Configuration
-  PYTHONPATH: \${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
+  PYTHONPATH: \${PWD}:\${PWD}/openmemory/api
   CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
   CI_NEO4J_URI: bolt://localhost:7687
   CI_COVERAGE_THRESHOLD: 80
