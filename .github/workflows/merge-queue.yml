@@ -3,6 +3,8 @@
 # Based on: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-a-merge-queue
 
 name: '🔄 Merge Queue Coordination'
+permissions:
+  contents: read
 
 on:
   # Merge queue events - triggered when PRs are queued for merging
@@ -392,6 +394,10 @@ jobs:
     name: '🧹 Clear Merge Queue'
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'clear-queue'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
 
     steps:
       - name: Checkout Repository
