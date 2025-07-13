@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv()
 
 # Import your models here
-from app.database import Base, get_migration_database_url
+from app.database import Base
 from app.models import *  # Import all your models
 
 # this is the Alembic Config object, which provides
