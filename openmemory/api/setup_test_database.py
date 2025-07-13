@@ -1,300 +1,213 @@
 #!/usr/bin/env python3
 """
-Test Database Setup Script
-
-This script sets up the test database for both local and CI environments.
-It handles:
-- Database creation and initialization
-- Extension installation (pgvector)
-- Schema migration
-- Test data seeding
-- Environment detection
+Test database setup script for OpenMemory API
+This script sets up test databases for development and testing purposes.
 """
 
-import os
-import sys
 import logging
-import argparse
-from pathlib import Path
-
-
-# Add the current directory to Python path
-sys.path.insert(0, str(Path(__file__).parent))
+import os
+import re
+import sys
 
 import psycopg2
+from psycopg2 import sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import alembic.command
-import alembic.config
-from sqlalchemy import create_engine, text
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def detect_environment():
-    """Detect the current environment (local, CI, docker)."""
-    is_ci = os.getenv('CI', 'false').lower() == 'true'
-    is_testing = os.getenv('TESTING', 'false').lower() == 'true'
-    is_docker = os.path.exists('/.dockerenv')
-    
-    logger.info(f"Environment detection: CI={is_ci}, Testing={is_testing}, Docker={is_docker}")
-    return is_ci, is_testing, is_docker
 
 def get_database_config():
-    """Get database configuration based on environment."""
-    is_ci, is_testing, is_docker = detect_environment()
-    
-    if is_ci:
-        # CI environment - use localhost
-        config = {
-            'host': 'localhost',
-            'port': 5432,
-            'database': 'test_db',
-            'user': 'postgres',
-            'password': 'testpass'
-        }
-    elif is_testing:
-        # Local testing - use docker-compose services
-        config = {
-            'host': os.getenv('POSTGRES_HOST', 'postgres-mem0'),
-            'port': int(os.getenv('POSTGRES_PORT', '5432')),
-            'database': os.getenv('POSTGRES_DB', 'mem0'),
-            'user': os.getenv('POSTGRES_USER', 'postgres'),
-            'password': os.getenv('POSTGRES_PASSWORD', 'postgres')
-        }
-    else:
-        # Production/development
-        config = {
-            'host': os.getenv('POSTGRES_HOST', 'postgres-mem0'),
-            'port': int(os.getenv('POSTGRES_PORT', '5432')),
-            'database': os.getenv('POSTGRES_DB', 'mem0'),
-            'user': os.getenv('POSTGRES_USER', 'postgres'),
-            'password': os.getenv('POSTGRES_PASSWORD', 'postgres')
-        }
-    
-    logger.info(f"Database config: {config['user']}@{config['host']}:{config['port']}/{config['database']}")
+    """Get database configuration from environment variables."""
+    config = {
+        "host": os.getenv("POSTGRES_HOST", "localhost"),
+        "port": int(os.getenv("POSTGRES_PORT", "5432")),
+        "user": os.getenv("POSTGRES_USER", "postgres"),
+        "password": os.getenv("POSTGRES_PASSWORD", "password"),
+        "database": os.getenv("POSTGRES_DB", "openmemory_test"),
+        "admin_database": os.getenv("POSTGRES_ADMIN_DB", "postgres"),
+    }
     return config
 
-def wait_for_database(config, timeout=60):
-    """Wait for database to be ready."""
-    import time
-    
-    logger.info(f"Waiting for database at {config['host']}:{config['port']}...")
-    
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        try:
-            conn = psycopg2.connect(
-                host=config['host'],
-                port=config['port'],
-                database='postgres',  # Connect to default database first
-                user=config['user'],
-                password=config['password']
-            )
-            conn.close()
-            logger.info("✅ Database is ready!")
-            return True
-        except psycopg2.OperationalError:
-            logger.info("Database not ready, waiting...")
-            time.sleep(2)
-    
-    logger.error(f"❌ Database not ready after {timeout} seconds")
-    return False
 
-def create_database_if_not_exists(config):
-    """Create the target database if it doesn't exist."""
+def connect_to_admin_database(config):
+    """Connect to the admin database to create new databases."""
     try:
-        # Connect to default postgres database
         conn = psycopg2.connect(
-            host=config['host'],
-            port=config['port'],
-            database='postgres',
-            user=config['user'],
-            password=config['password']
+            host=config["host"],
+            port=config["port"],
+            user=config["user"],
+            password=config["password"],
+            database=config["admin_database"],
         )
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        
-        cursor = conn.cursor()
-        
-        # Check if database exists
-        cursor.execute(
-            "SELECT 1 FROM pg_database WHERE datname = %s",
-            (config['database'],)
+        return conn
+    except psycopg2.Error as e:
+        logger.error(f"Failed to connect to admin database: {e}")
+        raise
+
+
+def validate_database_name(db_name):
+    """
+    Validate database name according to PostgreSQL naming conventions.
+
+    Args:
+        db_name (str): Database name to validate
+
+    Returns:
+        bool: True if valid, False otherwise
+
+    Raises:
+        ValueError: If database name is invalid
+    """
+    if not db_name:
+        raise ValueError("Database name cannot be empty")
+
+    if len(db_name) > 63:
+        raise ValueError("Database name cannot exceed 63 characters")
+
+    # PostgreSQL identifier rules:
+    # - Must start with a letter (a-z) or underscore
+    # - Can contain letters, digits, underscores, and dollar signs
+    # - Cannot be a reserved keyword (basic check)
+    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_$]*$", db_name):
+        raise ValueError(
+            "Database name must start with a letter or underscore and contain only "
+            "letters, numbers, underscores, and dollar signs"
         )
-        
-        if not cursor.fetchone():
-            logger.info(f"Creating database '{config['database']}'...")
-            cursor.execute(f"CREATE DATABASE {config['database']}")
-            logger.info("✅ Database created successfully")
-        else:
-            logger.info(f"Database '{config['database']}' already exists")
-        
-        cursor.close()
-        conn.close()
-        
-    except Exception as e:
-        logger.error(f"❌ Error creating database: {e}")
-        return False
-    
+
+    # Check for common PostgreSQL reserved keywords
+    reserved_keywords = {
+        "user",
+        "table",
+        "database",
+        "schema",
+        "index",
+        "view",
+        "trigger",
+        "function",
+        "procedure",
+        "select",
+        "insert",
+        "update",
+        "delete",
+        "create",
+        "drop",
+        "alter",
+        "grant",
+        "revoke",
+        "commit",
+        "rollback",
+    }
+
+    if db_name.lower() in reserved_keywords:
+        raise ValueError(f"Database name '{db_name}' is a reserved keyword")
+
     return True
 
-def install_extensions(config):
-    """Install required PostgreSQL extensions."""
+
+def database_exists(cursor, db_name):
+    """Check if a database already exists."""
+    cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+    return cursor.fetchone() is not None
+
+
+def create_database_if_not_exists(config):
+    """Create database if it doesn't exist."""
+    conn = None
+    try:
+        # Validate database name before proceeding
+        validate_database_name(config["database"])
+
+        conn = connect_to_admin_database(config)
+        cursor = conn.cursor()
+
+        if not database_exists(cursor, config["database"]):
+            logger.info(f"Creating database: {config['database']}")
+
+            # SECURE CODE - Use psycopg2.sql.Identifier for proper SQL identifier escaping
+            # This prevents SQL injection by properly escaping database identifiers
+            cursor.execute(
+                sql.SQL("CREATE DATABASE {}").format(sql.Identifier(config["database"]))
+            )
+
+            logger.info(f"Database '{config['database']}' created successfully")
+        else:
+            logger.info(f"Database '{config['database']}' already exists")
+
+    except ValueError as e:
+        logger.error(f"Invalid database name: {e}")
+        raise
+    except psycopg2.Error as e:
+        logger.error(f"Error creating database: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def create_test_tables(config):
+    """Create test tables in the database."""
     try:
         conn = psycopg2.connect(
-            host=config['host'],
-            port=config['port'],
-            database=config['database'],
-            user=config['user'],
-            password=config['password']
+            host=config["host"],
+            port=config["port"],
+            user=config["user"],
+            password=config["password"],
+            database=config["database"],
         )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        
+
         cursor = conn.cursor()
-        
-        # Install pgvector extension
-        logger.info("Installing pgvector extension...")
+
+        # Create pgvector extension
         cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
-        
-        # Install uuid-ossp extension
-        logger.info("Installing uuid-ossp extension...")
-        cursor.execute("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
-        
-        cursor.close()
-        conn.close()
-        
-        logger.info("✅ Extensions installed successfully")
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Error installing extensions: {e}")
-        return False
 
-def run_migrations(config):
-    """Run Alembic migrations."""
+        # Create test table
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS test_memories (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(255) NOT NULL,
+                content TEXT NOT NULL,
+                embedding vector(1536),
+                metadata JSONB DEFAULT '{}',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """
+        )
+
+        conn.commit()
+        logger.info("Test tables created successfully")
+
+    except psycopg2.Error as e:
+        logger.error(f"Error creating test tables: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
+
+
+def setup_test_database():
+    """Main function to setup test database."""
     try:
-        # Set environment variables for Alembic
-        database_url = f"postgresql://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{config['database']}"
-        os.environ['DATABASE_URL'] = database_url
-        os.environ['TESTING'] = 'true'
-        
-        # Create Alembic configuration
-        alembic_cfg = alembic.config.Config("alembic.ini")
-        alembic_cfg.set_main_option("sqlalchemy.url", database_url)
-        
-        logger.info("Running database migrations...")
-        alembic.command.upgrade(alembic_cfg, "head")
-        logger.info("✅ Migrations completed successfully")
-        
-        return True
-        
+        config = get_database_config()
+
+        logger.info("Setting up test database...")
+        logger.info(f"Target database: {config['database']}")
+
+        # Create database if it doesn't exist
+        create_database_if_not_exists(config)
+
+        # Create test tables
+        create_test_tables(config)
+
+        logger.info("Test database setup completed successfully")
+
     except Exception as e:
-        logger.error(f"❌ Error running migrations: {e}")
-        return False
+        logger.error(f"Test database setup failed: {e}")
+        sys.exit(1)
 
-def verify_database_setup(config):
-    """Verify that the database is set up correctly."""
-    try:
-        database_url = f"postgresql://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{config['database']}"
-        engine = create_engine(database_url)
-        
-        with engine.connect() as conn:
-            # Check pgvector extension
-            result = conn.execute(text("SELECT * FROM pg_extension WHERE extname = 'vector'"))
-            if not result.fetchone():
-                logger.error("❌ pgvector extension not installed")
-                return False
-            
-            # Check if basic tables exist
-            result = conn.execute(text("""
-                SELECT table_name FROM information_schema.tables 
-                WHERE table_schema = 'public' AND table_name IN ('users', 'apps', 'memories')
-            """))
-            tables = [row[0] for row in result.fetchall()]
-            
-            expected_tables = ['users', 'apps', 'memories']
-            missing_tables = [t for t in expected_tables if t not in tables]
-            
-            if missing_tables:
-                logger.warning(f"⚠️  Missing tables: {missing_tables}")
-            else:
-                logger.info("✅ All expected tables present")
-        
-        logger.info("✅ Database setup verification completed")
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Error verifying database setup: {e}")
-        return False
 
-def clean_database(config):
-    """Clean the database for testing."""
-    try:
-        database_url = f"postgresql://{config['user']}:{config['password']}@{config['host']}:{config['port']}/{config['database']}"
-        engine = create_engine(database_url)
-        
-        with engine.connect() as conn:
-            # Truncate all tables
-            logger.info("Cleaning database tables...")
-            conn.execute(text("TRUNCATE TABLE memories, apps, users CASCADE"))
-            conn.commit()
-            
-        logger.info("✅ Database cleaned successfully")
-        return True
-        
-    except Exception as e:
-        logger.error(f"❌ Error cleaning database: {e}")
-        return False
-
-def main():
-    """Main function."""
-    parser = argparse.ArgumentParser(description='Setup test database')
-    parser.add_argument('--clean', action='store_true', help='Clean existing data')
-    parser.add_argument('--verify-only', action='store_true', help='Only verify setup')
-    parser.add_argument('--timeout', type=int, default=60, help='Database wait timeout')
-    
-    args = parser.parse_args()
-    
-    # Get database configuration
-    config = get_database_config()
-    
-    # Wait for database to be ready
-    if not wait_for_database(config, args.timeout):
-        sys.exit(1)
-    
-    if args.verify_only:
-        if verify_database_setup(config):
-            logger.info("✅ Database setup is valid")
-            sys.exit(0)
-        else:
-            logger.error("❌ Database setup is invalid")
-            sys.exit(1)
-    
-    # Create database if it doesn't exist
-    if not create_database_if_not_exists(config):
-        sys.exit(1)
-    
-    # Install extensions
-    if not install_extensions(config):
-        sys.exit(1)
-    
-    # Run migrations
-    if not run_migrations(config):
-        sys.exit(1)
-    
-    # Clean database if requested
-    if args.clean:
-        if not clean_database(config):
-            sys.exit(1)
-    
-    # Verify setup
-    if not verify_database_setup(config):
-        sys.exit(1)
-    
-    logger.info("🎉 Database setup completed successfully!")
-
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    setup_test_database()
