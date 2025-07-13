@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import axios from 'axios'
-import { type Memory, Client, type Category } from '@/components/types'
+import { type Memory, type Category } from '@/components/types'
 import { useDispatch, useSelector } from 'react-redux'
 import { type AppDispatch, type RootState } from '@/store/store'
 import {
