@@ -16,41 +16,66 @@ load_dotenv()
 
 def _redact_database_url(url: str) -> str:
     """
-    Redact sensitive information from a database URL for logging purposes.
+    Redacts sensitive information from a database URL for safe logging.
+
+    Handles edge cases:
+    - Missing hostname: Returns generic message instead of malformed URL
+    - Missing username with password: Preserves correct format `:***@hostname`
 
     Args:
-        url: The database URL to redact
+        url: Database URL to redact
 
     Returns:
-        The redacted URL with password replaced by '***'
+        Redacted URL string or generic message for invalid URLs
     """
     try:
         parsed = urlparse(url)
 
-        # Only redact if there's a password to redact
-        if not parsed.password:
+        # SQLite URLs don't have hostnames and don't contain sensitive info
+        if parsed.scheme == "sqlite":
             return url
 
-        # Handle None values properly to avoid "None" in the URL
-        username = parsed.username or ""
-        hostname = parsed.hostname or ""
+        # If hostname is None or empty, return generic redacted message
+        if not parsed.hostname:
+            return "[REDACTED_DATABASE_URL]"
 
-        # Construct the netloc with proper handling of None values
-        if username:
-            netloc = f"{username}:***@{hostname}"
+        # Build netloc with proper redaction
+        netloc_parts = []
+
+        # Handle username
+        if parsed.username:
+            netloc_parts.append(parsed.username)
+
+        # Handle password - preserve colon for no-username cases
+        if parsed.password:
+            if parsed.username:
+                netloc_parts.append(":***")
+            else:
+                netloc_parts.append(":***")
+
+        # Add @ separator if we have username or password
+        if parsed.username or parsed.password:
+            netloc = "".join(netloc_parts) + "@" + parsed.hostname
         else:
-            netloc = f"***@{hostname}"
+            netloc = parsed.hostname
 
-        # Add port if it exists
+        # Add port if present
         if parsed.port:
             netloc += f":{parsed.port}"
 
-        # Reconstruct the URL with redacted password
-        redacted_parsed = parsed._replace(netloc=netloc)
-        return urlunparse(redacted_parsed)
+        # Reconstruct URL
+        redacted_url = f"{parsed.scheme}://{netloc}"
+        if parsed.path:
+            redacted_url += parsed.path
+        if parsed.query:
+            redacted_url += f"?{parsed.query}"
+        if parsed.fragment:
+            redacted_url += f"#{parsed.fragment}"
+
+        return redacted_url
 
     except Exception:
-        # If parsing fails, return a generic message to avoid exposing sensitive info
+        # If URL parsing fails completely, return generic message
         return "[REDACTED_DATABASE_URL]"
 
 
