@@ -253,6 +253,13 @@ collect_configuration_values() {
     log_success "Configuration values collected and applied"
 }
 
+# Escape special characters for sed replacement strings
+escape_sed_replacement() {
+    local input="$1"
+    # Escape backslashes, ampersands, and forward slashes
+    printf '%s\n' "$input" | sed 's/\\/\\\\/g; s/&/\\&/g; s/\//\\\//g'
+}
+
 apply_configuration_values() {
     local env_type="$1"
     local db_user="$2"
@@ -282,16 +289,25 @@ apply_configuration_values() {
             ;;
     esac
 
-    # Apply replacements
+    # Apply replacements with proper escaping
+    local escaped_env_type=$(escape_sed_replacement "$env_type")
+    local escaped_debug_mode=$(escape_sed_replacement "$debug_mode")
+    local escaped_log_level=$(escape_sed_replacement "$log_level")
+    local escaped_app_user_id=$(escape_sed_replacement "$app_user_id")
+    local escaped_db_user=$(escape_sed_replacement "$db_user")
+    local escaped_db_password=$(escape_sed_replacement "$db_password")
+    local escaped_neo4j_password=$(escape_sed_replacement "$neo4j_password")
+    local escaped_openai_key=$(escape_sed_replacement "$openai_key")
+    
     sed -i.bak \
-        -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$env_type/g" \
-        -e "s/APP_DEBUG=true/APP_DEBUG=$debug_mode/g" \
-        -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$log_level/g" \
-        -e "s/APP_USER_ID=drj/APP_USER_ID=$app_user_id/g" \
-        -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$db_user/g" \
-        -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$db_password/g" \
-        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$neo4j_password/g" \
-        -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$openai_key/g" \
+        -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$escaped_env_type/g" \
+        -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_debug_mode/g" \
+        -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_log_level/g" \
+        -e "s/APP_USER_ID=drj/APP_USER_ID=$escaped_app_user_id/g" \
+        -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$escaped_db_user/g" \
+        -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$escaped_db_password/g" \
+        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$escaped_neo4j_password/g" \
+        -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$escaped_openai_key/g" \
         "$ENV_FILE"
 
     # Remove backup file
@@ -323,16 +339,25 @@ generate_api_env_file() {
         if [[ -f "$ENV_FILE" ]]; then
             source "$ENV_FILE"
             
-            # Apply values from main .env
+            # Apply values from main .env with proper escaping
+            local escaped_db_user=$(escape_sed_replacement "$DATABASE_USER")
+            local escaped_db_password=$(escape_sed_replacement "$DATABASE_PASSWORD")
+            local escaped_neo4j_password=$(escape_sed_replacement "$NEO4J_PASSWORD")
+            local escaped_openai_key=$(escape_sed_replacement "$OPENAI_API_KEY")
+            local escaped_app_user_id=$(escape_sed_replacement "$APP_USER_ID")
+            local escaped_app_environment=$(escape_sed_replacement "$APP_ENVIRONMENT")
+            local escaped_app_debug=$(escape_sed_replacement "$APP_DEBUG")
+            local escaped_app_log_level=$(escape_sed_replacement "$APP_LOG_LEVEL")
+            
             sed -i.bak \
-                -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$DATABASE_USER/g" \
-                -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$DATABASE_PASSWORD/g" \
-                -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$NEO4J_PASSWORD/g" \
-                -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$OPENAI_API_KEY/g" \
-                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$APP_USER_ID/g" \
-                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$APP_ENVIRONMENT/g" \
-                -e "s/APP_DEBUG=true/APP_DEBUG=$APP_DEBUG/g" \
-                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$APP_LOG_LEVEL/g" \
+                -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$escaped_db_user/g" \
+                -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$escaped_db_password/g" \
+                -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$escaped_neo4j_password/g" \
+                -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$escaped_openai_key/g" \
+                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$escaped_app_user_id/g" \
+                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$escaped_app_environment/g" \
+                -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_app_debug/g" \
+                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_app_log_level/g" \
                 "$api_env_file"
                 
             rm -f "${api_env_file}.bak"
@@ -355,13 +380,18 @@ generate_ui_env_file() {
         if [[ -f "$ENV_FILE" ]]; then
             source "$ENV_FILE"
             
-            # Apply values from main .env
+            # Apply values from main .env with proper escaping
+            local escaped_app_user_id=$(escape_sed_replacement "$APP_USER_ID")
+            local escaped_app_environment=$(escape_sed_replacement "$APP_ENVIRONMENT")
+            local escaped_app_debug=$(escape_sed_replacement "$APP_DEBUG")
+            local escaped_app_log_level=$(escape_sed_replacement "$APP_LOG_LEVEL")
+            
             sed -i.bak \
-                -e "s/NEXT_PUBLIC_USER_ID=your_username_here/NEXT_PUBLIC_USER_ID=$APP_USER_ID/g" \
-                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$APP_USER_ID/g" \
-                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$APP_ENVIRONMENT/g" \
-                -e "s/APP_DEBUG=true/APP_DEBUG=$APP_DEBUG/g" \
-                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$APP_LOG_LEVEL/g" \
+                -e "s/NEXT_PUBLIC_USER_ID=your_username_here/NEXT_PUBLIC_USER_ID=$escaped_app_user_id/g" \
+                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$escaped_app_user_id/g" \
+                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$escaped_app_environment/g" \
+                -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_app_debug/g" \
+                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_app_log_level/g" \
                 "$ui_env_file"
                 
             rm -f "${ui_env_file}.bak"
@@ -617,13 +647,19 @@ migrate_main_env_file() {
     # Migrate existing values
     source "$ENV_FILE"
 
-    # Apply existing values to new template
+    # Apply existing values to new template with proper escaping
+    local escaped_app_user_id=$(escape_sed_replacement "${USER:-${APP_USER_ID:-drj}}")
+    local escaped_db_user=$(escape_sed_replacement "${POSTGRES_USER:-${DATABASE_USER:-drj}}")
+    local escaped_db_password=$(escape_sed_replacement "${POSTGRES_PASSWORD:-${DATABASE_PASSWORD:-}}")
+    local escaped_neo4j_password=$(escape_sed_replacement "${NEO4J_PASSWORD:-}")
+    local escaped_openai_key=$(escape_sed_replacement "${OPENAI_API_KEY:-${API_KEY:-}}")
+    
     sed -i.bak \
-        -e "s/APP_USER_ID=drj/APP_USER_ID=${USER:-${APP_USER_ID:-drj}}/g" \
-        -e "s/DATABASE_USER=your_username_here/DATABASE_USER=${POSTGRES_USER:-${DATABASE_USER:-drj}}/g" \
-        -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=${POSTGRES_PASSWORD:-${DATABASE_PASSWORD:-}}/g" \
-        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=${NEO4J_PASSWORD:-}/g" \
-        -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=${OPENAI_API_KEY:-${API_KEY:-}}/g" \
+        -e "s/APP_USER_ID=drj/APP_USER_ID=$escaped_app_user_id/g" \
+        -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$escaped_db_user/g" \
+        -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$escaped_db_password/g" \
+        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$escaped_neo4j_password/g" \
+        -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$escaped_openai_key/g" \
         "$temp_file"
 
     # Replace original with migrated version
