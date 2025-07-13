@@ -22,8 +22,7 @@ import pytest
 from app.database import SessionLocal, get_db
 from app.models import App, Memory, MemoryState, User
 from app.routers.config import ConfigSchema, LLMConfig, LLMProvider
-from app.routers.mem0_memories import CreateMemoryRequest
-from app.routers.mem0_memories import MemoryResponse as Mem0MemoryResponse
+from app.routers.memories import CreateMemoryRequest
 from app.schemas import (
     MemoryCreate,
     MemoryResponse,
