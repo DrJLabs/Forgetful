@@ -695,6 +695,7 @@ jobs:
   merge-decision:
     name: '🚦 Merge Decision (Final Quality Gate)'
     runs-on: ubuntu-latest
+    # CRITICAL: All quality gates must pass before merge is allowed
     needs:
       [
         unit-tests,
@@ -716,7 +717,9 @@ jobs:
       - name: Evaluate Quality Gates
         run: |
           echo "🚦 Evaluating all quality gates..."
-
+          echo "================================================="
+          
+          # CRITICAL: All quality gates must pass for merge approval
           # Check if all required tests passed
           if [ "${{ needs.unit-tests.result }}" == "success" ] && \
              [ "${{ needs.contract-tests.result }}" == "success" ] && \
@@ -726,9 +729,27 @@ jobs:
              [ "${{ needs.performance-tests.result }}" == "success" ] && \
              [ "${{ needs.code-quality.result }}" == "success" ]; then
             echo "✅ All quality gates passed - Ready for merge"
+            echo "📊 Quality Gate Summary:"
+            echo "  - Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "  - Contract Tests: ${{ needs.contract-tests.result }}"
+            echo "  - Security Tests: ${{ needs.security-tests.result }}"
+            echo "  - Database Tests: ${{ needs.database-tests.result }}"
+            echo "  - Integration Tests: ${{ needs.integration-tests.result }}"
+            echo "  - Performance Tests: ${{ needs.performance-tests.result }}"
+            echo "  - Code Quality: ${{ needs.code-quality.result }}"
             exit 0
           else
             echo "❌ Quality gates failed - Blocking merge"
+            echo "📊 Quality Gate Summary:"
+            echo "  - Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "  - Contract Tests: ${{ needs.contract-tests.result }}"
+            echo "  - Security Tests: ${{ needs.security-tests.result }}"
+            echo "  - Database Tests: ${{ needs.database-tests.result }}"
+            echo "  - Integration Tests: ${{ needs.integration-tests.result }}"
+            echo "  - Performance Tests: ${{ needs.performance-tests.result }}"
+            echo "  - Code Quality: ${{ needs.code-quality.result }}"
+            echo "================================================="
+            echo "🔧 Please fix all failing tests before attempting to merge"
             exit 1
           fi
 
@@ -761,6 +782,11 @@ jobs:
           - Neo4j URI: ${{ env.NEO4J_URI }}
           - Coverage Threshold: ${{ env.COVERAGE_THRESHOLD }}%
 
+          ## Merge Decision
+
+          **Status:** ${{ needs.unit-tests.result == 'success' && needs.contract-tests.result == 'success' && needs.security-tests.result == 'success' && needs.database-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.performance-tests.result == 'success' && needs.code-quality.result == 'success' && 'APPROVED FOR MERGE ✅' || 'BLOCKED FROM MERGE ❌' }}
+
+          This report validates that all quality gates have been met before allowing merge to protected branches.
           EOF
 
           cat quality-report.md
