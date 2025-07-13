@@ -13,9 +13,7 @@ from app.config import DEFAULT_APP_ID, USER_ID
 from app.database import Base, SessionLocal, engine
 from app.mcp_server import setup_mcp_server
 from app.models import App, User
-from app.routers import apps_router, config_router
-from app.routers import mem0_memories as memories_router
-from app.routers import stats_router
+from app.routers import apps_router, config_router, memories_router, stats_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
