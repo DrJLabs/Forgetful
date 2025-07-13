@@ -102,7 +102,7 @@ def mock_memory_client():
     with patch("app.utils.memory.get_memory_client", return_value=mock_client):
         with patch("app.mem0_client.get_memory_client", return_value=mock_client):
             with patch(
-                "app.routers.mem0_memories.get_memory_client", return_value=mock_client
+                "app.routers.memories.get_memory_client", return_value=mock_client
             ):
                 yield mock_client
 
