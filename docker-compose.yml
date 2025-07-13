@@ -80,7 +80,16 @@ services:
       -c 'min_wal_size=1GB' -c 'wal_buffers=64MB' -c 'default_statistics_target=100'
     networks: [traefik]
     healthcheck:
-      test: ['CMD', 'pg_isready', '-q', '-d', '${DATABASE_NAME:-mem0}', '-U', '${DATABASE_USER}']
+      test:
+        [
+          'CMD',
+          'pg_isready',
+          '-q',
+          '-d',
+          '${DATABASE_NAME:-mem0}',
+          '-U',
+          '${DATABASE_USER}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -215,8 +224,8 @@ services:
     environment:
       # Frontend Configuration
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8765}
-      - NEXT_PUBLIC_USER_ID=${NEXT_PUBLIC_USER_ID:-${APP_USER_ID}}
-      - NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT:-${APP_ENVIRONMENT}}
+      - NEXT_PUBLIC_USER_ID=${NEXT_PUBLIC_USER_ID:-drj}
+      - NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT:-development}
       - NEXT_PUBLIC_BUILD_TIME=${NEXT_PUBLIC_BUILD_TIME:-auto_generated}
       - NEXT_PUBLIC_VERSION=${NEXT_PUBLIC_VERSION:-1.0.0}
       # Application Configuration
