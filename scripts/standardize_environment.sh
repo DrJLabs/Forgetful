@@ -622,7 +622,7 @@ migrate_main_env_file() {
         -e "s/APP_USER_ID=drj/APP_USER_ID=${USER:-${APP_USER_ID:-drj}}/g" \
         -e "s/DATABASE_USER=your_username_here/DATABASE_USER=${POSTGRES_USER:-${DATABASE_USER:-drj}}/g" \
         -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=${POSTGRES_PASSWORD:-${DATABASE_PASSWORD:-}}/g" \
-        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=${NEO4J_PASSWORD:-}}/g" \
+        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=${NEO4J_PASSWORD:-}/g" \
         -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=${OPENAI_API_KEY:-${API_KEY:-}}/g" \
         "$temp_file"
 
@@ -697,7 +697,7 @@ USER=test_user
 API_KEY=sk-test-key-for-mocking-only
 
 # CI-specific Configuration
-PYTHONPATH=\${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
+PYTHONPATH=\${PWD}:\${PWD}/openmemory/api
 CI_DATABASE_URL=postgresql://postgres:testpass@localhost:5432/test_db
 CI_NEO4J_URI=bolt://localhost:7687
 CI_COVERAGE_THRESHOLD=80
@@ -761,7 +761,7 @@ env:
   API_KEY: sk-test-key-for-mocking-only
   
   # CI-specific Configuration
-  PYTHONPATH: \${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
+  PYTHONPATH: \${PWD}:\${PWD}/openmemory/api
   CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
   CI_NEO4J_URI: bolt://localhost:7687
   CI_COVERAGE_THRESHOLD: 80
