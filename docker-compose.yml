@@ -80,7 +80,16 @@ services:
       -c 'min_wal_size=1GB' -c 'wal_buffers=64MB' -c 'default_statistics_target=100'
     networks: [traefik]
     healthcheck:
-      test: ['CMD', 'pg_isready', '-q', '-d', '${DATABASE_NAME:-mem0}', '-U', '${DATABASE_USER}']
+      test:
+        [
+          'CMD',
+          'pg_isready',
+          '-q',
+          '-d',
+          '${DATABASE_NAME:-mem0}',
+          '-U',
+          '${DATABASE_USER}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -185,11 +194,11 @@ services:
     env_file:
       - ./openmemory/api/.env
     ports:
-      - '127.0.0.1:${OPENMEMORY_API_PORT:-8765}:${OPENMEMORY_API_PORT:-8765}'
+      - '127.0.0.1:${OPENMEMORY_API_PORT:-8765}:8765'
     volumes:
       - ./openmemory/api:/usr/src/openmemory
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port ${OPENMEMORY_API_PORT:-8765} --workers ${API_WORKERS:-4}"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --workers ${API_WORKERS:-4}"
     networks: [traefik]
     depends_on:
       postgres:
