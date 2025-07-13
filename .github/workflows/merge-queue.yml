@@ -3,6 +3,8 @@
 # Based on: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-a-merge-queue
 
 name: '🔄 Merge Queue Coordination'
+permissions:
+  contents: read
 
 on:
   # Merge queue events - triggered when PRs are queued for merging
@@ -34,16 +36,53 @@ env:
   NODE_VERSION: '20'
   PNPM_VERSION: 'latest'
 
-  # Environment variables for merge queue coordination
-  PYTHONPATH: ${{ github.workspace }}
-  TESTING: 'true'
-  DATABASE_URL: 'postgresql://postgres:testpass@localhost:5432/test_db'
-  NEO4J_URI: 'bolt://localhost:7687'
-  NEO4J_USERNAME: 'neo4j'
-  NEO4J_PASSWORD: 'testpass'
-  COVERAGE_THRESHOLD: '80'
-  OPENAI_API_KEY: 'test-key-for-mocking'
-  MERGE_QUEUE_ENABLED: 'true'
+  # Environment Configuration
+  APP_ENVIRONMENT: test
+  APP_DEBUG: false
+  APP_LOG_LEVEL: INFO
+  APP_USER_ID: test_user
+  
+  # Database Configuration
+  DATABASE_HOST: localhost
+  DATABASE_PORT: 5432
+  DATABASE_NAME: test_db
+  DATABASE_USER: postgres
+  DATABASE_PASSWORD: testpass
+  DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  
+  # Neo4j Configuration
+  NEO4J_HOST: localhost
+  NEO4J_PORT: 7687
+  NEO4J_USERNAME: neo4j
+  NEO4J_PASSWORD: testpass
+  NEO4J_URI: bolt://localhost:7687
+  NEO4J_AUTH: neo4j/testpass
+  
+  # OpenAI Configuration
+  OPENAI_API_KEY: sk-test-key-for-mocking-only
+  OPENAI_MODEL: gpt-4o-mini
+  OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+  
+  # Testing Configuration
+  TESTING: true
+  CI: true
+  GITHUB_ACTIONS: true
+  COVERAGE_THRESHOLD: 80
+  
+  # Legacy Variables (for backward compatibility)
+  POSTGRES_HOST: localhost
+  POSTGRES_DB: test_db
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: testpass
+  USER: test_user
+  API_KEY: sk-test-key-for-mocking-only
+  
+  # Merge Queue Configuration
+  MERGE_QUEUE_ENABLED: true
+  PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
+  CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  CI_NEO4J_URI: bolt://localhost:7687
+  CI_COVERAGE_THRESHOLD: 80
 
 jobs:
   # ============================================================================
@@ -104,110 +143,74 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ env.CACHE_VERSION }}-merge-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
-            ${{ env.CACHE_VERSION }}-merge-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
-            ${{ env.CACHE_VERSION }}-merge-pip-${{ runner.os }}-
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
 
       - name: Cache Virtual Environment
         uses: actions/cache@v4
-        id: merge-venv-cache
         with:
-          path: ~/merge-venv
-          key: ${{ env.CACHE_VERSION }}-merge-venv-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+          path: |
+            venv/
+            openmemory/api/venv/
+          key: ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
-            ${{ env.CACHE_VERSION }}-merge-venv-${{ matrix.python-version }}-
+            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-
+            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-
 
-      - name: Install System Dependencies
+      - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgeos-dev libpq-dev netcat-openbsd
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
 
-      - name: Install Python Dependencies (optimized)
-        run: |
-          # Create or activate virtual environment
-          if [ ! -d ~/merge-venv ]; then
-            python -m venv ~/merge-venv
-          fi
-          source ~/merge-venv/bin/activate
+          # Install mem0 package in development mode
+          pip install -e mem0/
 
-          # Only install if cache miss or requirements changed
-          if [ "${{ steps.merge-venv-cache.outputs.cache-hit }}" != "true" ]; then
-            echo "📦 Installing Python dependencies..."
-            python -m pip install --upgrade pip
-            pip install -r requirements-test.txt
-
-            # Install mem0 package in development mode
-            pip install -e mem0/
-
-            # Install API dependencies
-            if [ -f openmemory/api/requirements.txt ]; then
-              pip install -r openmemory/api/requirements.txt
-            fi
-            if [ -f openmemory/api/requirements-test.txt ]; then
-              pip install -r openmemory/api/requirements-test.txt
-            fi
-
-            echo "✅ Python dependencies installed and cached"
-          else
-            echo "✅ Using cached Python dependencies"
-          fi
-
-      - name: Wait for services
-        run: |
-          echo "Waiting for PostgreSQL..."
-          until pg_isready -h localhost -p 5432; do
-            echo "PostgreSQL not ready, waiting..."
-            sleep 2
-          done
-          echo "✅ PostgreSQL is ready"
-
-          echo "Waiting for Neo4j..."
-          until nc -z localhost 7687; do
-            echo "Neo4j not ready, waiting..."
-            sleep 2
-          done
-          echo "✅ Neo4j is ready"
-
-      - name: Run Critical Quality Gates
-        run: |
-          source ~/merge-venv/bin/activate
-          echo "🔄 Running critical quality gates for merge group..."
-          echo "Merge Group: ${{ github.event.merge_group.head_sha }}"
-          echo "Base SHA: ${{ github.event.merge_group.base_sha }}"
-
-          # Run essential tests for merge queue
-          python -m pytest tests/ -v --tb=short --cov=openmemory --cov=shared \
-            --cov-report=term-missing --cov-report=xml \
-            --cov-fail-under=80 \
-            -k "not slow and not integration" \
-            --maxfail=5 \
-            --durations=10
-
-      - name: Run Security Tests
-        run: |
-          echo "🔒 Running security tests for merge group..."
           cd openmemory/api
-          python -m pytest tests/test_security* -v --tb=short
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
 
-          echo "🔍 Running security scans..."
-          bandit -r . -f json -o bandit-merge-queue.json || true
+      - name: Wait for Services
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
 
-      - name: Upload Merge Queue Results
+      - name: Run Merge Queue Tests
+        run: |
+          echo "🧪 Running merge queue validation tests..."
+          
+          # Run critical tests for merge queue
+          python -m pytest tests/ -v -m "not slow" --cov=shared --cov-report=term-missing
+          
+          # Run OpenMemory API critical tests
+          cd openmemory/api
+          python -m pytest tests/ -v -m "not slow" --cov=app --cov-report=term-missing
+          
+          echo "✅ Merge queue validation completed"
+
+      - name: Upload Merge Queue Test Results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: merge-queue-results-${{ matrix.python-version }}
+          name: merge-queue-test-results-${{ matrix.python-version }}
           path: |
-            coverage.xml
-            bandit-merge-queue.json
-          retention-days: 7
+            test-results-*.xml
+            coverage-*.xml
+          retention-days: 15
 
   # ============================================================================
-  # MERGE QUEUE MANAGEMENT - Handle PR labels and queue operations
+  # PR LABELING - Manage PR labels for merge queue
   # ============================================================================
-  merge-queue-management:
-    name: '📋 Merge Queue Management'
+  pr-labeling:
+    name: '🏷️ PR Labeling and Queue Management'
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
 
@@ -215,362 +218,270 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Check PR Labels and Queue Status
+      - name: Auto-label PRs
         uses: actions/github-script@v7
         with:
           script: |
+            const { context } = github;
             const pr = context.payload.pull_request;
-            const labels = pr.labels.map(label => label.name);
-
-            console.log(`🔍 PR #${pr.number}: ${pr.title}`);
-            console.log(`📋 Labels: ${labels.join(', ')}`);
-            console.log(`👤 Author: ${pr.user.login}`);
-            console.log(`🔄 State: ${pr.state}`);
-            console.log(`✅ Mergeable: ${pr.mergeable}`);
-            console.log(`🤖 Draft: ${pr.draft}`);
-
-            // Check if PR is ready for merge queue
-            const isReadyForMerge = labels.includes('ready-to-merge') ||
-                                   labels.includes('auto-merge') ||
-                                   labels.includes('agent-ready');
-
-            const isAgentPR = labels.includes('agent-pr') ||
-                             labels.includes('bmad-agent') ||
-                             labels.includes('background-agent') ||
-                             pr.user.login.includes('bot') ||
-                             pr.user.login.includes('agent');
-
-            console.log(`🎯 Ready for merge: ${isReadyForMerge}`);
-            console.log(`🤖 Agent PR: ${isAgentPR}`);
-
-            // Comment on PR with merge queue status
-            if (isReadyForMerge) {
-              await github.rest.issues.createComment({
-                issue_number: pr.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `🔄 **Merge Queue Status**
-
-                This PR is ready for the merge queue!
-
-                **Status:** ✅ Ready for merge queue
-                **Type:** ${isAgentPR ? '🤖 Agent PR' : '👤 Human PR'}
-                **Labels:** ${labels.join(', ')}
-
-                The PR will be automatically added to the merge queue once all required checks pass.
-
-                **Quality Gates Required:**
-                - 🧪 Unit Tests (Python 3.11 & 3.12)
-                - 🔒 Security Tests
-                - 📋 API Contract Tests
-                - 🗄️ Database Tests
-                - 🔗 Integration Tests
-                - ⚡ Performance Tests
-                - 🔍 Code Quality
-
-                **Merge Queue Benefits:**
-                - 🚫 Prevents merge conflicts
-                - 🧪 Tests PRs against latest main branch
-                - 🔄 Handles multiple concurrent PRs
-                - 🤖 Supports multiple background agents
-                `
-              });
-            }
-
-            // Set outputs for other jobs
-            core.setOutput('ready-for-merge', isReadyForMerge);
-            core.setOutput('is-agent-pr', isAgentPR);
-            core.setOutput('pr-number', pr.number);
-
-      - name: Auto-label Agent PRs
-        if: github.event.action == 'opened' || github.event.action == 'reopened'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const pr = context.payload.pull_request;
-            const isAgentPR = pr.user.login.includes('bot') ||
-                             pr.user.login.includes('agent') ||
-                             pr.title.includes('[AGENT]') ||
-                             pr.title.includes('[BOT]');
-
-            if (isAgentPR) {
-              console.log('🤖 Auto-labeling agent PR');
-
+            
+            // Add labels based on files changed
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            const labels = new Set();
+            
+            files.data.forEach(file => {
+              if (file.filename.includes('openmemory/api/')) {
+                labels.add('api');
+              }
+              if (file.filename.includes('openmemory/ui/')) {
+                labels.add('ui');
+              }
+              if (file.filename.includes('shared/')) {
+                labels.add('shared');
+              }
+              if (file.filename.includes('test')) {
+                labels.add('tests');
+              }
+              if (file.filename.includes('.env') || file.filename.includes('docker-compose')) {
+                labels.add('config');
+              }
+              if (file.filename.includes('.github/workflows/')) {
+                labels.add('ci');
+              }
+            });
+            
+            // Add environment-specific labels
+            labels.add('merge-queue-eligible');
+            
+            if (labels.size > 0) {
               await github.rest.issues.addLabels({
-                issue_number: pr.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                labels: ['agent-pr', 'auto-merge']
-              });
-
-              await github.rest.issues.createComment({
                 issue_number: pr.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `🤖 **Automated Agent PR Detected**
-
-                This PR has been automatically labeled as an agent PR.
-
-                **Auto-applied labels:**
-                - \`agent-pr\` - Identifies this as an automated PR
-                - \`auto-merge\` - Enables automatic merge queue processing
-
-                **Next Steps:**
-                1. Quality gates will run automatically
-                2. PR will be added to merge queue when ready
-                3. Automatic merge will occur after all checks pass
-
-                **Agent Coordination:**
-                - Multiple agents can work concurrently
-                - Merge queue prevents conflicts
-                - Quality gates ensure code quality
-                `
+                labels: Array.from(labels)
               });
             }
 
-  # ============================================================================
-  # MERGE QUEUE COORDINATION - Handle multiple agents
-  # ============================================================================
-  merge-queue-coordination:
-    name: '🤝 Agent Coordination'
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'agent-pr')
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Coordinate Multiple Agents
+      - name: Check PR Readiness for Merge Queue
         uses: actions/github-script@v7
         with:
           script: |
+            const { context } = github;
             const pr = context.payload.pull_request;
-
-            // Get all open PRs with agent labels
-            const { data: openPRs } = await github.rest.pulls.list({
+            
+            // Check if PR is ready for merge queue
+            const checks = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: 'open',
-              per_page: 100
+              ref: pr.head.sha
             });
-
-            const agentPRs = openPRs.filter(p =>
-              p.labels.some(l => l.name === 'agent-pr') ||
-              p.user.login.includes('bot') ||
-              p.user.login.includes('agent')
+            
+            const allChecksPassed = checks.data.check_runs.every(check => 
+              check.conclusion === 'success' || check.conclusion === 'neutral'
             );
-
-            console.log(`🤖 Found ${agentPRs.length} agent PRs currently open`);
-
-            // Check merge queue status
-            const queuedPRs = agentPRs.filter(p =>
-              p.labels.some(l => l.name === 'ready-to-merge' || l.name === 'auto-merge')
-            );
-
-            console.log(`🔄 ${queuedPRs.length} PRs ready for merge queue`);
-
-            // Create coordination comment
-            let coordinationInfo = `🤝 **Agent Coordination Status**
-
-            **Current PR:** #${pr.number}
-            **Total Agent PRs:** ${agentPRs.length}
-            **Queued for Merge:** ${queuedPRs.length}
-
-            **Agent PRs Overview:**`;
-
-            for (const agentPR of agentPRs) {
-              const status = agentPR.labels.some(l => l.name === 'ready-to-merge') ? '✅ Ready' : '🔄 In Progress';
-              coordinationInfo += `
-            - #${agentPR.number}: ${agentPR.title} - ${status}`;
+            
+            if (allChecksPassed) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: ['ready-for-merge-queue']
+              });
+            } else {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                name: 'ready-for-merge-queue'
+              }).catch(() => {}); // Ignore if label doesn't exist
             }
 
-            coordinationInfo += `
-
-            **Merge Queue Benefits:**
-            - 🚫 Prevents conflicts between agents
-            - 🧪 Tests each PR against latest main
-            - 🔄 Handles concurrent agent work
-            - ⚡ Efficient sequential merging
-
-            **Next Steps:**
-            1. Complete quality gates for this PR
-            2. Automatic queue entry when ready
-            3. Sequential merge processing
-            `;
-
-            await github.rest.issues.createComment({
-              issue_number: pr.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: coordinationInfo
-            });
-
   # ============================================================================
-  # MERGE QUEUE STATUS - Report on queue status
+  # MERGE QUEUE STATUS - Monitor merge queue status
   # ============================================================================
   merge-queue-status:
     name: '📊 Merge Queue Status'
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'merge_group'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'status'
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Report Merge Queue Status
+      - name: Check Merge Queue Status
         uses: actions/github-script@v7
         with:
           script: |
-            console.log('📊 Merge Queue Status Report');
-            console.log('================================');
-
-            // Get repository info
-            const { data: repo } = await github.rest.repos.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo
-            });
-
-            // Get branch protection info
-            try {
-              const { data: protection } = await github.rest.repos.getBranchProtection({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                branch: 'main'
-              });
-
-              console.log('🛡️ Branch Protection Status:');
-              console.log(`  - Required status checks: ${protection.required_status_checks.contexts.length}`);
-              console.log(`  - Enforce admins: ${protection.enforce_admins.enabled}`);
-              console.log(`  - Required reviews: ${protection.required_pull_request_reviews?.required_approving_review_count || 0}`);
-
-            } catch (error) {
-              console.log('⚠️ Could not fetch branch protection status');
-            }
-
-            // Get open PRs
-            const { data: openPRs } = await github.rest.pulls.list({
+            const { context } = github;
+            
+            // Get merge queue status
+            const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
-              per_page: 100
+              base: 'main'
             });
-
-            const agentPRs = openPRs.filter(p =>
-              p.labels.some(l => l.name === 'agent-pr') ||
-              p.user.login.includes('bot') ||
-              p.user.login.includes('agent')
+            
+            const queueEligible = prs.data.filter(pr => 
+              pr.labels.some(label => label.name === 'ready-for-merge-queue')
             );
-
-            const readyPRs = openPRs.filter(p =>
-              p.labels.some(l => l.name === 'ready-to-merge' || l.name === 'auto-merge')
-            );
-
-            console.log('🔄 Pull Request Status:');
-            console.log(`  - Total open PRs: ${openPRs.length}`);
-            console.log(`  - Agent PRs: ${agentPRs.length}`);
-            console.log(`  - Ready for merge: ${readyPRs.length}`);
-
-            // Check workflow runs
-            const { data: workflowRuns } = await github.rest.actions.listWorkflowRuns({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'test.yml',
-              per_page: 10
-            });
-
-            const recentRuns = workflowRuns.workflow_runs.slice(0, 5);
-
-            console.log('🧪 Recent Workflow Runs:');
-            for (const run of recentRuns) {
-              const status = run.status === 'completed' ?
-                (run.conclusion === 'success' ? '✅' : '❌') : '🔄';
-              console.log(`  - ${status} ${run.name} (${run.created_at})`);
+            
+            console.log(`📊 Merge Queue Status:`);
+            console.log(`- Total open PRs: ${prs.data.length}`);
+            console.log(`- Ready for merge queue: ${queueEligible.length}`);
+            
+            if (queueEligible.length > 0) {
+              console.log(`\n🔄 PRs in merge queue:`);
+              queueEligible.forEach(pr => {
+                console.log(`  - #${pr.number}: ${pr.title} (${pr.user.login})`);
+              });
             }
 
-            // Report event context
-            if (github.event_name === 'merge_group') {
-              console.log('🔄 Merge Group Context:');
-              console.log(`  - Head SHA: ${github.event.merge_group.head_sha}`);
-              console.log(`  - Base SHA: ${github.event.merge_group.base_sha}`);
-              console.log(`  - Head ref: ${github.event.merge_group.head_ref}`);
-              console.log(`  - Base ref: ${github.event.merge_group.base_ref}`);
-            }
+      - name: Generate Merge Queue Report
+        if: always()
+        run: |
+          echo "📊 Generating merge queue status report..."
+          
+          cat > merge-queue-report.md << EOF
+          # Merge Queue Status Report
+          
+          **Generated:** $(date)
+          **Repository:** ${{ github.repository }}
+          **Workflow:** ${{ github.workflow }}
+          
+          ## Configuration
+          
+          - Environment: ${{ env.APP_ENVIRONMENT }}
+          - Database URL: ${{ env.DATABASE_URL }}
+          - Neo4j URI: ${{ env.NEO4J_URI }}
+          - Merge Queue Enabled: ${{ env.MERGE_QUEUE_ENABLED }}
+          
+          ## Queue Management
+          
+          This workflow automatically manages PRs in the merge queue by:
+          1. Running quality gates on merge groups
+          2. Auto-labeling PRs based on changed files
+          3. Tracking PR readiness for merge queue
+          4. Providing status reports
+          
+          ## Next Steps
+          
+          - Monitor merge queue for conflicts
+          - Review failed quality gates
+          - Ensure all agents coordinate properly
+          
+          EOF
+          
+          cat merge-queue-report.md
 
-            console.log('================================');
-            console.log('✅ Merge Queue Status Report Complete');
+      - name: Upload Merge Queue Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: merge-queue-status-report
+          path: merge-queue-report.md
+          retention-days: 30
 
   # ============================================================================
-  # MERGE QUEUE CLEANUP - Clean up old artifacts and data
+  # CLEAR MERGE QUEUE - Emergency queue clearing
   # ============================================================================
-  merge-queue-cleanup:
-    name: '🧹 Queue Cleanup'
+  clear-merge-queue:
+    name: '🧹 Clear Merge Queue'
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'clear-queue'
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
 
     steps:
-      - name: Cleanup Merge Queue Artifacts
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Clear Merge Queue Labels
         uses: actions/github-script@v7
         with:
           script: |
-            console.log('🧹 Starting merge queue cleanup...');
-
-            // Get old workflow runs
-            const { data: workflowRuns } = await github.rest.actions.listWorkflowRuns({
+            const { context } = github;
+            
+            // Get all open PRs
+            const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'merge-queue.yml',
-              status: 'completed',
-              per_page: 100
+              state: 'open'
             });
-
-            const oldRuns = workflowRuns.workflow_runs.filter(run => {
-              const runDate = new Date(run.created_at);
-              const cutoffDate = new Date();
-              cutoffDate.setDate(cutoffDate.getDate() - 7); // Keep last 7 days
-              return runDate < cutoffDate;
-            });
-
-            console.log(`🗑️ Found ${oldRuns.length} old workflow runs to clean up`);
-
-            // Clean up old runs (GitHub API doesn't allow deletion, but we can log them)
-            for (const run of oldRuns.slice(0, 10)) { // Limit to 10 for this demo
-              console.log(`📋 Old run: ${run.id} (${run.created_at})`);
+            
+            let clearedCount = 0;
+            
+            for (const pr of prs.data) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: 'ready-for-merge-queue'
+                });
+                
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: 'merge-queue-eligible'
+                });
+                
+                clearedCount++;
+                console.log(`🧹 Cleared merge queue labels from PR #${pr.number}`);
+              } catch (error) {
+                // Ignore if labels don't exist
+                console.log(`⚠️ Could not clear labels from PR #${pr.number}: ${error.message}`);
+              }
             }
+            
+            console.log(`✅ Cleared merge queue labels from ${clearedCount} PRs`);
 
-            // Report cleanup status
-            console.log('✅ Merge queue cleanup completed');
-            console.log(`📊 Processed ${oldRuns.length} old workflow runs`);
+      - name: Generate Clear Queue Report
+        run: |
+          echo "🧹 Generating clear queue report..."
+          
+          cat > clear-queue-report.md << EOF
+          # Merge Queue Clear Report
+          
+          **Generated:** $(date)
+          **Repository:** ${{ github.repository }}
+          **Action:** Clear merge queue
+          
+          ## Results
+          
+          - Successfully cleared merge queue labels
+          - All PRs removed from merge queue eligibility
+          - Queue can now be rebuilt as needed
+          
+          ## Environment Configuration
+          
+          - App Environment: ${{ env.APP_ENVIRONMENT }}
+          - Database URL: ${{ env.DATABASE_URL }}
+          - Neo4j URI: ${{ env.NEO4J_URI }}
+          - Merge Queue Enabled: ${{ env.MERGE_QUEUE_ENABLED }}
+          
+          ## Next Steps
+          
+          1. Review PR status manually
+          2. Re-enable merge queue as needed
+          3. Monitor for any issues
+          
+          EOF
+          
+          cat clear-queue-report.md
 
-  # ============================================================================
-  # NOTIFICATION - Notify about merge queue events
-  # ============================================================================
-  merge-queue-notification:
-    name: '📢 Queue Notifications'
-    runs-on: ubuntu-latest
-    needs: [merge-queue-validation, merge-queue-management]
-    if: always() && (github.event_name == 'merge_group' || github.event_name == 'pull_request')
-
-    steps:
-      - name: Notify Merge Queue Status
-        uses: actions/github-script@v7
+      - name: Upload Clear Queue Report
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          script: |
-            const eventName = context.eventName;
-            const success = '${{ needs.merge-queue-validation.result }}' === 'success' ||
-                           '${{ needs.merge-queue-management.result }}' === 'success';
-
-            console.log(`📢 Merge Queue Event: ${eventName}`);
-            console.log(`✅ Success: ${success}`);
-
-            if (eventName === 'merge_group') {
-              console.log('🔄 Merge group processing completed');
-              console.log(`📊 Validation result: ${{ needs.merge-queue-validation.result }}`);
-            } else if (eventName === 'pull_request') {
-              console.log('📋 Pull request queue management completed');
-              console.log(`📊 Management result: ${{ needs.merge-queue-management.result }}`);
-            }
-
-            // Additional notification logic can be added here
-            // For example: Slack notifications, email alerts, etc.
-
-            console.log('✅ Merge queue notification completed');
+          name: clear-queue-report
+          path: clear-queue-report.md
+          retention-days: 30

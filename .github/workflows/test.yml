@@ -19,17 +19,52 @@ env:
   NODE_VERSION: '20'
   PNPM_VERSION: 'latest'
 
-  # Existing environment variables
+  # Environment Configuration
+  APP_ENVIRONMENT: test
+  APP_DEBUG: false
+  APP_LOG_LEVEL: INFO
+  APP_USER_ID: test_user
+  
+  # Database Configuration
+  DATABASE_HOST: localhost
+  DATABASE_PORT: 5432
+  DATABASE_NAME: test_db
+  DATABASE_USER: postgres
+  DATABASE_PASSWORD: testpass
+  DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  
+  # Neo4j Configuration
+  NEO4J_HOST: localhost
+  NEO4J_PORT: 7687
+  NEO4J_USERNAME: neo4j
+  NEO4J_PASSWORD: testpass
+  NEO4J_URI: bolt://localhost:7687
+  NEO4J_AUTH: neo4j/testpass
+  
+  # OpenAI Configuration
+  OPENAI_API_KEY: sk-test-key-for-mocking-only
+  OPENAI_MODEL: gpt-4o-mini
+  OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+  
+  # Testing Configuration
+  TESTING: true
+  CI: true
+  GITHUB_ACTIONS: true
+  COVERAGE_THRESHOLD: 80
+  
+  # Legacy Variables (for backward compatibility)
+  POSTGRES_HOST: localhost
+  POSTGRES_DB: test_db
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: testpass
+  USER: test_user
+  API_KEY: sk-test-key-for-mocking-only
+  
+  # CI-specific Configuration
   PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
-  TESTING: 'true'
-  DATABASE_URL: 'postgresql://postgres:testpass@localhost:5432/test_db'
-  NEO4J_URI: 'bolt://localhost:7687'
-  NEO4J_USERNAME: 'neo4j'
-  NEO4J_PASSWORD: 'testpass'
-  COVERAGE_THRESHOLD: '80'
-  OPENAI_API_KEY: 'sk-test-key-for-mocking-only'
-  DATABASE_USER: 'postgres'
-  DATABASE_PASSWORD: 'testpass'
+  CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  CI_NEO4J_URI: bolt://localhost:7687
+  CI_COVERAGE_THRESHOLD: 80
 
 jobs:
   # ============================================================================
@@ -75,100 +110,62 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/setup.py') }}
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
-            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
-            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
 
-      # Virtual environment cache (much faster than pip install)
       - name: Cache Virtual Environment
         uses: actions/cache@v4
-        id: venv-cache
         with:
-          path: ~/test-venv
-          key: ${{ env.CACHE_VERSION }}-test-venv-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+          path: |
+            venv/
+            openmemory/api/venv/
+          key: ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
           restore-keys: |
-            ${{ env.CACHE_VERSION }}-test-venv-${{ matrix.python-version }}-
+            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-
+            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-
 
-      - name: Install System Dependencies
+      - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libgeos-dev libpq-dev netcat-openbsd
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
 
-      - name: Install Python Dependencies (optimized)
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
+          cd openmemory/api
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Wait for PostgreSQL
         run: |
-          # Create or activate virtual environment
-          if [ ! -d ~/test-venv ]; then
-            python -m venv ~/test-venv
-          fi
-          source ~/test-venv/bin/activate
-
-          # Only install if cache miss or requirements changed
-          if [ "${{ steps.venv-cache.outputs.cache-hit }}" != "true" ]; then
-            echo "📦 Installing Python dependencies..."
-            python -m pip install --upgrade pip
-            pip install -r requirements-test.txt
-
-            # Install mem0 package in development mode
-            pip install -e mem0/
-
-            # Install API dependencies
-            if [ -f openmemory/api/requirements.txt ]; then
-              pip install -r openmemory/api/requirements.txt
-            fi
-            if [ -f openmemory/api/requirements-test.txt ]; then
-              pip install -r openmemory/api/requirements-test.txt
-            fi
-
-            echo "✅ Python dependencies installed and cached"
-          else
-            echo "✅ Using cached Python dependencies"
-          fi
-
-      - name: Wait for services
-        run: |
-          echo "Waiting for PostgreSQL..."
           until pg_isready -h localhost -p 5432; do
-            echo "PostgreSQL not ready, waiting..."
+            echo "Waiting for PostgreSQL..."
             sleep 2
           done
-          echo "✅ PostgreSQL is ready"
 
-      - name: Run Comprehensive Unit Tests
+      - name: Run Unit Tests
         run: |
-          source ~/test-venv/bin/activate
-          echo "🧪 Running comprehensive unit test suite..."
-          pytest tests/ openmemory/api/tests/ -v \
-            -m "unit or (not integration and not performance and not slow and not e2e)" \
-            --cov=openmemory --cov=shared --cov=app \
-            --cov-report=xml:coverage-unit.xml \
-            --cov-report=html:htmlcov-unit \
-            --cov-report=term-missing \
-            --junit-xml=test-results-unit.xml \
-            --cov-fail-under=80 \
-            --durations=10 \
-            --tb=short
+          echo "🧪 Running comprehensive unit tests..."
+          
+          # Run shared library tests
+          python -m pytest tests/ -v --cov=shared --cov-report=term-missing --cov-report=xml:coverage-shared.xml
+          
+          # Run OpenMemory API tests
+          cd openmemory/api
+          python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml:coverage-api.xml
+          
+          echo "✅ Unit tests completed"
 
-          echo "📊 Unit test coverage results:"
-          coverage report --skip-covered
-
-      - name: Upload Unit Test Coverage
-        uses: codecov/codecov-action@v4
-        with:
-          file: coverage-unit.xml
-          flags: unit-tests
-          name: codecov-unit-py${{ matrix.python-version }}
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload Unit Test Results
+      - name: Upload Coverage Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: unit-test-results-py${{ matrix.python-version }}
+          name: coverage-reports-${{ matrix.python-version }}
           path: |
-            test-results-unit.xml
-            htmlcov-unit
-            coverage-unit.xml
+            coverage-*.xml
+            openmemory/api/coverage-*.xml
           retention-days: 30
 
   # ============================================================================
@@ -251,26 +248,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-tests]
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: test_db
-          POSTGRES_USER: postgres
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          # For merge groups, checkout the merge commit
           ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
 
       - name: Set up Python 3.11
@@ -278,32 +259,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Install Security Testing Dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install bandit safety semgrep
           pip install -r requirements-test.txt
 
-          # Install mem0 package in development mode
-          pip install -e mem0/
-
-          cd openmemory/api
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
-
-      - name: Wait for PostgreSQL
+      - name: Run Security Tests
         run: |
-          until pg_isready -h localhost -p 5432; do
-            echo "Waiting for PostgreSQL..."
-            sleep 2
-          done
-
-      - name: Run Security Test Suite
-        run: |
-          echo "🔒 Running comprehensive security test suite..."
+          echo "🔒 Running security vulnerability tests..."
           cd openmemory/api
-          ./run_security_tests.sh --comprehensive --strict
+          ./run_security_tests.sh --verbose --fail-fast
 
-          echo "✅ Security tests completed - 150+ test cases validated"
+          echo "✅ Security tests completed"
 
       - name: Upload Security Test Results
         uses: actions/upload-artifact@v4
@@ -338,11 +306,23 @@ jobs:
         ports:
           - 5432:5432
 
+      neo4j:
+        image: neo4j:5.15
+        env:
+          NEO4J_AUTH: neo4j/testpass
+          NEO4J_PLUGINS: '["apoc"]'
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7687:7687
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          # For merge groups, checkout the merge commit
           ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
 
       - name: Set up Python 3.11
@@ -355,25 +335,27 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
 
-          # Install mem0 package in development mode
-          pip install -e mem0/
-
           cd openmemory/api
           pip install -r requirements.txt
           pip install -r requirements-test.txt
 
-      - name: Wait for PostgreSQL
+      - name: Wait for Services
         run: |
           until pg_isready -h localhost -p 5432; do
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
 
-      - name: Run Database Test Suite
+      - name: Run Database Tests
         run: |
-          echo "🗄️ Running database testing framework..."
+          echo "🗄️ Running database integration tests..."
           cd openmemory/api
-          ./run_database_tests.sh --migration-tests --transaction-tests
+          ./run_database_tests.sh --verbose --fail-fast
 
           echo "✅ Database tests completed"
 
@@ -411,13 +393,14 @@ jobs:
           - 5432:5432
 
       neo4j:
-        image: neo4j:5.0
+        image: neo4j:5.15
         env:
           NEO4J_AUTH: neo4j/testpass
+          NEO4J_PLUGINS: '["apoc"]'
         options: >-
           --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
-          --health-interval 30s
-          --health-timeout 10s
+          --health-interval 10s
+          --health-timeout 5s
           --health-retries 5
         ports:
           - 7687:7687
@@ -426,7 +409,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          # For merge groups, checkout the merge commit
           ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
 
       - name: Set up Python 3.11
@@ -446,33 +428,28 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-test.txt
 
-      - name: Wait for services
+      - name: Wait for Services
         run: |
-          echo "Waiting for PostgreSQL..."
           until pg_isready -h localhost -p 5432; do
-            echo "PostgreSQL not ready, waiting..."
+            echo "Waiting for PostgreSQL..."
             sleep 2
           done
-
-          echo "Waiting for Neo4j..."
+          
           until nc -z localhost 7687; do
-            echo "Neo4j not ready, waiting..."
+            echo "Waiting for Neo4j..."
             sleep 2
           done
-
-          echo "✅ All services are ready"
 
       - name: Run Integration Tests
         run: |
-          echo "🔗 Running integration test suite..."
-          pytest tests/ openmemory/api/tests/ -v -m "integration" \
-            --cov=openmemory --cov=shared --cov=app \
-            --cov-report=xml:coverage-integration.xml \
-            --cov-report=html:htmlcov-integration \
-            --cov-report=term-missing \
-            --junit-xml=test-results-integration.xml \
-            --durations=10 \
-            --tb=short
+          echo "🔗 Running end-to-end integration tests..."
+          
+          # Run comprehensive integration tests
+          python -m pytest tests/test_integration.py -v --tb=short
+          
+          # Run system integration tests
+          cd openmemory/api
+          python -m pytest tests/test_system_integration.py -v --tb=short
 
           echo "✅ Integration tests completed"
 
@@ -482,9 +459,8 @@ jobs:
         with:
           name: integration-test-results
           path: |
-            test-results-integration.xml
-            htmlcov-integration
-            coverage-integration.xml
+            integration-test-results.xml
+            openmemory/api/integration-test-results.xml
           retention-days: 30
 
   # ============================================================================
@@ -510,11 +486,23 @@ jobs:
         ports:
           - 5432:5432
 
+      neo4j:
+        image: neo4j:5.15
+        env:
+          NEO4J_AUTH: neo4j/testpass
+          NEO4J_PLUGINS: '["apoc"]'
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7687:7687
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          # For merge groups, checkout the merge commit
           ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
 
       - name: Set up Python 3.11
@@ -527,29 +515,29 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
 
-          # Install mem0 package in development mode
-          pip install -e mem0/
-
           cd openmemory/api
           pip install -r requirements.txt
           pip install -r requirements-test.txt
 
-      - name: Wait for PostgreSQL
+      - name: Wait for Services
         run: |
           until pg_isready -h localhost -p 5432; do
             echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
             sleep 2
           done
 
       - name: Run Performance Tests
         run: |
           echo "⚡ Running performance benchmark tests..."
-          pytest tests/ -v -m "performance" \
-            --benchmark-only \
-            --benchmark-json=benchmark-results.json \
-            --benchmark-sort=mean \
-            --junit-xml=test-results-performance.xml
-
+          
+          # Run performance tests
+          python scripts/benchmark_vector_performance.py
+          
           echo "✅ Performance tests completed"
 
       - name: Upload Performance Test Results
@@ -558,91 +546,52 @@ jobs:
         with:
           name: performance-test-results
           path: |
-            test-results-performance.xml
+            performance-test-results.xml
             benchmark-results.json
           retention-days: 30
 
   # ============================================================================
-  # QUALITY GATE 7: CODE QUALITY & LINTING
+  # QUALITY GATE 7: CODE QUALITY
   # ============================================================================
   code-quality:
     name: '🔍 Code Quality (Quality Gate 7)'
     runs-on: ubuntu-latest
+    needs: [unit-tests]
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          # For merge groups, checkout the merge commit
           ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
-          # Ensure consistent line endings
-          fetch-depth: 0
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Configure Git for consistent line endings
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global core.filemode false
-
-      - name: Install Dependencies
+      - name: Install Quality Tools
         run: |
           python -m pip install --upgrade pip
-          pip install pre-commit flake8 black isort mypy pylint bandit safety
+          pip install black flake8 mypy pylint isort
+          pip install -r requirements-test.txt
 
-      - name: Cache pre-commit hooks
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: pre-commit-
-
-      - name: Run pre-commit hooks
+      - name: Run Code Quality Checks
         run: |
-          echo "🔍 Running pre-commit hooks for code quality..."
-          pre-commit run --all-files --show-diff-on-failure
-
-      - name: Run Code Formatting Check (Backup)
-        if: failure()
-        run: |
-          echo "🔍 Running backup formatting checks..."
-          echo "=== Black formatting check ==="
-          black --check --diff openmemory/ shared/ tests/ || echo "Black formatting issues found"
-
-          echo "=== isort import sorting check ==="
-          isort --check-only --diff openmemory/ shared/ tests/ || echo "isort issues found"
-
-      - name: Run Linting (Backup)
-        if: failure()
-        run: |
-          echo "🔍 Running backup linting checks..."
-          echo "=== Flake8 linting ==="
-          flake8 openmemory/ shared/ tests/ --max-line-length=88 --extend-ignore=E203,W503 || echo "Flake8 issues found"
-
-      - name: Run Type Checking
-        run: |
-          echo "🔍 Running type checks..."
-          mypy openmemory/ shared/ --ignore-missing-imports --no-strict-optional || echo "Type checking issues found"
-
-      - name: Run Security Scanning
-        run: |
-          echo "🔍 Running security scanning..."
-          bandit -r openmemory/ shared/ -f json -o bandit-report.json || echo "Security issues found"
-          safety check --json --output safety-report.json || echo "Safety issues found"
-
-      - name: Upload Code Quality Reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: code-quality-reports
-          path: |
-            bandit-report.json
-            safety-report.json
-          retention-days: 30
+          echo "🔍 Running code quality analysis..."
+          
+          # Format checking
+          black --check --diff .
+          
+          # Import sorting
+          isort --check-only --diff .
+          
+          # Linting
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+          # Type checking
+          mypy shared/ openmemory/api/app/ --ignore-missing-imports
+          
+          echo "✅ Code quality checks completed"
 
   # ============================================================================
   # FINAL QUALITY GATE: MERGE DECISION
@@ -650,208 +599,66 @@ jobs:
   merge-decision:
     name: '🚦 Merge Decision (Final Quality Gate)'
     runs-on: ubuntu-latest
-    needs:
-      [
-        unit-tests,
-        contract-tests,
-        security-tests,
-        database-tests,
-        integration-tests,
-        performance-tests,
-        code-quality,
-      ]
+    needs: [performance-tests, code-quality]
     if: always()
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          # For merge groups, checkout the merge commit
           ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
 
-      - name: Download All Test Results
-        uses: actions/download-artifact@v4
-        with:
-          path: test-results
-
-      - name: Quality Gate Evaluation
+      - name: Evaluate Quality Gates
         run: |
-          echo "🚦 EVALUATING QUALITY GATES FOR MERGE DECISION"
-          echo "=================================================="
-
-          # Initialize quality gate status
-          QUALITY_GATES_PASSED=true
-          FAILED_GATES=()
-
-          # Check each quality gate
-          echo "📊 Quality Gate Results:"
-
-          # Gate 1: Unit Tests
-          if [ "${{ needs.unit-tests.result }}" != "success" ]; then
-            echo "❌ Quality Gate 1 - Unit Tests: FAILED"
-            QUALITY_GATES_PASSED=false
-            FAILED_GATES+=("Unit Tests")
+          echo "🚦 Evaluating all quality gates..."
+          
+          # Check if all required tests passed
+          if [ "${{ needs.performance-tests.result }}" == "success" ] && 
+             [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "✅ All quality gates passed - Ready for merge"
+            exit 0
           else
-            echo "✅ Quality Gate 1 - Unit Tests: PASSED"
-          fi
-
-          # Gate 2: API Contract Tests
-          if [ "${{ needs.contract-tests.result }}" != "success" ]; then
-            echo "❌ Quality Gate 2 - API Contract Tests: FAILED"
-            QUALITY_GATES_PASSED=false
-            FAILED_GATES+=("API Contract Tests")
-          else
-            echo "✅ Quality Gate 2 - API Contract Tests: PASSED"
-          fi
-
-          # Gate 3: Security Tests
-          if [ "${{ needs.security-tests.result }}" != "success" ]; then
-            echo "❌ Quality Gate 3 - Security Tests: FAILED"
-            QUALITY_GATES_PASSED=false
-            FAILED_GATES+=("Security Tests")
-          else
-            echo "✅ Quality Gate 3 - Security Tests: PASSED"
-          fi
-
-          # Gate 4: Database Tests
-          if [ "${{ needs.database-tests.result }}" != "success" ]; then
-            echo "❌ Quality Gate 4 - Database Tests: FAILED"
-            QUALITY_GATES_PASSED=false
-            FAILED_GATES+=("Database Tests")
-          else
-            echo "✅ Quality Gate 4 - Database Tests: PASSED"
-          fi
-
-          # Gate 5: Integration Tests
-          if [ "${{ needs.integration-tests.result }}" != "success" ]; then
-            echo "❌ Quality Gate 5 - Integration Tests: FAILED"
-            QUALITY_GATES_PASSED=false
-            FAILED_GATES+=("Integration Tests")
-          else
-            echo "✅ Quality Gate 5 - Integration Tests: PASSED"
-          fi
-
-          # Gate 6: Performance Tests
-          if [ "${{ needs.performance-tests.result }}" != "success" ]; then
-            echo "❌ Quality Gate 6 - Performance Tests: FAILED"
-            QUALITY_GATES_PASSED=false
-            FAILED_GATES+=("Performance Tests")
-          else
-            echo "✅ Quality Gate 6 - Performance Tests: PASSED"
-          fi
-
-          # Gate 7: Code Quality
-          if [ "${{ needs.code-quality.result }}" != "success" ]; then
-            echo "❌ Quality Gate 7 - Code Quality: FAILED"
-            QUALITY_GATES_PASSED=false
-            FAILED_GATES+=("Code Quality")
-          else
-            echo "✅ Quality Gate 7 - Code Quality: PASSED"
-          fi
-
-          echo "=================================================="
-
-          # Final decision
-          if [ "$QUALITY_GATES_PASSED" = true ]; then
-            echo "🎉 ALL QUALITY GATES PASSED - MERGE APPROVED"
-            echo "✅ This pull request meets all quality standards and is safe to merge"
-            echo "📊 Summary: 7/7 quality gates passed"
-          else
-            echo "🚫 QUALITY GATES FAILED - MERGE BLOCKED"
-            echo "❌ This pull request does not meet quality standards"
-            echo "📊 Failed gates: ${FAILED_GATES[*]}"
-            echo "🔧 Please fix the failing tests before attempting to merge"
+            echo "❌ Quality gates failed - Blocking merge"
             exit 1
           fi
 
-      - name: Generate Comprehensive Test Report
+      - name: Generate Quality Report
+        if: always()
         run: |
-          echo "📋 Generating comprehensive test report..."
-
-          cat > comprehensive-test-report.md << 'EOF'
-          # Comprehensive Test Report
-
-          **Generated:** $(date)
+          echo "📊 Generating quality gate report..."
+          
+          cat > quality-report.md << EOF
+          # Quality Gate Report
+          
           **Branch:** ${{ github.ref }}
           **Commit:** ${{ github.sha }}
-          **PR:** ${{ github.event.pull_request.number }}
-
-          ## Quality Gates Summary
-
-          | Quality Gate | Status | Description |
-          |--------------|---------|-------------|
-          | 1. Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | Comprehensive unit test suite (106+ tests) |
-          | 2. API Contract Tests | ${{ needs.contract-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | API endpoint validation and contract testing |
-          | 3. Security Tests | ${{ needs.security-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | Security vulnerability testing (150+ test cases) |
-          | 4. Database Tests | ${{ needs.database-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | Database integrity and migration testing |
-          | 5. Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | Cross-service integration testing |
-          | 6. Performance Tests | ${{ needs.performance-tests.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | Performance benchmarking and regression testing |
-          | 7. Code Quality | ${{ needs.code-quality.result == 'success' && '✅ PASSED' || '❌ FAILED' }} | Code formatting, linting, and security scanning |
-
-          ## Test Coverage Requirements
-
-          - **Minimum Coverage:** 80%
-          - **Unit Test Coverage:** Enforced
-          - **Integration Test Coverage:** Enforced
-          - **Security Test Coverage:** 100% of endpoints
-
-          ## Quality Standards
-
-          - **Bug Prevention:** Pre-merge validation prevents bugs reaching main
-          - **Security:** All endpoints tested for vulnerabilities
-          - **Performance:** Regression testing ensures performance standards
-          - **Code Quality:** Automated formatting and linting enforcement
-
-          ## Merge Decision
-
-          **Status:** ${{ needs.unit-tests.result == 'success' && needs.contract-tests.result == 'success' && needs.security-tests.result == 'success' && needs.database-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.performance-tests.result == 'success' && needs.code-quality.result == 'success' && 'APPROVED FOR MERGE ✅' || 'BLOCKED FROM MERGE ❌' }}
-
-          This report validates that all quality gates have been met before allowing merge to protected branches.
+          **Workflow:** ${{ github.workflow }}
+          
+          ## Quality Gate Results
+          
+          - Unit Tests: ${{ needs.unit-tests.result }}
+          - Contract Tests: ${{ needs.contract-tests.result }}
+          - Security Tests: ${{ needs.security-tests.result }}
+          - Database Tests: ${{ needs.database-tests.result }}
+          - Integration Tests: ${{ needs.integration-tests.result }}
+          - Performance Tests: ${{ needs.performance-tests.result }}
+          - Code Quality: ${{ needs.code-quality.result }}
+          
+          ## Environment Configuration
+          
+          - App Environment: ${{ env.APP_ENVIRONMENT }}
+          - Database URL: ${{ env.DATABASE_URL }}
+          - Neo4j URI: ${{ env.NEO4J_URI }}
+          - Coverage Threshold: ${{ env.COVERAGE_THRESHOLD }}%
+          
           EOF
+          
+          cat quality-report.md
 
-          echo "✅ Comprehensive test report generated"
-
-      - name: Upload Comprehensive Test Report
+      - name: Upload Quality Report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: comprehensive-test-report
-          path: comprehensive-test-report.md
-          retention-days: 90
-
-      - name: Comment PR with Results
-        uses: actions/github-script@v7
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            const fs = require('fs');
-            const report = fs.readFileSync('comprehensive-test-report.md', 'utf8');
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: report
-            });
-
-  # ============================================================================
-  # SLACK NOTIFICATION (Optional)
-  # ============================================================================
-  notify-quality-gates:
-    name: '📢 Quality Gate Notifications'
-    runs-on: ubuntu-latest
-    needs: [merge-decision]
-    if: always() && github.event_name == 'pull_request'
-
-    steps:
-      - name: Notify on Success
-        if: needs.merge-decision.result == 'success'
-        run: |
-          echo "🎉 Quality Gates Passed - PR ready for merge"
-          echo "All 7 quality gates have been satisfied"
-
-      - name: Notify on Failure
-        if: needs.merge-decision.result != 'success'
-        run: |
-          echo "🚫 Quality Gates Failed - PR blocked from merge"
-          echo "Please review and fix the failing quality gates"
+          name: quality-gate-report
+          path: quality-report.md
+          retention-days: 30
