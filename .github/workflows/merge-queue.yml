@@ -28,6 +28,12 @@ on:
           - status
 
 env:
+  # Caching optimization variables
+  CACHE_VERSION: v1 # Increment to invalidate all caches
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  PNPM_VERSION: 'latest'
+
   # Environment variables for merge queue coordination
   PYTHONPATH: ${{ github.workspace }}
   TESTING: 'true'
@@ -93,33 +99,58 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip packages
+      # Multi-level Python caching strategy
+      - name: Cache Python Dependencies (pip cache)
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          key: ${{ env.CACHE_VERSION }}-merge-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ env.CACHE_VERSION }}-merge-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
+            ${{ env.CACHE_VERSION }}-merge-pip-${{ runner.os }}-
+
+      - name: Cache Virtual Environment
+        uses: actions/cache@v4
+        id: merge-venv-cache
+        with:
+          path: ~/merge-venv
+          key: ${{ env.CACHE_VERSION }}-merge-venv-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ env.CACHE_VERSION }}-merge-venv-${{ matrix.python-version }}-
 
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgeos-dev libpq-dev netcat-openbsd
 
-      - name: Install Python Dependencies
+      - name: Install Python Dependencies (optimized)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-test.txt
-
-          # Install mem0 package in development mode
-          pip install -e mem0/
-
-          # Install API dependencies
-          if [ -f openmemory/api/requirements.txt ]; then
-            pip install -r openmemory/api/requirements.txt
+          # Create or activate virtual environment
+          if [ ! -d ~/merge-venv ]; then
+            python -m venv ~/merge-venv
           fi
-          if [ -f openmemory/api/requirements-test.txt ]; then
-            pip install -r openmemory/api/requirements-test.txt
+          source ~/merge-venv/bin/activate
+
+          # Only install if cache miss or requirements changed
+          if [ "${{ steps.merge-venv-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "📦 Installing Python dependencies..."
+            python -m pip install --upgrade pip
+            pip install -r requirements-test.txt
+
+            # Install mem0 package in development mode
+            pip install -e mem0/
+
+            # Install API dependencies
+            if [ -f openmemory/api/requirements.txt ]; then
+              pip install -r openmemory/api/requirements.txt
+            fi
+            if [ -f openmemory/api/requirements-test.txt ]; then
+              pip install -r openmemory/api/requirements-test.txt
+            fi
+
+            echo "✅ Python dependencies installed and cached"
+          else
+            echo "✅ Using cached Python dependencies"
           fi
 
       - name: Wait for services
@@ -140,6 +171,7 @@ jobs:
 
       - name: Run Critical Quality Gates
         run: |
+          source ~/merge-venv/bin/activate
           echo "🔄 Running critical quality gates for merge group..."
           echo "Merge Group: ${{ github.event.merge_group.head_sha }}"
           echo "Base SHA: ${{ github.event.merge_group.base_sha }}"

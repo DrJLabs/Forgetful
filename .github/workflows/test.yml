@@ -13,6 +13,13 @@ on:
   workflow_dispatch: # Enable manual workflow triggering
 
 env:
+  # Caching optimization variables
+  CACHE_VERSION: v1 # Increment to invalidate all caches
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  PNPM_VERSION: 'latest'
+
+  # Existing environment variables
   PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
   TESTING: 'true'
   DATABASE_URL: 'postgresql://postgres:testpass@localhost:5432/test_db'
@@ -63,33 +70,59 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Cache pip packages
+      # Multi-level Python caching strategy
+      - name: Cache Python Dependencies (pip cache)
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements*.txt') }}
+          key: ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml', '**/setup.py') }}
           restore-keys: |
-            ${{ runner.os }}-pip-
+            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
+            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-
+
+      # Virtual environment cache (much faster than pip install)
+      - name: Cache Virtual Environment
+        uses: actions/cache@v4
+        id: venv-cache
+        with:
+          path: ~/test-venv
+          key: ${{ env.CACHE_VERSION }}-test-venv-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', '**/pyproject.toml') }}
+          restore-keys: |
+            ${{ env.CACHE_VERSION }}-test-venv-${{ matrix.python-version }}-
 
       - name: Install System Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libgeos-dev libpq-dev netcat-openbsd
 
-      - name: Install Python Dependencies
+      - name: Install Python Dependencies (optimized)
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements-test.txt
-
-          # Install mem0 package in development mode
-          pip install -e mem0/
-
-          # Install API dependencies
-          if [ -f openmemory/api/requirements.txt ]; then
-            pip install -r openmemory/api/requirements.txt
+          # Create or activate virtual environment
+          if [ ! -d ~/test-venv ]; then
+            python -m venv ~/test-venv
           fi
-          if [ -f openmemory/api/requirements-test.txt ]; then
-            pip install -r openmemory/api/requirements-test.txt
+          source ~/test-venv/bin/activate
+
+          # Only install if cache miss or requirements changed
+          if [ "${{ steps.venv-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "📦 Installing Python dependencies..."
+            python -m pip install --upgrade pip
+            pip install -r requirements-test.txt
+
+            # Install mem0 package in development mode
+            pip install -e mem0/
+
+            # Install API dependencies
+            if [ -f openmemory/api/requirements.txt ]; then
+              pip install -r openmemory/api/requirements.txt
+            fi
+            if [ -f openmemory/api/requirements-test.txt ]; then
+              pip install -r openmemory/api/requirements-test.txt
+            fi
+
+            echo "✅ Python dependencies installed and cached"
+          else
+            echo "✅ Using cached Python dependencies"
           fi
 
       - name: Wait for services
@@ -103,6 +136,7 @@ jobs:
 
       - name: Run Comprehensive Unit Tests
         run: |
+          source ~/test-venv/bin/activate
           echo "🧪 Running comprehensive unit test suite..."
           pytest tests/ openmemory/api/tests/ -v \
             -m "unit or (not integration and not performance and not slow and not e2e)" \
