@@ -170,8 +170,9 @@ jobs:
         run: |
           source ~/venv/bin/activate
 
-          # Create pgvector extension
-          psql -h localhost -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+          # Create pgvector extension with proper authentication
+          export PGPASSWORD=testpass
+          psql -h localhost -p 5432 -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
           # Run database migrations
           echo "🔄 Running database migrations..."
@@ -181,6 +182,8 @@ jobs:
           alembic upgrade head
 
           echo "✅ Database migrations completed"
+        env:
+          PGPASSWORD: testpass
 
       - name: Run Unit Tests
         run: |
@@ -415,6 +418,13 @@ jobs:
           cd openmemory/api
           alembic upgrade head
           echo "✅ Database migrations completed"
+
+      - name: Initialize Database
+        run: |
+          export PGPASSWORD=testpass
+          psql -h localhost -p 5432 -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+        env:
+          PGPASSWORD: testpass
 
       - name: Run Database Tests
         run: |
@@ -685,7 +695,16 @@ jobs:
   merge-decision:
     name: '🚦 Merge Decision (Final Quality Gate)'
     runs-on: ubuntu-latest
-    needs: [performance-tests, code-quality]
+    needs:
+      [
+        unit-tests,
+        contract-tests,
+        security-tests,
+        database-tests,
+        integration-tests,
+        performance-tests,
+        code-quality,
+      ]
     if: always()
 
     steps:
@@ -699,7 +718,12 @@ jobs:
           echo "🚦 Evaluating all quality gates..."
 
           # Check if all required tests passed
-          if [ "${{ needs.performance-tests.result }}" == "success" ] &&
+          if [ "${{ needs.unit-tests.result }}" == "success" ] && \
+             [ "${{ needs.contract-tests.result }}" == "success" ] && \
+             [ "${{ needs.security-tests.result }}" == "success" ] && \
+             [ "${{ needs.database-tests.result }}" == "success" ] && \
+             [ "${{ needs.integration-tests.result }}" == "success" ] && \
+             [ "${{ needs.performance-tests.result }}" == "success" ] && \
              [ "${{ needs.code-quality.result }}" == "success" ]; then
             echo "✅ All quality gates passed - Ready for merge"
             exit 0
