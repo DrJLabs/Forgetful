@@ -7,19 +7,40 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      - NEO4J_URI=bolt://neo4j-mem0:7687
-      - NEO4J_USERNAME=neo4j
+      # Database Configuration
+      - DATABASE_HOST=${DATABASE_HOST:-postgres-mem0}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_NAME=${DATABASE_NAME:-mem0}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+      # Neo4j Configuration
+      - NEO4J_HOST=${NEO4J_HOST:-neo4j-mem0}
+      - NEO4J_PORT=${NEO4J_PORT:-7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
       - NEO4J_PASSWORD=${NEO4J_PASSWORD}
-      - POSTGRES_HOST=postgres-mem0
-      - POSTGRES_DB=mem0
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_COLLECTION_NAME=mem0_memories
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_URL=${NEO4J_URL}
+      # OpenAI Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      # Application Configuration
+      - APP_USER_ID=${APP_USER_ID}
+      - APP_ENVIRONMENT=${APP_ENVIRONMENT:-development}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL:-INFO}
+      # Legacy Variables (for backward compatibility)
+      - POSTGRES_HOST=${DATABASE_HOST:-postgres-mem0}
+      - POSTGRES_DB=${DATABASE_NAME:-mem0}
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_COLLECTION_NAME=mem0_memories
+      - USER=${APP_USER_ID}
     volumes:
       - ./data/mem0/history:/app/history
     ports:
-      - '127.0.0.1:8000:8000'
+      - '127.0.0.1:${MEM0_API_PORT:-8000}:8000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,9 +65,12 @@ services:
     container_name: postgres-mem0
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=mem0
+      # Use standardized variables
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME:-mem0}
+      - POSTGRES_HOST=${DATABASE_HOST:-postgres-mem0}
+      - POSTGRES_PORT=${DATABASE_PORT:-5432}
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     command: >
@@ -56,7 +80,11 @@ services:
       -c 'min_wal_size=1GB' -c 'wal_buffers=64MB' -c 'default_statistics_target=100'
     networks: [traefik]
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -q -d mem0 -U "${POSTGRES_USER}"']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -q -d "$${DATABASE_NAME:-mem0}" -U "$${DATABASE_USER}"',
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -74,7 +102,13 @@ services:
     container_name: neo4j-mem0
     restart: unless-stopped
     environment:
+      # Use standardized variables
       - NEO4J_AUTH=${NEO4J_AUTH}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - NEO4J_HOST=${NEO4J_HOST:-neo4j-mem0}
+      - NEO4J_PORT=${NEO4J_PORT:-7687}
+      - NEO4J_DATABASE=${NEO4J_DATABASE:-neo4j}
       - NEO4J_PLUGINS=["apoc"]
       - NEO4J_apoc_export_file_enabled=true
       - NEO4J_apoc_import_file_enabled=true
@@ -116,24 +150,50 @@ services:
     container_name: openmemory-mcp
     restart: unless-stopped
     environment:
-      - USER=${USER:-drj}
-      - API_KEY=${API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - POSTGRES_HOST=postgres-mem0
-      - POSTGRES_DB=mem0
-      - POSTGRES_USER=${POSTGRES_USER:-drj}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - NEO4J_URL=neo4j://neo4j-mem0:7687
+      # Database Configuration
+      - DATABASE_HOST=${DATABASE_HOST:-postgres-mem0}
+      - DATABASE_PORT=${DATABASE_PORT:-5432}
+      - DATABASE_NAME=${DATABASE_NAME:-mem0}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_URL=${DATABASE_URL}
+      # Neo4j Configuration
+      - NEO4J_HOST=${NEO4J_HOST:-neo4j-mem0}
+      - NEO4J_PORT=${NEO4J_PORT:-7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_URL=${NEO4J_URL}
       - NEO4J_AUTH=${NEO4J_AUTH}
+      # OpenAI Configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      # Application Configuration
+      - APP_USER_ID=${APP_USER_ID}
+      - APP_ENVIRONMENT=${APP_ENVIRONMENT:-development}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL:-INFO}
+      # API Configuration
+      - API_PORT=${OPENMEMORY_API_PORT:-8765}
+      - API_WORKERS=${API_WORKERS:-4}
+      - API_TIMEOUT=${API_TIMEOUT:-30}
+      # Legacy Variables (for backward compatibility)
+      - USER=${APP_USER_ID}
+      - API_KEY=${OPENAI_API_KEY}
+      - POSTGRES_HOST=${DATABASE_HOST:-postgres-mem0}
+      - POSTGRES_DB=${DATABASE_NAME:-mem0}
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
       - PYTHONWARNINGS=ignore::DeprecationWarning
     env_file:
       - ./openmemory/api/.env
     ports:
-      - '127.0.0.1:8765:8765'
+      - '127.0.0.1:${OPENMEMORY_API_PORT:-8765}:8765'
     volumes:
       - ./openmemory/api:/usr/src/openmemory
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --workers 4"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --workers ${API_WORKERS:-4}"
     networks: [traefik]
     depends_on:
       postgres:
@@ -157,12 +217,27 @@ services:
     container_name: openmemory-ui
     restart: unless-stopped
     environment:
+      # Frontend Configuration
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8765}
-      - NEXT_PUBLIC_USER_ID=${USER:-drj}
+      - NEXT_PUBLIC_USER_ID=${NEXT_PUBLIC_USER_ID:-drj}
+      - NEXT_PUBLIC_ENVIRONMENT=${NEXT_PUBLIC_ENVIRONMENT:-development}
+      - NEXT_PUBLIC_BUILD_TIME=${NEXT_PUBLIC_BUILD_TIME:-auto_generated}
+      - NEXT_PUBLIC_VERSION=${NEXT_PUBLIC_VERSION:-1.0.0}
+      # Application Configuration
+      - APP_USER_ID=${APP_USER_ID}
+      - APP_ENVIRONMENT=${APP_ENVIRONMENT:-development}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - APP_LOG_LEVEL=${APP_LOG_LEVEL:-INFO}
+      # Service Configuration
+      - OPENMEMORY_API_URL=${OPENMEMORY_API_URL:-http://localhost:8765}
+      - OPENMEMORY_UI_URL=${OPENMEMORY_UI_URL:-http://localhost:3000}
+      - UI_PORT=${OPENMEMORY_UI_PORT:-3000}
+      # Legacy Variables (for backward compatibility)
+      - USER=${APP_USER_ID}
     env_file:
       - ./openmemory/ui/.env
     ports:
-      - '127.0.0.1:3000:3000'
+      - '127.0.0.1:${OPENMEMORY_UI_PORT:-3000}:3000'
     networks: [traefik]
     labels:
       - 'traefik.enable=true'
