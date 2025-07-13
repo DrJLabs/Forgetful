@@ -51,18 +51,18 @@ monitor_postgres_performance() {
     fi
 
     # Database size and growth
-    DB_SIZE=$(docker exec "$POSTGRES_CONTAINER" psql \
+    DB_SIZE=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "SELECT pg_size_pretty(pg_database_size('mem0'))" 2>/dev/null || echo "Unknown")
 
     # Active connections
-    ACTIVE_CONN=$(docker exec "$POSTGRES_CONTAINER" psql \
+    ACTIVE_CONN=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'" 2>/dev/null || echo "0")
 
-    MAX_CONN=$(docker exec "$POSTGRES_CONTAINER" psql \
+    MAX_CONN=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "SELECT setting FROM pg_settings WHERE name = 'max_connections'" 2>/dev/null || echo "100")
@@ -75,7 +75,7 @@ monitor_postgres_performance() {
     fi
 
     # Long-running queries
-    LONG_QUERIES=$(docker exec "$POSTGRES_CONTAINER" psql \
+    LONG_QUERIES=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -90,7 +90,7 @@ monitor_postgres_performance() {
     fi
 
     # Cache hit ratio
-    CACHE_HIT_RATIO=$(docker exec "$POSTGRES_CONTAINER" psql \
+    CACHE_HIT_RATIO=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -100,7 +100,7 @@ monitor_postgres_performance() {
         FROM pg_stat_database;" 2>/dev/null || echo "0")
 
     # Index usage
-    INDEX_USAGE=$(docker exec "$POSTGRES_CONTAINER" psql \
+    INDEX_USAGE=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -126,7 +126,7 @@ monitor_postgres_locks() {
     log "Checking PostgreSQL locks..."
 
     # Check for blocked queries
-    BLOCKED_QUERIES=$(docker exec "$POSTGRES_CONTAINER" psql \
+    BLOCKED_QUERIES=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -139,7 +139,7 @@ monitor_postgres_locks() {
     fi
 
     # Check for deadlocks (from log)
-    DEADLOCKS=$(docker exec "$POSTGRES_CONTAINER" psql \
+    DEADLOCKS=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "SELECT deadlocks FROM pg_stat_database WHERE datname = 'mem0';" 2>/dev/null || echo "0")
@@ -261,7 +261,7 @@ monitor_memory_operations() {
 
     # Get memory count (if PostgreSQL is available)
     if check_container "$POSTGRES_CONTAINER"; then
-        MEMORY_COUNT=$(docker exec "$POSTGRES_CONTAINER" psql \
+        MEMORY_COUNT=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
             -U "${POSTGRES_USER:-drj}" \
             -d mem0 \
             -t -c "SELECT count(*) FROM memories WHERE deleted_at IS NULL;" 2>/dev/null || echo "0")

@@ -25,7 +25,7 @@
 
 ### 1. Environment Template Standardization
 
-**File**: `.env.template`
+**File**: `env.template`
 **Changes**: Complete rewrite with standardized variable naming
 
 **Key Improvements**:
@@ -225,7 +225,7 @@ env:
 ### 1. DATABASE_URL Inconsistencies ✅
 
 **Problem**: Different DATABASE_URL formats across environments
-- `.env.template` commented out DATABASE_URL as "auto-generated"
+- `env.template` commented out DATABASE_URL and Neo4j derived variables as "auto-generated"
 - `docker-compose.yml` used individual variables
 - `openmemory/api/app/database.py` expected DATABASE_URL directly
 - CI workflows used different DATABASE_URL formats
@@ -344,7 +344,7 @@ env:
 ### 1. Environment Configuration Documentation
 
 **Updated Files**:
-- `.env.template` - Comprehensive inline documentation
+- `env.template` - Comprehensive inline documentation
 - `openmemory/api/.env.example` - Service-specific documentation
 - `openmemory/ui/.env.example` - UI-specific documentation
 
