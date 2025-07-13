@@ -82,8 +82,13 @@ services:
     healthcheck:
       test:
         [
-          'CMD-SHELL',
-          'pg_isready -q -d "$${DATABASE_NAME:-mem0}" -U "$${DATABASE_USER}"',
+          'CMD',
+          'pg_isready',
+          '-q',
+          '-d',
+          '$${DATABASE_NAME:-mem0}',
+          '-U',
+          '$${DATABASE_USER}',
         ]
       interval: 5s
       timeout: 5s
