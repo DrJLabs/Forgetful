@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
@@ -15,22 +15,60 @@ if not DATABASE_URL:
 # Setup logging
 logger = logging.getLogger(__name__)
 
+
 def redact_database_url(url: str) -> str:
     """
-    Redact sensitive information from database URLs.
-    
-    For PostgreSQL URLs (contains '@'), redact the user:password portion.
-    For SQLite URLs (no '@'), return as-is since they don't contain credentials.
+    Redact sensitive information from a database URL.
+
+    Handles:
+    - Multiple '@' characters in usernames/passwords
+    - URLs without proper scheme (://missing)
     """
-    if '@' in url:
-        # PostgreSQL-style URL: postgresql://user:password@host:port/database
-        parts = url.split('@')
-        if len(parts) >= 2:
-            # Keep everything after the '@' and redact the credential part
-            return f"{parts[0].split('://')[0]}://[REDACTED]@{parts[1]}"
-    
-    # SQLite or other URLs without '@' - return as-is since no credentials to redact
+    if not url:
+        return url
+
+    # Check if URL has proper scheme
+    if "://" not in url:
+        # For URLs without scheme, assume they start with credentials
+        # If there's an '@' character, redact everything before the last '@'
+        if "@" in url:
+            # Find the last '@' which should be the separator
+            last_at_pos = url.rfind("@")
+            return f"[REDACTED]@{url[last_at_pos+1:]}"
+        else:
+            # No credentials to redact
+            return url
+
+    # For URLs with proper scheme
+    if "@" in url:
+        # Split by '://' to separate scheme from the rest
+        scheme_sep = url.split("://", 1)
+        scheme = scheme_sep[0]
+        rest = scheme_sep[1]
+
+        # Find the authority part (before the path)
+        # The path starts with '/' after the host
+        path_start = rest.find("/")
+        if path_start == -1:
+            # No path, entire rest is authority
+            authority = rest
+            path = ""
+        else:
+            authority = rest[:path_start]
+            path = rest[path_start:]
+
+        # Find the '@' in the authority part - this is the credential separator
+        auth_at_pos = authority.rfind("@")
+        if auth_at_pos != -1:
+            host_and_port = authority[auth_at_pos + 1 :]
+            return f"{scheme}://[REDACTED]@{host_and_port}{path}"
+        else:
+            # No credentials in authority part
+            return url
+
+    # No credentials to redact
     return url
+
 
 # Log database connection info with proper redaction
 logger.info(f"Connecting to database: {redact_database_url(DATABASE_URL)}")
