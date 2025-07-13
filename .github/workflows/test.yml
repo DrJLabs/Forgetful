@@ -158,6 +158,11 @@ jobs:
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
 
           echo "🔄 Waiting for Neo4j..."
           until nc -z localhost 7687; do
