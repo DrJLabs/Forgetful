@@ -162,6 +162,7 @@ def create_test_tables(config):
 
         # Create pgvector extension
         cursor.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        conn.commit()
 
         # Create test table
         cursor.execute(
