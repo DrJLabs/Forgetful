@@ -4,7 +4,9 @@ from typing import Dict, List, Optional
 try:
     import litellm
 except ImportError:
-    raise ImportError("The 'litellm' library is required. Please install it using 'pip install litellm'.")
+    raise ImportError(
+        "The 'litellm' library is required. Please install it using 'pip install litellm'."
+    )
 
 from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase
@@ -40,7 +42,9 @@ class LiteLLM(LLMBase):
                     processed_response["tool_calls"].append(
                         {
                             "name": tool_call.function.name,
-                            "arguments": json.loads(extract_json(tool_call.function.arguments)),
+                            "arguments": json.loads(
+                                extract_json(tool_call.function.arguments)
+                            ),
                         }
                     )
 
@@ -68,7 +72,9 @@ class LiteLLM(LLMBase):
             str: The generated response.
         """
         if not litellm.supports_function_calling(self.config.model):
-            raise ValueError(f"Model '{self.config.model}' in litellm does not support function calling.")
+            raise ValueError(
+                f"Model '{self.config.model}' in litellm does not support function calling."
+            )
 
         params = {
             "model": self.config.model,
@@ -79,7 +85,9 @@ class LiteLLM(LLMBase):
         }
         if response_format:
             params["response_format"] = response_format
-        if tools:  # TODO: Remove tools if no issues found with new memory addition logic
+        if (
+            tools
+        ):  # TODO: Remove tools if no issues found with new memory addition logic
             params["tools"] = tools
             params["tool_choice"] = tool_choice
 

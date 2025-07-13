@@ -1,17 +1,5 @@
 {
-  "name": "mem0ai-oss",
-  "version": "1.0.0",
-  "description": "TypeScript implementation of mem0 memory system",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "test": "jest",
-    "start": "pnpm run example memory",
-    "example": "ts-node examples/vector-stores/index.ts",
-    "clean": "rimraf dist",
-    "prepare": "npm run build"
-  },
+  "author": "",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.18.0",
     "@google/genai": "^0.7.0",
@@ -31,6 +19,7 @@
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
+  "description": "TypeScript implementation of mem0 memory system",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250504.0",
     "@types/jest": "^29.5.12",
@@ -47,6 +36,17 @@
     "vector-store",
     "typescript"
   ],
-  "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "main": "dist/index.js",
+  "name": "mem0ai-oss",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "example": "ts-node examples/vector-stores/index.ts",
+    "prepare": "npm run build",
+    "start": "pnpm run example memory",
+    "test": "jest"
+  },
+  "types": "dist/index.d.ts",
+  "version": "1.0.0"
 }

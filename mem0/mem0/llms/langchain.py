@@ -6,7 +6,9 @@ from mem0.llms.base import LLMBase
 try:
     from langchain.chat_models.base import BaseChatModel
 except ImportError:
-    raise ImportError("langchain is not installed. Please install it using `pip install langchain`")
+    raise ImportError(
+        "langchain is not installed. Please install it using `pip install langchain`"
+    )
 
 
 class LangchainLLM(LLMBase):
@@ -62,4 +64,6 @@ class LangchainLLM(LLMBase):
             return ai_message.content
 
         except Exception as e:
-            raise Exception(f"Error generating response using langchain model: {str(e)}")
+            raise Exception(
+                f"Error generating response using langchain model: {str(e)}"
+            )

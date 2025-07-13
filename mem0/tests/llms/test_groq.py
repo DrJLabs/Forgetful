@@ -15,7 +15,9 @@ def mock_groq_client():
 
 
 def test_generate_response_without_tools(mock_groq_client):
-    config = BaseLlmConfig(model="llama3-70b-8192", temperature=0.7, max_tokens=100, top_p=1.0)
+    config = BaseLlmConfig(
+        model="llama3-70b-8192", temperature=0.7, max_tokens=100, top_p=1.0
+    )
     llm = GroqLLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -23,19 +25,27 @@ def test_generate_response_without_tools(mock_groq_client):
     ]
 
     mock_response = Mock()
-    mock_response.choices = [Mock(message=Mock(content="I'm doing well, thank you for asking!"))]
+    mock_response.choices = [
+        Mock(message=Mock(content="I'm doing well, thank you for asking!"))
+    ]
     mock_groq_client.chat.completions.create.return_value = mock_response
 
     response = llm.generate_response(messages)
 
     mock_groq_client.chat.completions.create.assert_called_once_with(
-        model="llama3-70b-8192", messages=messages, temperature=0.7, max_tokens=100, top_p=1.0
+        model="llama3-70b-8192",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=100,
+        top_p=1.0,
     )
     assert response == "I'm doing well, thank you for asking!"
 
 
 def test_generate_response_with_tools(mock_groq_client):
-    config = BaseLlmConfig(model="llama3-70b-8192", temperature=0.7, max_tokens=100, top_p=1.0)
+    config = BaseLlmConfig(
+        model="llama3-70b-8192", temperature=0.7, max_tokens=100, top_p=1.0
+    )
     llm = GroqLLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -49,7 +59,12 @@ def test_generate_response_with_tools(mock_groq_client):
                 "description": "Add a memory",
                 "parameters": {
                     "type": "object",
-                    "properties": {"data": {"type": "string", "description": "Data to add to memory"}},
+                    "properties": {
+                        "data": {
+                            "type": "string",
+                            "description": "Data to add to memory",
+                        }
+                    },
                     "required": ["data"],
                 },
             },

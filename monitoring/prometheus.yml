@@ -1,0 +1,214 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'mem0-stack'
+    environment: 'production'
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager-mem0:9093
+
+scrape_configs:
+  # =======================================================================
+  # CORE APPLICATION SERVICES
+  # =======================================================================
+  
+  - job_name: 'mem0-api'
+    static_configs:
+      - targets: ['mem0:8000']
+    metrics_path: /metrics
+    scrape_interval: 5s
+    scrape_timeout: 10s
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: mem0:8000
+      - source_labels: [__param_target]
+        target_label: service
+        replacement: mem0-api
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'mem0_.*'
+        target_label: service
+        replacement: mem0
+
+  - job_name: 'openmemory-mcp'
+    static_configs:
+      - targets: ['openmemory-mcp:8765']
+    metrics_path: /metrics
+    scrape_interval: 5s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: openmemory-mcp
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'openmemory_.*'
+        target_label: service
+        replacement: openmemory-mcp
+
+  - job_name: 'openmemory-ui'
+    static_configs:
+      - targets: ['openmemory-ui:3000']
+    metrics_path: /api/metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: openmemory-ui
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'nextjs_.*'
+        target_label: service
+        replacement: openmemory-ui
+
+  # =======================================================================
+  # DATABASE SERVICES
+  # =======================================================================
+
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['postgres-exporter-mem0:9187']
+    scrape_interval: 5s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: postgres-mem0
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'pg_.*'
+        target_label: service
+        replacement: postgres
+
+  - job_name: 'neo4j'
+    static_configs:
+      - targets: ['neo4j-mem0:2004']
+    scrape_interval: 5s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: neo4j-mem0
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'neo4j_.*'
+        target_label: service
+        replacement: neo4j
+
+  # =======================================================================
+  # SYSTEM MONITORING
+  # =======================================================================
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter-mem0:9100']
+    scrape_interval: 5s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: system
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'node_.*'
+        target_label: service
+        replacement: system
+
+  # =======================================================================
+  # DOCKER CONTAINER MONITORING
+  # =======================================================================
+
+  - job_name: 'docker-containers'
+    static_configs:
+      - targets: ['host.docker.internal:9323']
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: docker
+    metric_relabel_configs:
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+        regex: '(.*)'
+        replacement: '${1}'
+      - source_labels: [container_label_com_docker_compose_project]
+        target_label: project
+        regex: '(.*)'
+        replacement: '${1}'
+
+  # =======================================================================
+  # MONITORING STACK SELF-MONITORING
+  # =======================================================================
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: prometheus
+
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana-mem0:3000']
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: grafana
+
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['alertmanager-mem0:9093']
+    scrape_interval: 10s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: alertmanager
+
+  # =======================================================================
+  # HEALTH CHECK MONITORING
+  # =======================================================================
+
+  - job_name: 'blackbox-exporter'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://mem0:8000/health
+          - http://openmemory-mcp:8765/health
+          - http://openmemory-ui:3000/health
+          - http://postgres-mem0:5432
+          - http://neo4j-mem0:7474
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+      - source_labels: [__param_target]
+        regex: 'http://([^:]+):.*'
+        target_label: service
+        replacement: '${1}'

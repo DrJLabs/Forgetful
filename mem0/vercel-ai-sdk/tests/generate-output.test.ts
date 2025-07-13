@@ -12,7 +12,7 @@ describe.each(testConfig.providers)('TESTS: Generate/Stream Text with model %s',
   const { userId } = testConfig;
   let mem0: ReturnType<typeof testConfig.createTestClient>;
   jest.setTimeout(50000);
-  
+
   beforeEach(() => {
     mem0 = testConfig.createTestClient(provider);
   });
@@ -71,16 +71,16 @@ describe.each(testConfig.providers)('TESTS: Generate/Stream Text with model %s',
       }),
       prompt: "Suggest me a good car to buy! Write only the car name and it's color.",
     });
-  
+
     // Collect streamed text parts
     let streamedText = '';
     for await (const textPart of textStream) {
       streamedText += textPart;
     }
-  
+
     // Ensure the streamed text is a string
     expect(typeof streamedText).toBe('string');
     expect(streamedText.length).toBeGreaterThan(0);
   });
-  
+
 });

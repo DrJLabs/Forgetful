@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 
 from mem0 import Memory
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 # Load environment variables
 load_dotenv()
@@ -48,10 +50,20 @@ DEFAULT_CONFIG = {
     },
     "graph_store": {
         "provider": "neo4j",
-        "config": {"url": NEO4J_URI, "username": NEO4J_USERNAME, "password": NEO4J_PASSWORD},
+        "config": {
+            "url": NEO4J_URI,
+            "username": NEO4J_USERNAME,
+            "password": NEO4J_PASSWORD,
+        },
     },
-    "llm": {"provider": "openai", "config": {"api_key": OPENAI_API_KEY, "temperature": 0.2, "model": "gpt-4o"}},
-    "embedder": {"provider": "openai", "config": {"api_key": OPENAI_API_KEY, "model": "text-embedding-3-small"}},
+    "llm": {
+        "provider": "openai",
+        "config": {"api_key": OPENAI_API_KEY, "temperature": 0.2, "model": "gpt-4o"},
+    },
+    "embedder": {
+        "provider": "openai",
+        "config": {"api_key": OPENAI_API_KEY, "model": "text-embedding-3-small"},
+    },
     "history_db_path": HISTORY_DB_PATH,
 }
 
@@ -98,11 +110,20 @@ def set_config(config: Dict[str, Any]):
 def add_memory(memory_create: MemoryCreate):
     """Store new memories."""
     if not any([memory_create.user_id, memory_create.agent_id, memory_create.run_id]):
-        raise HTTPException(status_code=400, detail="At least one identifier (user_id, agent_id, run_id) is required.")
+        raise HTTPException(
+            status_code=400,
+            detail="At least one identifier (user_id, agent_id, run_id) is required.",
+        )
 
-    params = {k: v for k, v in memory_create.model_dump().items() if v is not None and k != "messages"}
+    params = {
+        k: v
+        for k, v in memory_create.model_dump().items()
+        if v is not None and k != "messages"
+    }
     try:
-        response = MEMORY_INSTANCE.add(messages=[m.model_dump() for m in memory_create.messages], **params)
+        response = MEMORY_INSTANCE.add(
+            messages=[m.model_dump() for m in memory_create.messages], **params
+        )
         return JSONResponse(content=response)
     except Exception as e:
         logging.exception("Error in add_memory:")  # This will log the full traceback
@@ -117,10 +138,18 @@ def get_all_memories(
 ):
     """Retrieve stored memories."""
     if not any([user_id, run_id, agent_id]):
-        raise HTTPException(status_code=400, detail="At least one identifier is required.")
+        raise HTTPException(
+            status_code=400, detail="At least one identifier is required."
+        )
     try:
         params = {
-            k: v for k, v in {"user_id": user_id, "run_id": run_id, "agent_id": agent_id}.items() if v is not None
+            k: v
+            for k, v in {
+                "user_id": user_id,
+                "run_id": run_id,
+                "agent_id": agent_id,
+            }.items()
+            if v is not None
         }
         return MEMORY_INSTANCE.get_all(**params)
     except Exception as e:
@@ -142,7 +171,11 @@ def get_memory(memory_id: str):
 def search_memories(search_req: SearchRequest):
     """Search for memories based on a query."""
     try:
-        params = {k: v for k, v in search_req.model_dump().items() if v is not None and k != "query"}
+        params = {
+            k: v
+            for k, v in search_req.model_dump().items()
+            if v is not None and k != "query"
+        }
         return MEMORY_INSTANCE.search(query=search_req.query, **params)
     except Exception as e:
         logging.exception("Error in search_memories:")
@@ -157,7 +190,11 @@ def update_memory(memory_id: str, updated_memory: Dict[str, Any]):
         # Extract the text/data from the dict if provided
         if isinstance(updated_memory, dict):
             # Try common keys that might contain the memory text
-            data = updated_memory.get("text") or updated_memory.get("data") or updated_memory.get("content")
+            data = (
+                updated_memory.get("text")
+                or updated_memory.get("data")
+                or updated_memory.get("content")
+            )
             if data is None:
                 # If no recognized key, convert the entire dict to string
                 data = str(updated_memory)
@@ -200,10 +237,18 @@ def delete_all_memories(
 ):
     """Delete all memories for a given identifier."""
     if not any([user_id, run_id, agent_id]):
-        raise HTTPException(status_code=400, detail="At least one identifier is required.")
+        raise HTTPException(
+            status_code=400, detail="At least one identifier is required."
+        )
     try:
         params = {
-            k: v for k, v in {"user_id": user_id, "run_id": run_id, "agent_id": agent_id}.items() if v is not None
+            k: v
+            for k, v in {
+                "user_id": user_id,
+                "run_id": run_id,
+                "agent_id": agent_id,
+            }.items()
+            if v is not None
         }
         MEMORY_INSTANCE.delete_all(**params)
         return {"message": "All relevant memories deleted"}
@@ -227,3 +272,9 @@ def reset_memory():
 def home():
     """Redirect to the OpenAPI documentation."""
     return RedirectResponse(url="/docs")
+
+
+@app.get("/health", summary="Health check endpoint")
+def health_check():
+    """Check if the service is healthy."""
+    return {"status": "healthy", "service": "mem0"}

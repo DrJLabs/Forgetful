@@ -1,107 +1,107 @@
 version: 2
 updates:
   # Main Python package
-  - package-ecosystem: "pip"
-    directory: "/mem0"
+  - package-ecosystem: 'pip'
+    directory: '/mem0'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 5
     allow:
-      - dependency-type: "all"
+      - dependency-type: 'all'
     reviewers:
-      - "maintainers"
+      - 'maintainers'
     labels:
-      - "dependencies"
-      - "python"
+      - 'dependencies'
+      - 'python'
 
   # Embedchain Python package - REMOVED (legacy, not maintained)
 
   # OpenMemory API Python package
-  - package-ecosystem: "pip"
-    directory: "/mem0/openmemory/api"
+  - package-ecosystem: 'pip'
+    directory: '/mem0/openmemory/api'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 5
     allow:
-      - dependency-type: "all"
+      - dependency-type: 'all'
     reviewers:
-      - "maintainers"
+      - 'maintainers'
     labels:
-      - "dependencies"
-      - "python"
-      - "openmemory"
+      - 'dependencies'
+      - 'python'
+      - 'openmemory'
 
   # Server Python package
-  - package-ecosystem: "pip"
-    directory: "/mem0/server"
+  - package-ecosystem: 'pip'
+    directory: '/mem0/server'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 5
     allow:
-      - dependency-type: "all"
+      - dependency-type: 'all'
     reviewers:
-      - "maintainers"
+      - 'maintainers'
     labels:
-      - "dependencies"
-      - "python"
-      - "server"
+      - 'dependencies'
+      - 'python'
+      - 'server'
 
   # Main TypeScript package
-  - package-ecosystem: "npm"
-    directory: "/mem0/mem0-ts"
+  - package-ecosystem: 'npm'
+    directory: '/mem0/mem0-ts'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 5
     allow:
-      - dependency-type: "all"
+      - dependency-type: 'all'
     reviewers:
-      - "maintainers"
+      - 'maintainers'
     labels:
-      - "dependencies"
-      - "typescript"
+      - 'dependencies'
+      - 'typescript'
 
   # Vercel AI SDK TypeScript package
-  - package-ecosystem: "npm"
-    directory: "/mem0/vercel-ai-sdk"
+  - package-ecosystem: 'npm'
+    directory: '/mem0/vercel-ai-sdk'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 5
     allow:
-      - dependency-type: "all"
+      - dependency-type: 'all'
     reviewers:
-      - "maintainers"
+      - 'maintainers'
     labels:
-      - "dependencies"
-      - "typescript"
-      - "vercel-ai-sdk"
+      - 'dependencies'
+      - 'typescript'
+      - 'vercel-ai-sdk'
 
   # OpenMemory UI TypeScript package
-  - package-ecosystem: "npm"
-    directory: "/mem0/openmemory/ui"
+  - package-ecosystem: 'npm'
+    directory: '/mem0/openmemory/ui'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 5
     allow:
-      - dependency-type: "all"
+      - dependency-type: 'all'
     reviewers:
-      - "maintainers"
+      - 'maintainers'
     labels:
-      - "dependencies"
-      - "typescript"
-      - "openmemory"
+      - 'dependencies'
+      - 'typescript'
+      - 'openmemory'
 
   # Community TypeScript package - REMOVED (not actively maintained)
 
   # Example projects - REMOVED (not maintained)
 
   # GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/mem0/.github/workflows"
+  - package-ecosystem: 'github-actions'
+    directory: '/mem0/.github/workflows'
     schedule:
-      interval: "weekly"
+      interval: 'weekly'
     open-pull-requests-limit: 3
     reviewers:
-      - "maintainers"
+      - 'maintainers'
     labels:
-      - "dependencies"
-      - "github-actions" 
+      - 'dependencies'
+      - 'github-actions'

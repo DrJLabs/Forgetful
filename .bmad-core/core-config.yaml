@@ -1,0 +1,54 @@
+version: 4.27.0
+markdownExploder: true
+prd:
+  prdFile: docs/prd.md
+  prdVersion: v4
+  prdSharded: true
+  prdShardedLocation: docs/prd
+  epicFilePattern: epic-{n}*.md
+architecture:
+  architectureFile: docs/architecture.md
+  architectureVersion: v4
+  architectureSharded: true
+  architectureShardedLocation: docs/architecture
+customTechnicalDocuments: null
+devLoadAlwaysFiles:
+  - docs/architecture/coding-standards.md
+  - docs/architecture/tech-stack.md
+  - docs/architecture/source-tree.md
+devDebugLog: .ai/debug-log.md
+devStoryLocation: docs/stories
+workflow:
+  planFile: docs/workflow-plan.md
+  trackProgress: true
+  enforceSequence: false
+  updateOnCompletion: true
+
+# External Services Configuration - MANDATORY for all agents
+externalServices:
+  mem0:
+    enabled: true
+    apiUrl: 'http://localhost:8000'
+    enforceUsage: true
+    defaultUserId: 'drj'
+    searchBeforeResponse: true
+    healthCheckRequired: true
+  context7:
+    enabled: true
+    enforceDocLookup: true
+    serverUrl: 'http://localhost:8765'
+    lookupBeforeTechnical: true
+    healthCheckRequired: true
+
+# Agent Behavior Defaults - Applied to all BMad agents
+agentDefaults:
+  memoryEnabled: true
+  contextLookupRequired: true
+  healthCheckRequired: true
+  preExecutionChecks:
+    - validateMem0Service
+    - validateContext7Service
+  mandatoryOperations:
+    - searchMemoryBeforeResponse
+    - lookupDocsForTechnical
+    - storeImportantContext

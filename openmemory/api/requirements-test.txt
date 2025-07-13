@@ -1,0 +1,65 @@
+# Testing Framework Dependencies - Step 1.2: Database Testing Framework
+
+# Core Testing Framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.1
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+pytest-xdist>=3.3.1  # Parallel test execution
+pytest-timeout>=2.1.0  # Test timeout handling
+pytest-benchmark>=4.0.0  # Performance benchmarking
+
+# Database Testing Dependencies
+testcontainers>=3.7.1  # Docker containers for testing
+psycopg2-binary>=2.9.7  # PostgreSQL driver
+sqlalchemy>=2.0.0  # Database ORM
+alembic>=1.12.0  # Database migrations
+
+# HTTP Testing
+httpx>=0.24.1  # Async HTTP client for testing
+requests>=2.31.0  # HTTP requests
+
+# Mock and Fixtures
+factory-boy>=3.3.0  # Test data factories
+faker>=19.6.0  # Fake data generation
+responses>=0.23.3  # HTTP response mocking
+freezegun>=1.2.2  # Time mocking
+
+# Performance and Monitoring
+memory-profiler>=0.61.0  # Memory usage profiling
+py-spy>=0.3.14  # Performance profiling
+psutil>=5.9.5  # System monitoring
+
+# Data Validation and Utilities
+pydantic>=2.0.0  # Data validation
+python-dotenv>=1.0.0  # Environment variable loading
+uuid>=1.30  # UUID generation
+click>=8.1.0  # CLI utilities
+jsonschema>=4.19.0  # JSON Schema validation for API contract testing
+
+# Development and Debugging
+ipdb>=0.13.13  # Interactive debugging
+rich>=13.5.0  # Rich console output
+tabulate>=0.9.0  # Table formatting
+
+# Neo4j Testing (optional)
+neo4j>=5.12.0  # Neo4j driver
+testcontainers[neo4j]>=3.7.1  # Neo4j test containers
+
+# OpenAI Testing (mocking)
+openai>=1.0.0  # OpenAI API client
+
+# Async Testing Utilities
+trio>=0.22.2  # Async testing framework
+anyio>=3.7.1  # Async compatibility
+
+# Type Checking (for testing)
+mypy>=1.5.1  # Type checking
+types-requests>=2.31.0  # Type stubs
+types-python-dateutil>=2.8.19  # Type stubs
+
+# Test Reporting
+pytest-html>=3.2.0  # HTML test reports
+pytest-json-report>=1.5.0  # JSON test reports
+coverage>=7.3.0  # Code coverage
+pytest-clarity>=1.0.1  # Better test output

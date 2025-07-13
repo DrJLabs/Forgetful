@@ -7,7 +7,9 @@ import dotenv
 try:
     from elasticsearch import Elasticsearch
 except ImportError:
-    raise ImportError("Elasticsearch requires extra dependencies. Install with `pip install elasticsearch`") from None
+    raise ImportError(
+        "Elasticsearch requires extra dependencies. Install with `pip install elasticsearch`"
+    ) from None
 
 from mem0.vector_stores.elasticsearch import ElasticsearchDB, OutputData
 
@@ -41,7 +43,10 @@ class TestElasticsearchDB(unittest.TestCase):
         self.client_mock.indices.get_alias = MagicMock()
 
         # Start patches BEFORE creating ElasticsearchDB instance
-        patcher = patch("mem0.vector_stores.elasticsearch.Elasticsearch", return_value=self.client_mock)
+        patcher = patch(
+            "mem0.vector_stores.elasticsearch.Elasticsearch",
+            return_value=self.client_mock,
+        )
         self.mock_es = patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -180,7 +185,14 @@ class TestElasticsearchDB(unittest.TestCase):
         mock_response = {
             "hits": {
                 "hits": [
-                    {"_id": "id1", "_score": 0.8, "_source": {"vector": [0.1] * 1536, "metadata": {"key1": "value1"}}}
+                    {
+                        "_id": "id1",
+                        "_score": 0.8,
+                        "_source": {
+                            "vector": [0.1] * 1536,
+                            "metadata": {"key1": "value1"},
+                        },
+                    }
                 ]
             }
         }
@@ -234,7 +246,11 @@ class TestElasticsearchDB(unittest.TestCase):
         # Mock get response with correct structure
         mock_response = {
             "_id": "id1",
-            "_source": {"vector": [0.1] * 1536, "metadata": {"key": "value"}, "text": "sample text"},
+            "_source": {
+                "vector": [0.1] * 1536,
+                "metadata": {"key": "value"},
+                "text": "sample text",
+            },
         }
         self.client_mock.get.return_value = mock_response
 
@@ -263,8 +279,22 @@ class TestElasticsearchDB(unittest.TestCase):
         mock_response = {
             "hits": {
                 "hits": [
-                    {"_id": "id1", "_source": {"vector": [0.1] * 1536, "metadata": {"key1": "value1"}}, "_score": 1.0},
-                    {"_id": "id2", "_source": {"vector": [0.2] * 1536, "metadata": {"key2": "value2"}}, "_score": 0.8},
+                    {
+                        "_id": "id1",
+                        "_source": {
+                            "vector": [0.1] * 1536,
+                            "metadata": {"key1": "value1"},
+                        },
+                        "_score": 1.0,
+                    },
+                    {
+                        "_id": "id2",
+                        "_source": {
+                            "vector": [0.2] * 1536,
+                            "metadata": {"key2": "value2"},
+                        },
+                        "_score": 0.8,
+                    },
                 ]
             }
         }
@@ -290,7 +320,9 @@ class TestElasticsearchDB(unittest.TestCase):
         self.es_db.delete(vector_id="id1")
 
         # Verify delete call
-        self.client_mock.delete.assert_called_once_with(index="test_collection", id="id1")
+        self.client_mock.delete.assert_called_once_with(
+            index="test_collection", id="id1"
+        )
 
     def test_list_cols(self):
         # Mock indices response

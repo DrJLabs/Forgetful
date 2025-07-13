@@ -1,0 +1,170 @@
+# CODEOWNERS - Automated Code Ownership & Review Assignment
+#
+# This file defines code ownership patterns for automated review assignment.
+# When a pull request modifies files matching these patterns, the specified
+# teams/users are automatically notified and can provide reviews.
+#
+# Syntax: path/pattern @user @team
+# Last matching pattern takes precedence
+# Teams must be in format @org/team-name
+
+# =============================================================================
+# GLOBAL OWNERSHIP - Default fallback for all files
+# =============================================================================
+* @DrJLabs
+
+# =============================================================================
+# CORE INFRASTRUCTURE & SYSTEM COMPONENTS
+# =============================================================================
+
+# GitHub Actions & CI/CD Infrastructure
+/.github/ @DrJLabs
+/.github/workflows/ @DrJLabs
+/.github/codeql/ @DrJLabs
+**/docker-compose*.yml @DrJLabs
+**/Dockerfile* @DrJLabs
+
+# Monitoring & Observability
+/monitoring/ @DrJLabs
+/scripts/ @DrJLabs
+
+# =============================================================================
+# BACKEND CORE COMPONENTS
+# =============================================================================
+
+# Shared Libraries & Utilities
+/shared/ @DrJLabs
+/shared/caching.py @DrJLabs
+/shared/logging_system.py @DrJLabs
+/shared/errors.py @DrJLabs
+/shared/resilience.py @DrJLabs
+
+# OpenMemory API Core
+/openmemory/ @DrJLabs
+/openmemory/api/ @DrJLabs
+/openmemory/api/app/ @DrJLabs
+/openmemory/api/routers/ @DrJLabs
+/openmemory/api/utils/ @DrJLabs
+
+# Database & Migrations
+/openmemory/api/alembic/ @DrJLabs
+/openmemory/api/app/database.py @DrJLabs
+/openmemory/api/app/models.py @DrJLabs
+
+# =============================================================================
+# MEM0 CORE LIBRARY
+# =============================================================================
+
+# Mem0 Python Core
+/mem0/ @DrJLabs
+/mem0/mem0/ @DrJLabs
+
+# Mem0 TypeScript SDK
+/mem0/mem0-ts/ @DrJLabs
+
+# Mem0 Vercel AI SDK Integration
+/mem0/vercel-ai-sdk/ @DrJLabs
+
+# Mem0 Server & API
+/mem0/server/ @DrJLabs
+
+# =============================================================================
+# FRONTEND & UI COMPONENTS
+# =============================================================================
+
+# OpenMemory React UI
+/openmemory/ui/ @DrJLabs
+/openmemory/ui/app/ @DrJLabs
+/openmemory/ui/components/ @DrJLabs
+/openmemory/ui/hooks/ @DrJLabs
+/openmemory/ui/store/ @DrJLabs
+
+# UI Configuration & Styling
+/openmemory/ui/tailwind.config.js @DrJLabs
+/openmemory/ui/package.json @DrJLabs
+/openmemory/ui/next.config.mjs @DrJLabs
+
+# =============================================================================
+# TESTING & QUALITY ASSURANCE
+# =============================================================================
+
+# Test Suites & Test Infrastructure
+/tests/ @DrJLabs
+/openmemory/api/tests/ @DrJLabs
+/mem0/tests/ @DrJLabs
+
+# Test Configuration
+**/conftest.py @DrJLabs
+**/pytest.ini @DrJLabs
+**/requirements-test.txt @DrJLabs
+
+# Security & Performance Tests
+/openmemory/api/tests/test_security* @DrJLabs
+/tests/test_performance* @DrJLabs
+
+# =============================================================================
+# DOCUMENTATION & CONFIGURATION
+# =============================================================================
+
+# Project Documentation
+/docs/ @DrJLabs
+README.md @DrJLabs
+*.md @DrJLabs
+
+# Configuration Files
+pyproject.toml @DrJLabs
+requirements*.txt @DrJLabs
+package.json @DrJLabs
+
+# Environment & Deployment
+.env* @DrJLabs
+docker-compose*.yml @DrJLabs
+
+# =============================================================================
+# SPECIALIZED COMPONENTS
+# =============================================================================
+
+# BMAD Agent Orchestration (if applicable)
+/.bmad-core/ @DrJLabs
+
+# Data & Backups (Read-only, high security)
+/data/ @DrJLabs
+/backups/ @DrJLabs
+
+# =============================================================================
+# SECURITY-CRITICAL FILES (Require thorough review)
+# =============================================================================
+
+# Authentication & Authorization
+**/auth* @DrJLabs
+**/security* @DrJLabs
+**/permissions* @DrJLabs
+
+# Database Security & Connection
+**/database* @DrJLabs
+**/connection* @DrJLabs
+
+# API Security
+**/routers/auth* @DrJLabs
+**/middleware* @DrJLabs
+
+# =============================================================================
+# NOTES FOR TEAM EXPANSION
+# =============================================================================
+#
+# When expanding the team, replace @DrJLabs with appropriate team assignments:
+#
+# Backend Team: @org/backend-team
+# Frontend Team: @org/frontend-team
+# DevOps Team: @org/devops-team
+# QA Team: @org/qa-team
+# Security Team: @org/security-team
+# Documentation Team: @org/docs-team
+#
+# Example team patterns:
+# /shared/ @org/backend-team @org/platform-team
+# /openmemory/ui/ @org/frontend-team @org/ui-team
+# /.github/ @org/devops-team @org/platform-team
+# /docs/ @org/documentation-team @org/product-team
+#
+# =============================================================================

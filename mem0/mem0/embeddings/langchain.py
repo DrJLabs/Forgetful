@@ -6,7 +6,9 @@ from mem0.embeddings.base import EmbeddingBase
 try:
     from langchain.embeddings.base import Embeddings
 except ImportError:
-    raise ImportError("langchain is not installed. Please install it using `pip install langchain`")
+    raise ImportError(
+        "langchain is not installed. Please install it using `pip install langchain`"
+    )
 
 
 class LangchainEmbedding(EmbeddingBase):
@@ -21,7 +23,9 @@ class LangchainEmbedding(EmbeddingBase):
 
         self.langchain_model = self.config.model
 
-    def embed(self, text, memory_action: Optional[Literal["add", "search", "update"]] = None):
+    def embed(
+        self, text, memory_action: Optional[Literal["add", "search", "update"]] = None
+    ):
         """
         Get the embedding for the given text using Langchain.
 

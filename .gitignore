@@ -3,3 +3,24 @@ data/
 
 #Ignore cursor AI rules
 .cursor/rules/codacy.mdc
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# Archive directories
+archive/
+
+# Node modules
+node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

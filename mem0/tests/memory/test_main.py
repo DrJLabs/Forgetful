@@ -15,7 +15,8 @@ def _setup_mocks(mocker):
     mock_vector_store = mocker.MagicMock()
     mock_vector_store.return_value.search.return_value = []
     mocker.patch(
-        "mem0.utils.factory.VectorStoreFactory.create", side_effect=[mock_vector_store.return_value, mocker.MagicMock()]
+        "mem0.utils.factory.VectorStoreFactory.create",
+        side_effect=[mock_vector_store.return_value, mocker.MagicMock()],
     )
 
     mock_llm = mocker.MagicMock()
@@ -50,7 +51,10 @@ class TestAddToVectorStoreErrors:
         # Execute
         with caplog.at_level(logging.ERROR):
             result = mock_memory._add_to_vector_store(
-                messages=[{"role": "user", "content": "test"}], metadata={}, filters={}, infer=True
+                messages=[{"role": "user", "content": "test"}],
+                metadata={},
+                filters={},
+                infer=True,
             )
 
         # Verify
@@ -68,7 +72,10 @@ class TestAddToVectorStoreErrors:
         # Execute
         with caplog.at_level(logging.ERROR):
             result = mock_memory._add_to_vector_store(
-                messages=[{"role": "user", "content": "test"}], metadata={}, filters={}, infer=True
+                messages=[{"role": "user", "content": "test"}],
+                metadata={},
+                filters={},
+                infer=True,
             )
 
         # Verify
@@ -93,16 +100,23 @@ class TestAsyncAddToVectorStoreErrors:
         return memory
 
     @pytest.mark.asyncio
-    async def test_async_empty_llm_response_fact_extraction(self, mock_async_memory, caplog, mocker):
+    async def test_async_empty_llm_response_fact_extraction(
+        self, mock_async_memory, caplog, mocker
+    ):
         """Test empty response in AsyncMemory._add_to_vector_store"""
-        mocker.patch("mem0.utils.factory.EmbedderFactory.create", return_value=MagicMock())
+        mocker.patch(
+            "mem0.utils.factory.EmbedderFactory.create", return_value=MagicMock()
+        )
         mock_async_memory.llm.generate_response.return_value = ""
         mock_capture_event = mocker.MagicMock()
         mocker.patch("mem0.memory.main.capture_event", mock_capture_event)
 
         with caplog.at_level(logging.ERROR):
             result = await mock_async_memory._add_to_vector_store(
-                messages=[{"role": "user", "content": "test"}], metadata={}, effective_filters={}, infer=True
+                messages=[{"role": "user", "content": "test"}],
+                metadata={},
+                effective_filters={},
+                infer=True,
             )
         assert mock_async_memory.llm.generate_response.call_count == 1
         assert result == []
@@ -110,16 +124,26 @@ class TestAsyncAddToVectorStoreErrors:
         assert mock_capture_event.call_count == 1
 
     @pytest.mark.asyncio
-    async def test_async_empty_llm_response_memory_actions(self, mock_async_memory, caplog, mocker):
+    async def test_async_empty_llm_response_memory_actions(
+        self, mock_async_memory, caplog, mocker
+    ):
         """Test empty response in AsyncMemory._add_to_vector_store"""
-        mocker.patch("mem0.utils.factory.EmbedderFactory.create", return_value=MagicMock())
-        mock_async_memory.llm.generate_response.side_effect = ['{"facts": ["test fact"]}', ""]
+        mocker.patch(
+            "mem0.utils.factory.EmbedderFactory.create", return_value=MagicMock()
+        )
+        mock_async_memory.llm.generate_response.side_effect = [
+            '{"facts": ["test fact"]}',
+            "",
+        ]
         mock_capture_event = mocker.MagicMock()
         mocker.patch("mem0.memory.main.capture_event", mock_capture_event)
 
         with caplog.at_level(logging.ERROR):
             result = await mock_async_memory._add_to_vector_store(
-                messages=[{"role": "user", "content": "test"}], metadata={}, effective_filters={}, infer=True
+                messages=[{"role": "user", "content": "test"}],
+                metadata={},
+                effective_filters={},
+                infer=True,
             )
 
         assert result == []

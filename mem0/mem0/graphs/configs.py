@@ -10,7 +10,9 @@ class Neo4jConfig(BaseModel):
     username: Optional[str] = Field(None, description="Username for the graph database")
     password: Optional[str] = Field(None, description="Password for the graph database")
     database: Optional[str] = Field(None, description="Database for the graph database")
-    base_label: Optional[bool] = Field(None, description="Whether to use base node label __Entity__ for all entities")
+    base_label: Optional[bool] = Field(
+        None, description="Whether to use base node label __Entity__ for all entities"
+    )
 
     @model_validator(mode="before")
     def check_host_port_or_path(cls, values):
@@ -48,13 +50,17 @@ class NeptuneConfig(BaseModel):
             description="Endpoint to connect to a Neptune Analytics Server as neptune-graph://<graphid>",
         ),
     )
-    base_label: Optional[bool] = Field(None, description="Whether to use base node label __Entity__ for all entities")
+    base_label: Optional[bool] = Field(
+        None, description="Whether to use base node label __Entity__ for all entities"
+    )
 
     @model_validator(mode="before")
     def check_host_port_or_path(cls, values):
         endpoint = values.get("endpoint")
         if not endpoint:
-            raise ValueError("Please provide 'endpoint' with the format as 'neptune-graph://<graphid>'.")
+            raise ValueError(
+                "Please provide 'endpoint' with the format as 'neptune-graph://<graphid>'."
+            )
         if endpoint.startswith("neptune-db://"):
             raise ValueError("neptune-db server is not yet supported")
         elif endpoint.startswith("neptune-graph://"):
@@ -78,7 +84,9 @@ class GraphStoreConfig(BaseModel):
     config: Union[Neo4jConfig, MemgraphConfig, NeptuneConfig] = Field(
         description="Configuration for the specific data store", default=None
     )
-    llm: Optional[LlmConfig] = Field(description="LLM configuration for querying the graph store", default=None)
+    llm: Optional[LlmConfig] = Field(
+        description="LLM configuration for querying the graph store", default=None
+    )
     custom_prompt: Optional[str] = Field(
         description="Custom prompt to fetch entities from the given text", default=None
     )

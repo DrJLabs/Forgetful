@@ -1,0 +1,211 @@
+apiVersion: 1
+
+datasources:
+  # Prometheus datasource for metrics
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus-mem0:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 15s
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasource: Jaeger
+          url: http://jaeger-mem0:16686/trace/{{__value.raw}}
+      prometheusType: Prometheus
+      prometheusVersion: 2.54.0
+      cacheLevel: 'High'
+      incrementalQuerying: false
+      incrementalQueryOverlapWindow: 10m
+      disableRecordingRules: false
+      customQueryParameters: ''
+      httpHeaderName1: 'X-Scope-OrgID'
+    secureJsonData:
+      httpHeaderValue1: 'mem0-stack'
+    uid: 'prometheus-mem0'
+    version: 1
+
+  # Elasticsearch datasource for logs
+  - name: Elasticsearch
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch-mem0:9200
+    database: 'mem0-stack-logs-*'
+    editable: true
+    jsonData:
+      interval: Daily
+      timeField: '@timestamp'
+      esVersion: '8.15.0'
+      maxConcurrentShardRequests: 5
+      includeFrozen: false
+      logMessageField: 'message'
+      logLevelField: 'log_level'
+      queryTimeout: 60s
+      index: 'mem0-stack-logs-*'
+      timeInterval: '15s'
+      includeFrozen: false
+      xpack: false
+    uid: 'elasticsearch-mem0'
+    version: 1
+
+  # Jaeger datasource for distributed tracing
+  - name: Jaeger
+    type: jaeger
+    access: proxy
+    url: http://jaeger-mem0:16686
+    editable: true
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: 'elasticsearch-mem0'
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        tags:
+          - { key: 'service.name', value: 'service' }
+          - { key: 'service.version', value: 'version' }
+        filterByTraceID: true
+        filterBySpanID: true
+        customQuery: true
+        query: 'trace_id:{{__trace.traceID}}'
+      tracesToMetrics:
+        datasourceUid: 'prometheus-mem0'
+        spanStartTimeShift: '-1h'
+        spanEndTimeShift: '1h'
+        tags:
+          - { key: 'service.name', value: 'service' }
+          - { key: 'operation.name', value: 'operation' }
+        queries:
+          - name: 'Request Rate'
+            query: 'rate(http_requests_total{service_name="$service"}[5m])'
+          - name: 'Error Rate'
+            query: 'rate(http_requests_total{service_name="$service",status_code!~"2.."}[5m])'
+          - name: 'Duration'
+            query: 'histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{service_name="$service"}[5m]))'
+      nodeGraph:
+        enabled: true
+      lokiSearch:
+        datasourceUid: 'elasticsearch-mem0'
+      spanBar:
+        type: 'Tag'
+        tag: 'http.status_code'
+    uid: 'jaeger-mem0'
+    version: 1
+
+  # Alertmanager datasource for alerts
+  - name: Alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager-mem0:9093
+    editable: true
+    jsonData:
+      implementation: 'prometheus'
+      handleGrafanaManagedAlerts: false
+      httpMethod: 'GET'
+    uid: 'alertmanager-mem0'
+    version: 1
+
+  # Additional Prometheus datasource for alerting rules
+  - name: Prometheus-Alerting
+    type: prometheus
+    access: proxy
+    url: http://prometheus-mem0:9090
+    editable: true
+    jsonData:
+      httpMethod: POST
+      queryTimeout: 60s
+      timeInterval: 15s
+      manageAlerts: true
+      alertmanagerUid: 'alertmanager-mem0'
+      prometheusType: Prometheus
+      prometheusVersion: 2.54.0
+      cacheLevel: 'High'
+      incrementalQuerying: false
+      incrementalQueryOverlapWindow: 10m
+      disableRecordingRules: false
+      customQueryParameters: ''
+      httpHeaderName1: 'X-Scope-OrgID'
+    secureJsonData:
+      httpHeaderValue1: 'mem0-stack'
+    uid: 'prometheus-alerting'
+    version: 1
+
+  # TestData datasource for testing
+  - name: TestData
+    type: testdata
+    access: proxy
+    editable: true
+    jsonData: {}
+    uid: 'testdata'
+    version: 1
+
+  # Logs datasource for application logs
+  - name: 'Application Logs'
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch-mem0:9200
+    database: 'mem0-stack-*-logs-*'
+    editable: true
+    jsonData:
+      interval: Daily
+      timeField: '@timestamp'
+      esVersion: '8.15.0'
+      maxConcurrentShardRequests: 5
+      includeFrozen: false
+      logMessageField: 'message'
+      logLevelField: 'log_level'
+      queryTimeout: 60s
+      index: 'mem0-stack-*-logs-*'
+      timeInterval: '15s'
+      includeFrozen: false
+      xpack: false
+    uid: 'application-logs'
+    version: 1
+
+  # Performance datasource for performance metrics
+  - name: 'Performance Metrics'
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch-mem0:9200
+    database: 'mem0-stack-performance-*'
+    editable: true
+    jsonData:
+      interval: Daily
+      timeField: '@timestamp'
+      esVersion: '8.15.0'
+      maxConcurrentShardRequests: 5
+      includeFrozen: false
+      logMessageField: 'message'
+      logLevelField: 'log_level'
+      queryTimeout: 60s
+      index: 'mem0-stack-performance-*'
+      timeInterval: '15s'
+      includeFrozen: false
+      xpack: false
+    uid: 'performance-metrics'
+    version: 1
+
+  # Error datasource for error tracking
+  - name: 'Error Logs'
+    type: elasticsearch
+    access: proxy
+    url: http://elasticsearch-mem0:9200
+    database: 'mem0-stack-errors-*'
+    editable: true
+    jsonData:
+      interval: Daily
+      timeField: '@timestamp'
+      esVersion: '8.15.0'
+      maxConcurrentShardRequests: 5
+      includeFrozen: false
+      logMessageField: 'message'
+      logLevelField: 'log_level'
+      queryTimeout: 60s
+      index: 'mem0-stack-errors-*'
+      timeInterval: '15s'
+      includeFrozen: false
+      xpack: false
+    uid: 'error-logs'
+    version: 1

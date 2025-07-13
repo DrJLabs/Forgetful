@@ -1,0 +1,314 @@
+version: '3.8'
+
+services:
+  # =======================================================================
+  # METRICS COLLECTION STACK
+  # =======================================================================
+
+  prometheus:
+    image: prom/prometheus:v2.54.0
+    container_name: prometheus-mem0
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    ports:
+      - '127.0.0.1:9090:9090'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - ./data/prometheus:/prometheus
+    depends_on:
+      - node-exporter
+      - postgres-exporter
+    networks:
+      - traefik
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.prometheus.rule=Host(`prometheus.drjlabs.com`)'
+      - 'traefik.http.routers.prometheus.entrypoints=websecure'
+      - 'traefik.http.routers.prometheus.tls=true'
+      - 'traefik.http.services.prometheus.loadbalancer.server.port=9090'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2GB
+        reservations:
+          cpus: '1.0'
+          memory: 1GB
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: grafana-mem0
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - '127.0.0.1:3001:3000'
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - traefik
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.grafana.rule=Host(`grafana.drjlabs.com`)'
+      - 'traefik.http.routers.grafana.entrypoints=websecure'
+      - 'traefik.http.routers.grafana.tls=true'
+      - 'traefik.http.services.grafana.loadbalancer.server.port=3000'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1GB
+        reservations:
+          cpus: '0.5'
+          memory: 512MB
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: alertmanager-mem0
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    ports:
+      - '127.0.0.1:9093:9093'
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - ./data/alertmanager:/alertmanager
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512MB
+
+  # =======================================================================
+  # SYSTEM MONITORING EXPORTERS
+  # =======================================================================
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter-mem0
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - '127.0.0.1:9100:9100'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256MB
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: postgres-exporter-mem0
+    restart: unless-stopped
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-drj}:${POSTGRES_PASSWORD}@postgres-mem0:5432/mem0?sslmode=disable
+    ports:
+      - '127.0.0.1:9187:9187'
+    depends_on:
+      - postgres-mem0
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256MB
+
+  # =======================================================================
+  # CENTRALIZED LOGGING STACK (ELK)
+  # =======================================================================
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch-mem0
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms1g -Xmx1g'
+      - xpack.security.enabled=false
+      - xpack.monitoring.collection.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - '127.0.0.1:9200:9200'
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2GB
+        reservations:
+          cpus: '1.0'
+          memory: 1GB
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.0
+    container_name: logstash-mem0
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:5000:5000'
+      - '127.0.0.1:9600:9600'
+    volumes:
+      - ./monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - ./monitoring/logstash.yml:/usr/share/logstash/config/logstash.yml
+    depends_on:
+      - elasticsearch
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1GB
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.15.0
+    container_name: kibana-mem0
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch-mem0:9200
+      - SERVER_NAME=kibana-mem0
+    ports:
+      - '127.0.0.1:5601:5601'
+    depends_on:
+      - elasticsearch
+    networks:
+      - traefik
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.kibana.rule=Host(`kibana.drjlabs.com`)'
+      - 'traefik.http.routers.kibana.entrypoints=websecure'
+      - 'traefik.http.routers.kibana.tls=true'
+      - 'traefik.http.services.kibana.loadbalancer.server.port=5601'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1GB
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.15.0
+    container_name: filebeat-mem0
+    restart: unless-stopped
+    user: root
+    command: filebeat -e -strict.perms=false
+    volumes:
+      - ./monitoring/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - logstash
+    networks:
+      - traefik
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512MB
+
+  # =======================================================================
+  # DISTRIBUTED TRACING STACK
+  # =======================================================================
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.60
+    container_name: jaeger-mem0
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - '127.0.0.1:16686:16686' # Jaeger UI
+      - '127.0.0.1:14268:14268' # HTTP collector
+      - '127.0.0.1:4317:4317' # OTLP gRPC receiver
+      - '127.0.0.1:4318:4318' # OTLP HTTP receiver
+    networks:
+      - traefik
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.jaeger.rule=Host(`jaeger.drjlabs.com`)'
+      - 'traefik.http.routers.jaeger.entrypoints=websecure'
+      - 'traefik.http.routers.jaeger.tls=true'
+      - 'traefik.http.services.jaeger.loadbalancer.server.port=16686'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1GB
+
+  # =======================================================================
+  # UPTIME MONITORING
+  # =======================================================================
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:1.23.13
+    container_name: uptime-kuma-mem0
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3001:3001'
+    volumes:
+      - ./data/uptime-kuma:/app/data
+    networks:
+      - traefik
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.uptime-kuma.rule=Host(`uptime.drjlabs.com`)'
+      - 'traefik.http.routers.uptime-kuma.entrypoints=websecure'
+      - 'traefik.http.routers.uptime-kuma.tls=true'
+      - 'traefik.http.services.uptime-kuma.loadbalancer.server.port=3001'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512MB
+
+networks:
+  traefik:
+    external: true
+
+volumes:
+  prometheus-data:
+  grafana-data:
+  alertmanager-data:
+  elasticsearch-data:
+  uptime-kuma-data:

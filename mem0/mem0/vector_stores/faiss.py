@@ -86,7 +86,9 @@ class FAISS(VectorStoreBase):
             self.index = faiss.read_index(index_path)
             with open(docstore_path, "rb") as f:
                 self.docstore, self.index_to_id = pickle.load(f)
-            logger.info(f"Loaded FAISS index from {index_path} with {self.index.ntotal} vectors")
+            logger.info(
+                f"Loaded FAISS index from {index_path} with {self.index.ntotal} vectors"
+            )
         except Exception as e:
             logger.warning(f"Failed to load FAISS index: {e}")
 
@@ -165,7 +167,10 @@ class FAISS(VectorStoreBase):
         distance_strategy = distance or self.distance_strategy
 
         # Create index based on distance strategy
-        if distance_strategy.lower() == "inner_product" or distance_strategy.lower() == "cosine":
+        if (
+            distance_strategy.lower() == "inner_product"
+            or distance_strategy.lower() == "cosine"
+        ):
             self.index = faiss.IndexFlatIP(self.embedding_model_dims)
         else:
             self.index = faiss.IndexFlatL2(self.embedding_model_dims)
@@ -216,10 +221,16 @@ class FAISS(VectorStoreBase):
 
         self._save()
 
-        logger.info(f"Inserted {len(vectors)} vectors into collection {self.collection_name}")
+        logger.info(
+            f"Inserted {len(vectors)} vectors into collection {self.collection_name}"
+        )
 
     def search(
-        self, query: str, vectors: List[list], limit: int = 5, filters: Optional[Dict] = None
+        self,
+        query: str,
+        vectors: List[list],
+        limit: int = 5,
+        filters: Optional[Dict] = None,
     ) -> List[OutputData]:
         """
         Search for similar vectors.
@@ -308,9 +319,13 @@ class FAISS(VectorStoreBase):
 
             self._save()
 
-            logger.info(f"Deleted vector {vector_id} from collection {self.collection_name}")
+            logger.info(
+                f"Deleted vector {vector_id} from collection {self.collection_name}"
+            )
         else:
-            logger.warning(f"Vector {vector_id} not found in collection {self.collection_name}")
+            logger.warning(
+                f"Vector {vector_id} not found in collection {self.collection_name}"
+            )
 
     def update(
         self,
@@ -429,7 +444,9 @@ class FAISS(VectorStoreBase):
             "distance": self.distance_strategy,
         }
 
-    def list(self, filters: Optional[Dict] = None, limit: int = 100) -> List[OutputData]:
+    def list(
+        self, filters: Optional[Dict] = None, limit: int = 100
+    ) -> List[OutputData]:
         """
         List all vectors in a collection.
 

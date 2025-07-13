@@ -1,30 +1,5 @@
 {
-  "name": "@mem0/vercel-ai-provider",
-  "version": "1.0.7",
-  "description": "Vercel AI Provider for providing memory to LLMs",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist/**/*"
-  ],
-  "scripts": {
-    "build": "tsup",
-    "clean": "rm -rf dist",
-    "dev": "nodemon",
-    "lint": "eslint \"./**/*.ts*\"",
-    "type-check": "tsc --noEmit",
-    "prettier-check": "prettier --check \"./**/*.ts*\"",
-    "test": "jest",
-    "test:edge": "vitest --config vitest.edge.config.js --run",
-    "test:node": "vitest --config vitest.node.config.js --run"
-  },
-  "keywords": [
-    "ai",
-    "vercel-ai"
-  ],
   "author": "Saket Aryan <saketaryan2002@gmail.com>",
-  "license": "Apache-2.0",
   "dependencies": {
     "@ai-sdk/anthropic": "1.1.12",
     "@ai-sdk/cohere": "1.1.12",
@@ -39,6 +14,7 @@
     "partial-json": "0.1.7",
     "zod": "^3.25.76"
   },
+  "description": "Vercel AI Provider for providing memory to LLMs",
   "devDependencies": {
     "@edge-runtime/vm": "^3.2.0",
     "@types/jest": "^29.5.14",
@@ -50,6 +26,25 @@
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   },
+  "directories": {
+    "example": "example",
+    "test": "tests"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "keywords": [
+    "ai",
+    "vercel-ai"
+  ],
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "name": "@mem0/vercel-ai-provider",
+  "packageManager": "pnpm@10.5.2+sha512.da9dc28cd3ff40d0592188235ab25d3202add8a207afbedc682220e4a0029ffbff4562102b9e6e46b4e3f9e8bd53e6d05de48544b0c57d4b0179e22c76d1199b",
   "peerDependencies": {
     "zod": "^3.0.0"
   },
@@ -58,24 +53,30 @@
       "optional": true
     }
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "directories": {
-    "example": "example",
-    "test": "tests"
-  },
-  "packageManager": "pnpm@10.5.2+sha512.da9dc28cd3ff40d0592188235ab25d3202add8a207afbedc682220e4a0029ffbff4562102b9e6e46b4e3f9e8bd53e6d05de48544b0c57d4b0179e22c76d1199b",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
       "sqlite3"
     ],
     "overrides": {
-      "axios": "^1.10.0"
+      "axios": "^1.10.0",
+      "undici@<5.29.0": ">=5.29.0"
     }
-  }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist",
+    "dev": "nodemon",
+    "lint": "eslint \"./**/*.ts*\"",
+    "prettier-check": "prettier --check \"./**/*.ts*\"",
+    "test": "jest",
+    "test:edge": "vitest --config vitest.edge.config.js --run",
+    "test:node": "vitest --config vitest.node.config.js --run",
+    "type-check": "tsc --noEmit"
+  },
+  "types": "./dist/index.d.ts",
+  "version": "1.0.7"
 }

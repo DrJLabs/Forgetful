@@ -1,0 +1,679 @@
+name: 'mem0-stack Pre-Merge Quality Gates'
+
+on:
+  push:
+    branches: ['main', 'develop']
+  pull_request:
+    branches: ['main', 'develop']
+  merge_group:
+    # Support GitHub merge queues for handling multiple concurrent PRs
+    types: [checks_requested]
+  schedule:
+    - cron: '0 2 * * *' # Daily at 2 AM
+  workflow_dispatch: # Enable manual workflow triggering
+
+env:
+  # Caching optimization variables
+  CACHE_VERSION: v1 # Increment to invalidate all caches
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  PNPM_VERSION: 'latest'
+
+  # Environment Configuration
+  APP_ENVIRONMENT: test
+  APP_DEBUG: false
+  APP_LOG_LEVEL: INFO
+  APP_USER_ID: test_user
+  
+  # Database Configuration
+  DATABASE_HOST: localhost
+  DATABASE_PORT: 5432
+  DATABASE_NAME: test_db
+  DATABASE_USER: postgres
+  DATABASE_PASSWORD: testpass
+  DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  
+  # Neo4j Configuration
+  NEO4J_HOST: localhost
+  NEO4J_PORT: 7687
+  NEO4J_USERNAME: neo4j
+  NEO4J_PASSWORD: testpass
+  NEO4J_URI: bolt://localhost:7687
+  NEO4J_AUTH: neo4j/testpass
+  
+  # OpenAI Configuration
+  OPENAI_API_KEY: sk-test-key-for-mocking-only
+  OPENAI_MODEL: gpt-4o-mini
+  OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+  
+  # Testing Configuration
+  TESTING: true
+  CI: true
+  GITHUB_ACTIONS: true
+  COVERAGE_THRESHOLD: 80
+  
+  # Legacy Variables (for backward compatibility)
+  POSTGRES_HOST: localhost
+  POSTGRES_DB: test_db
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: testpass
+  USER: test_user
+  API_KEY: sk-test-key-for-mocking-only
+  
+  # CI-specific Configuration
+  PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
+  CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  CI_NEO4J_URI: bolt://localhost:7687
+  CI_COVERAGE_THRESHOLD: 80
+
+jobs:
+  # ============================================================================
+  # QUALITY GATE 1: COMPREHENSIVE UNIT TESTS
+  # ============================================================================
+  unit-tests:
+    name: '🧪 Unit Tests (Quality Gate 1)'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true # Fail fast for unit tests
+      matrix:
+        python-version: ['3.11', '3.12']
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # For merge groups, checkout the merge commit
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Multi-level Python caching strategy
+      - name: Cache Python Dependencies (pip cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
+            ${{ runner.os }}-pip-
+
+      - name: Cache Virtual Environment
+        uses: actions/cache@v4
+        with:
+          path: |
+            venv/
+            openmemory/api/venv/
+          key: ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-
+            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev netcat-openbsd
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
+          cd openmemory/api
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Wait for Services
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
+
+      - name: Run Unit Tests
+        run: |
+          echo "🧪 Running comprehensive unit tests..."
+          
+          # Run shared library tests
+          python -m pytest tests/ -v --cov=shared --cov-report=term-missing --cov-report=xml:coverage-shared.xml
+          
+          # Run OpenMemory API tests
+          cd openmemory/api
+          python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml:coverage-api.xml
+          
+          echo "✅ Unit tests completed"
+
+      - name: Upload Coverage Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports-${{ matrix.python-version }}
+          path: |
+            coverage-*.xml
+            openmemory/api/coverage-*.xml
+          retention-days: 30
+
+  # ============================================================================
+  # QUALITY GATE 2: API CONTRACT TESTS
+  # ============================================================================
+  contract-tests:
+    name: '📋 API Contract Tests (Quality Gate 2)'
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # For merge groups, checkout the merge commit
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
+          cd openmemory/api
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+
+      - name: Run API Contract Tests
+        run: |
+          echo "📋 Running API contract validation tests..."
+          cd openmemory/api
+          ./run_contract_tests.sh --verbose --fail-fast
+
+          echo "✅ API contract tests completed"
+
+      - name: Upload Contract Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-test-results
+          path: |
+            openmemory/api/contract-test-results.xml
+            openmemory/api/contract-test-report.html
+          retention-days: 30
+
+  # ============================================================================
+  # QUALITY GATE 3: SECURITY TESTS
+  # ============================================================================
+  security-tests:
+    name: '🔒 Security Tests (Quality Gate 3)'
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Security Testing Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit safety semgrep
+          pip install -r requirements-test.txt
+
+      - name: Run Security Tests
+        run: |
+          echo "🔒 Running security vulnerability tests..."
+          cd openmemory/api
+          ./run_security_tests.sh --verbose --fail-fast
+
+          echo "✅ Security tests completed"
+
+      - name: Upload Security Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-test-results
+          path: |
+            openmemory/api/security-test-results.xml
+            openmemory/api/security-test-report.html
+          retention-days: 30
+
+  # ============================================================================
+  # QUALITY GATE 4: DATABASE TESTS
+  # ============================================================================
+  database-tests:
+    name: '🗄️ Database Tests (Quality Gate 4)'
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      neo4j:
+        image: neo4j:5.15
+        env:
+          NEO4J_AUTH: neo4j/testpass
+          NEO4J_PLUGINS: '["apoc"]'
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7687:7687
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+          cd openmemory/api
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Wait for Services
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
+
+      - name: Run Database Tests
+        run: |
+          echo "🗄️ Running database integration tests..."
+          cd openmemory/api
+          ./run_database_tests.sh --verbose --fail-fast
+
+          echo "✅ Database tests completed"
+
+      - name: Upload Database Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: database-test-results
+          path: |
+            openmemory/api/database-test-results.xml
+            openmemory/api/database-test-report.html
+          retention-days: 30
+
+  # ============================================================================
+  # QUALITY GATE 5: INTEGRATION TESTS
+  # ============================================================================
+  integration-tests:
+    name: '🔗 Integration Tests (Quality Gate 5)'
+    runs-on: ubuntu-latest
+    needs: [contract-tests, security-tests, database-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      neo4j:
+        image: neo4j:5.15
+        env:
+          NEO4J_AUTH: neo4j/testpass
+          NEO4J_PLUGINS: '["apoc"]'
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7687:7687
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+          # Install mem0 package in development mode
+          pip install -e mem0/
+
+          cd openmemory/api
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Wait for Services
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
+
+      - name: Run Integration Tests
+        run: |
+          echo "🔗 Running end-to-end integration tests..."
+          
+          # Run comprehensive integration tests
+          python -m pytest tests/test_integration.py -v --tb=short
+          
+          # Run system integration tests
+          cd openmemory/api
+          python -m pytest tests/test_system_integration.py -v --tb=short
+
+          echo "✅ Integration tests completed"
+
+      - name: Upload Integration Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            integration-test-results.xml
+            openmemory/api/integration-test-results.xml
+          retention-days: 30
+
+  # ============================================================================
+  # QUALITY GATE 6: PERFORMANCE TESTS
+  # ============================================================================
+  performance-tests:
+    name: '⚡ Performance Tests (Quality Gate 6)'
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      neo4j:
+        image: neo4j:5.15
+        env:
+          NEO4J_AUTH: neo4j/testpass
+          NEO4J_PLUGINS: '["apoc"]'
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7687:7687
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+
+          cd openmemory/api
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Wait for Services
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
+
+      - name: Run Performance Tests
+        run: |
+          echo "⚡ Running performance benchmark tests..."
+          
+          # Run performance tests
+          python scripts/benchmark_vector_performance.py
+          
+          echo "✅ Performance tests completed"
+
+      - name: Upload Performance Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            performance-test-results.xml
+            benchmark-results.json
+          retention-days: 30
+
+  # ============================================================================
+  # QUALITY GATE 7: CODE QUALITY
+  # ============================================================================
+  code-quality:
+    name: '🔍 Code Quality (Quality Gate 7)'
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Quality Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install black flake8 mypy pylint isort
+          pip install -r requirements-test.txt
+
+      - name: Run Code Quality Checks
+        run: |
+          echo "🔍 Running code quality analysis..."
+          
+          # Format checking
+          black --check --diff .
+          
+          # Import sorting
+          isort --check-only --diff .
+          
+          # Linting
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          
+          # Type checking
+          mypy shared/ openmemory/api/app/ --ignore-missing-imports
+          
+          echo "✅ Code quality checks completed"
+
+  # ============================================================================
+  # FINAL QUALITY GATE: MERGE DECISION
+  # ============================================================================
+  merge-decision:
+    name: '🚦 Merge Decision (Final Quality Gate)'
+    runs-on: ubuntu-latest
+    needs: [unit-tests, contract-tests, security-tests, database-tests, integration-tests, performance-tests, code-quality]
+    if: always()
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.sha }}
+
+      - name: Evaluate Quality Gates
+        run: |
+          echo "🚦 Evaluating all quality gates..."
+          
+          # Check if all required tests passed
+          if [ "${{ needs.unit-tests.result }}" == "success" ] && 
+             [ "${{ needs.contract-tests.result }}" == "success" ] && 
+             [ "${{ needs.security-tests.result }}" == "success" ] && 
+             [ "${{ needs.database-tests.result }}" == "success" ] && 
+             [ "${{ needs.integration-tests.result }}" == "success" ] && 
+             [ "${{ needs.performance-tests.result }}" == "success" ] && 
+             [ "${{ needs.code-quality.result }}" == "success" ]; then
+            echo "✅ All quality gates passed - Ready for merge"
+            exit 0
+          else
+            echo "❌ Quality gates failed - Blocking merge"
+            exit 1
+          fi
+
+      - name: Generate Quality Report
+        if: always()
+        run: |
+          echo "📊 Generating quality gate report..."
+          
+          cat > quality-report.md << EOF
+          # Quality Gate Report
+          
+          **Branch:** ${{ github.ref }}
+          **Commit:** ${{ github.sha }}
+          **Workflow:** ${{ github.workflow }}
+          
+          ## Quality Gate Results
+          
+          - Unit Tests: ${{ needs.unit-tests.result }}
+          - Contract Tests: ${{ needs.contract-tests.result }}
+          - Security Tests: ${{ needs.security-tests.result }}
+          - Database Tests: ${{ needs.database-tests.result }}
+          - Integration Tests: ${{ needs.integration-tests.result }}
+          - Performance Tests: ${{ needs.performance-tests.result }}
+          - Code Quality: ${{ needs.code-quality.result }}
+          
+          ## Environment Configuration
+          
+          - App Environment: ${{ env.APP_ENVIRONMENT }}
+          - Database URL: ${{ env.DATABASE_URL }}
+          - Neo4j URI: ${{ env.NEO4J_URI }}
+          - Coverage Threshold: ${{ env.COVERAGE_THRESHOLD }}%
+          
+          EOF
+          
+          cat quality-report.md
+
+      - name: Upload Quality Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-gate-report
+          path: quality-report.md
+          retention-days: 30

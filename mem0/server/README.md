@@ -12,6 +12,8 @@ Mem0 provides a REST API server (written using FastAPI). Users can perform all o
 - **Reset memories:** Reset all memories for a user, agent, or run.
 - **OpenAPI Documentation:** Accessible via `/docs` endpoint.
 
-## Running the server
+## Production Usage
 
-Follow the instructions in the [docs](https://docs.mem0.ai/open-source/features/rest-api) to run the server.
+This server is integrated into the main project's `docker-compose.yml` and runs as the `mem0` service. It connects to the shared PostgreSQL and Neo4j instances.
+
+For detailed setup and running instructions, please refer to the main project documentation.

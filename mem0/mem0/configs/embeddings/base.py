@@ -79,7 +79,9 @@ class BaseEmbedderConfig(ABC):
         self.embedding_dims = embedding_dims
 
         # AzureOpenAI specific
-        self.http_client = httpx.Client(proxies=http_client_proxies) if http_client_proxies else None
+        self.http_client = (
+            httpx.Client(proxies=http_client_proxies) if http_client_proxies else None
+        )
 
         # Ollama specific
         self.ollama_base_url = ollama_base_url

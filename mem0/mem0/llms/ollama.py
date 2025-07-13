@@ -3,7 +3,9 @@ from typing import Dict, List, Optional
 try:
     from ollama import Client
 except ImportError:
-    raise ImportError("The 'ollama' library is required. Please install it using 'pip install ollama'.")
+    raise ImportError(
+        "The 'ollama' library is required. Please install it using 'pip install ollama'."
+    )
 
 from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase

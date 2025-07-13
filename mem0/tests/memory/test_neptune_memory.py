@@ -1,8 +1,10 @@
 import unittest
 from unittest.mock import MagicMock, patch
+
 import pytest
-from mem0.graphs.neptune.main import MemoryGraph
+
 from mem0.graphs.neptune.base import NeptuneBase
+from mem0.graphs.neptune.main import MemoryGraph
 
 
 class TestNeptuneMemory(unittest.TestCase):
@@ -28,12 +30,16 @@ class TestNeptuneMemory(unittest.TestCase):
         self.mock_llm = MagicMock()
 
         # Patch the necessary components
-        self.neptune_analytics_graph_patcher = patch("mem0.graphs.neptune.main.NeptuneAnalyticsGraph")
+        self.neptune_analytics_graph_patcher = patch(
+            "mem0.graphs.neptune.main.NeptuneAnalyticsGraph"
+        )
         self.mock_neptune_analytics_graph = self.neptune_analytics_graph_patcher.start()
         self.mock_neptune_analytics_graph.return_value = self.mock_graph
 
         # Patch the static methods
-        self.create_embedding_model_patcher = patch.object(NeptuneBase, "_create_embedding_model")
+        self.create_embedding_model_patcher = patch.object(
+            NeptuneBase, "_create_embedding_model"
+        )
         self.mock_create_embedding_model = self.create_embedding_model_patcher.start()
         self.mock_create_embedding_model.return_value = self.mock_embedding_model
 
@@ -85,12 +91,18 @@ class TestNeptuneMemory(unittest.TestCase):
         """Test the add method with mocked components."""
 
         # Mock the necessary methods that add() calls
-        self.memory_graph._retrieve_nodes_from_data = MagicMock(return_value={"alice": "person", "bob": "person"})
+        self.memory_graph._retrieve_nodes_from_data = MagicMock(
+            return_value={"alice": "person", "bob": "person"}
+        )
         self.memory_graph._establish_nodes_relations_from_data = MagicMock(
-            return_value=[{"source": "alice", "relationship": "knows", "destination": "bob"}]
+            return_value=[
+                {"source": "alice", "relationship": "knows", "destination": "bob"}
+            ]
         )
         self.memory_graph._search_graph_db = MagicMock(return_value=[])
-        self.memory_graph._get_delete_entities_from_search_output = MagicMock(return_value=[])
+        self.memory_graph._get_delete_entities_from_search_output = MagicMock(
+            return_value=[]
+        )
         self.memory_graph._delete_entities = MagicMock(return_value=[])
         self.memory_graph._add_entities = MagicMock(
             return_value=[{"source": "alice", "relationship": "knows", "target": "bob"}]
@@ -100,7 +112,9 @@ class TestNeptuneMemory(unittest.TestCase):
         result = self.memory_graph.add("Alice knows Bob", self.test_filters)
 
         # Verify the method calls
-        self.memory_graph._retrieve_nodes_from_data.assert_called_once_with("Alice knows Bob", self.test_filters)
+        self.memory_graph._retrieve_nodes_from_data.assert_called_once_with(
+            "Alice knows Bob", self.test_filters
+        )
         self.memory_graph._establish_nodes_relations_from_data.assert_called_once()
         self.memory_graph._search_graph_db.assert_called_once()
         self.memory_graph._get_delete_entities_from_search_output.assert_called_once()
@@ -114,7 +128,9 @@ class TestNeptuneMemory(unittest.TestCase):
     def test_search_method(self):
         """Test the search method with mocked components."""
         # Mock the necessary methods that search() calls
-        self.memory_graph._retrieve_nodes_from_data = MagicMock(return_value={"alice": "person"})
+        self.memory_graph._retrieve_nodes_from_data = MagicMock(
+            return_value={"alice": "person"}
+        )
 
         # Mock search results
         mock_search_results = [
@@ -129,15 +145,22 @@ class TestNeptuneMemory(unittest.TestCase):
             mock_bm25.return_value = mock_bm25_instance
 
             # Mock get_top_n to return reranked results
-            reranked_results = [["alice", "knows", "bob"], ["alice", "works_with", "charlie"]]
+            reranked_results = [
+                ["alice", "knows", "bob"],
+                ["alice", "works_with", "charlie"],
+            ]
             mock_bm25_instance.get_top_n.return_value = reranked_results
 
             # Call the search method
             result = self.memory_graph.search("Find Alice", self.test_filters, limit=5)
 
             # Verify the method calls
-            self.memory_graph._retrieve_nodes_from_data.assert_called_once_with("Find Alice", self.test_filters)
-            self.memory_graph._search_graph_db.assert_called_once_with(node_list=["alice"], filters=self.test_filters)
+            self.memory_graph._retrieve_nodes_from_data.assert_called_once_with(
+                "Find Alice", self.test_filters
+            )
+            self.memory_graph._search_graph_db.assert_called_once_with(
+                node_list=["alice"], filters=self.test_filters
+            )
 
             # Check the result structure
             self.assertEqual(len(result), 2)
@@ -151,7 +174,9 @@ class TestNeptuneMemory(unittest.TestCase):
         # Mock the _get_all_cypher method
         mock_cypher = "MATCH (n) RETURN n"
         mock_params = {"user_id": self.user_id, "limit": 10}
-        self.memory_graph._get_all_cypher = MagicMock(return_value=(mock_cypher, mock_params))
+        self.memory_graph._get_all_cypher = MagicMock(
+            return_value=(mock_cypher, mock_params)
+        )
 
         # Mock the graph.query result
         mock_query_result = [
@@ -178,7 +203,9 @@ class TestNeptuneMemory(unittest.TestCase):
         # Mock the _delete_all_cypher method
         mock_cypher = "MATCH (n) DETACH DELETE n"
         mock_params = {"user_id": self.user_id}
-        self.memory_graph._delete_all_cypher = MagicMock(return_value=(mock_cypher, mock_params))
+        self.memory_graph._delete_all_cypher = MagicMock(
+            return_value=(mock_cypher, mock_params)
+        )
 
         # Call the delete_all method
         self.memory_graph.delete_all(self.test_filters)
@@ -194,18 +221,28 @@ class TestNeptuneMemory(unittest.TestCase):
 
         # Mock the _search_source_node_cypher method
         mock_cypher = "MATCH (n) RETURN n"
-        mock_params = {"source_embedding": mock_embedding, "user_id": self.user_id, "threshold": 0.9}
-        self.memory_graph._search_source_node_cypher = MagicMock(return_value=(mock_cypher, mock_params))
+        mock_params = {
+            "source_embedding": mock_embedding,
+            "user_id": self.user_id,
+            "threshold": 0.9,
+        }
+        self.memory_graph._search_source_node_cypher = MagicMock(
+            return_value=(mock_cypher, mock_params)
+        )
 
         # Mock the graph.query result
         mock_query_result = [{"id(source_candidate)": 123, "cosine_similarity": 0.95}]
         self.mock_graph.query.return_value = mock_query_result
 
         # Call the _search_source_node method
-        result = self.memory_graph._search_source_node(mock_embedding, self.user_id, threshold=0.9)
+        result = self.memory_graph._search_source_node(
+            mock_embedding, self.user_id, threshold=0.9
+        )
 
         # Verify the method calls
-        self.memory_graph._search_source_node_cypher.assert_called_once_with(mock_embedding, self.user_id, 0.9)
+        self.memory_graph._search_source_node_cypher.assert_called_once_with(
+            mock_embedding, self.user_id, 0.9
+        )
         self.mock_graph.query.assert_called_once_with(mock_cypher, params=mock_params)
 
         # Check the result
@@ -218,18 +255,30 @@ class TestNeptuneMemory(unittest.TestCase):
 
         # Mock the _search_destination_node_cypher method
         mock_cypher = "MATCH (n) RETURN n"
-        mock_params = {"destination_embedding": mock_embedding, "user_id": self.user_id, "threshold": 0.9}
-        self.memory_graph._search_destination_node_cypher = MagicMock(return_value=(mock_cypher, mock_params))
+        mock_params = {
+            "destination_embedding": mock_embedding,
+            "user_id": self.user_id,
+            "threshold": 0.9,
+        }
+        self.memory_graph._search_destination_node_cypher = MagicMock(
+            return_value=(mock_cypher, mock_params)
+        )
 
         # Mock the graph.query result
-        mock_query_result = [{"id(destination_candidate)": 456, "cosine_similarity": 0.92}]
+        mock_query_result = [
+            {"id(destination_candidate)": 456, "cosine_similarity": 0.92}
+        ]
         self.mock_graph.query.return_value = mock_query_result
 
         # Call the _search_destination_node method
-        result = self.memory_graph._search_destination_node(mock_embedding, self.user_id, threshold=0.9)
+        result = self.memory_graph._search_destination_node(
+            mock_embedding, self.user_id, threshold=0.9
+        )
 
         # Verify the method calls
-        self.memory_graph._search_destination_node_cypher.assert_called_once_with(mock_embedding, self.user_id, 0.9)
+        self.memory_graph._search_destination_node_cypher.assert_called_once_with(
+            mock_embedding, self.user_id, 0.9
+        )
         self.mock_graph.query.assert_called_once_with(mock_cypher, params=mock_params)
 
         # Check the result
@@ -246,16 +295,29 @@ class TestNeptuneMemory(unittest.TestCase):
 
         # Mock the _search_graph_db_cypher method
         mock_cypher = "MATCH (n) RETURN n"
-        mock_params = {"n_embedding": mock_embedding, "user_id": self.user_id, "threshold": 0.7, "limit": 10}
-        self.memory_graph._search_graph_db_cypher = MagicMock(return_value=(mock_cypher, mock_params))
+        mock_params = {
+            "n_embedding": mock_embedding,
+            "user_id": self.user_id,
+            "threshold": 0.7,
+            "limit": 10,
+        }
+        self.memory_graph._search_graph_db_cypher = MagicMock(
+            return_value=(mock_cypher, mock_params)
+        )
 
         # Mock the graph.query results
-        mock_query_result1 = [{"source": "alice", "relationship": "knows", "destination": "bob"}]
-        mock_query_result2 = [{"source": "bob", "relationship": "works_with", "destination": "charlie"}]
+        mock_query_result1 = [
+            {"source": "alice", "relationship": "knows", "destination": "bob"}
+        ]
+        mock_query_result2 = [
+            {"source": "bob", "relationship": "works_with", "destination": "charlie"}
+        ]
         self.mock_graph.query.side_effect = [mock_query_result1, mock_query_result2]
 
         # Call the _search_graph_db method
-        result = self.memory_graph._search_graph_db(node_list, self.test_filters, limit=10)
+        result = self.memory_graph._search_graph_db(
+            node_list, self.test_filters, limit=10
+        )
 
         # Verify the method calls
         self.assertEqual(self.mock_embedding_model.embed.call_count, 2)
@@ -269,7 +331,9 @@ class TestNeptuneMemory(unittest.TestCase):
     def test_add_entities(self):
         """Test the _add_entities method."""
         # Mock data
-        to_be_added = [{"source": "alice", "relationship": "knows", "destination": "bob"}]
+        to_be_added = [
+            {"source": "alice", "relationship": "knows", "destination": "bob"}
+        ]
         entity_type_map = {"alice": "person", "bob": "person"}
 
         # Mock embeddings
@@ -278,28 +342,44 @@ class TestNeptuneMemory(unittest.TestCase):
 
         # Mock search results
         mock_source_search = [{"id(source_candidate)": 123, "cosine_similarity": 0.95}]
-        mock_dest_search = [{"id(destination_candidate)": 456, "cosine_similarity": 0.92}]
+        mock_dest_search = [
+            {"id(destination_candidate)": 456, "cosine_similarity": 0.92}
+        ]
 
         # Mock the search methods
-        self.memory_graph._search_source_node = MagicMock(return_value=mock_source_search)
-        self.memory_graph._search_destination_node = MagicMock(return_value=mock_dest_search)
+        self.memory_graph._search_source_node = MagicMock(
+            return_value=mock_source_search
+        )
+        self.memory_graph._search_destination_node = MagicMock(
+            return_value=mock_dest_search
+        )
 
         # Mock the _add_entities_cypher method
         mock_cypher = "MATCH (n) RETURN n"
         mock_params = {"source_id": 123, "destination_id": 456}
-        self.memory_graph._add_entities_cypher = MagicMock(return_value=(mock_cypher, mock_params))
+        self.memory_graph._add_entities_cypher = MagicMock(
+            return_value=(mock_cypher, mock_params)
+        )
 
         # Mock the graph.query result
-        mock_query_result = [{"source": "alice", "relationship": "knows", "target": "bob"}]
+        mock_query_result = [
+            {"source": "alice", "relationship": "knows", "target": "bob"}
+        ]
         self.mock_graph.query.return_value = mock_query_result
 
         # Call the _add_entities method
-        result = self.memory_graph._add_entities(to_be_added, self.user_id, entity_type_map)
+        result = self.memory_graph._add_entities(
+            to_be_added, self.user_id, entity_type_map
+        )
 
         # Verify the method calls
         self.assertEqual(self.mock_embedding_model.embed.call_count, 2)
-        self.memory_graph._search_source_node.assert_called_once_with(mock_embedding, self.user_id, threshold=0.9)
-        self.memory_graph._search_destination_node.assert_called_once_with(mock_embedding, self.user_id, threshold=0.9)
+        self.memory_graph._search_source_node.assert_called_once_with(
+            mock_embedding, self.user_id, threshold=0.9
+        )
+        self.memory_graph._search_destination_node.assert_called_once_with(
+            mock_embedding, self.user_id, threshold=0.9
+        )
         self.memory_graph._add_entities_cypher.assert_called_once()
         self.mock_graph.query.assert_called_once_with(mock_cypher, params=mock_params)
 
@@ -309,22 +389,34 @@ class TestNeptuneMemory(unittest.TestCase):
     def test_delete_entities(self):
         """Test the _delete_entities method."""
         # Mock data
-        to_be_deleted = [{"source": "alice", "relationship": "knows", "destination": "bob"}]
+        to_be_deleted = [
+            {"source": "alice", "relationship": "knows", "destination": "bob"}
+        ]
 
         # Mock the _delete_entities_cypher method
         mock_cypher = "MATCH (n) RETURN n"
-        mock_params = {"source_name": "alice", "dest_name": "bob", "user_id": self.user_id}
-        self.memory_graph._delete_entities_cypher = MagicMock(return_value=(mock_cypher, mock_params))
+        mock_params = {
+            "source_name": "alice",
+            "dest_name": "bob",
+            "user_id": self.user_id,
+        }
+        self.memory_graph._delete_entities_cypher = MagicMock(
+            return_value=(mock_cypher, mock_params)
+        )
 
         # Mock the graph.query result
-        mock_query_result = [{"source": "alice", "relationship": "knows", "target": "bob"}]
+        mock_query_result = [
+            {"source": "alice", "relationship": "knows", "target": "bob"}
+        ]
         self.mock_graph.query.return_value = mock_query_result
 
         # Call the _delete_entities method
         result = self.memory_graph._delete_entities(to_be_deleted, self.user_id)
 
         # Verify the method calls
-        self.memory_graph._delete_entities_cypher.assert_called_once_with("alice", "bob", "knows", self.user_id)
+        self.memory_graph._delete_entities_cypher.assert_called_once_with(
+            "alice", "bob", "knows", self.user_id
+        )
         self.mock_graph.query.assert_called_once_with(mock_cypher, params=mock_params)
 
         # Check the result

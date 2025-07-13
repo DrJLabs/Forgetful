@@ -16,7 +16,9 @@ class LMStudioLLM(LLMBase):
         )
         self.config.api_key = self.config.api_key or "lm-studio"
 
-        self.client = OpenAI(base_url=self.config.lmstudio_base_url, api_key=self.config.api_key)
+        self.client = OpenAI(
+            base_url=self.config.lmstudio_base_url, api_key=self.config.api_key
+        )
 
     def generate_response(
         self,

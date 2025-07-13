@@ -1,11 +1,16 @@
-from unittest.mock import Mock, patch, PropertyMock
+from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
+from pymochow.exception import ServerError
+from pymochow.model.enum import ServerErrCode, TableState
+from pymochow.model.table import (
+    FloatVector,
+    Table,
+    VectorSearchConfig,
+    VectorTopkSearchRequest,
+)
 
 from mem0.vector_stores.baidu import BaiduDB
-from pymochow.model.enum import TableState, ServerErrCode
-from pymochow.model.table import VectorSearchConfig, VectorTopkSearchRequest, FloatVector, Table
-from pymochow.exception import ServerError
 
 
 @pytest.fixture
@@ -44,7 +49,9 @@ def mock_table():
 
 
 @pytest.fixture
-def mochow_instance(mock_mochow_client, mock_configuration, mock_bce_credentials, mock_table):
+def mochow_instance(
+    mock_mochow_client, mock_configuration, mock_bce_credentials, mock_table
+):
     mock_database = Mock()
     mock_client_instance = Mock()
 
@@ -144,7 +151,10 @@ def test_search_with_filters(mochow_instance, mock_mochow_client):
     call_args = mochow_instance._table.vector_search.call_args
     request = call_args[0][0] if call_args[0] else call_args[1]["request"]
 
-    assert request._filter == 'metadata["user_id"] = "user123" AND metadata["agent_id"] = "agent456"'
+    assert (
+        request._filter
+        == 'metadata["user_id"] = "user123" AND metadata["agent_id"] = "agent456"'
+    )
 
 
 def test_delete(mochow_instance, mock_mochow_client):
@@ -178,7 +188,9 @@ def test_get(mochow_instance, mock_mochow_client):
 
     result = mochow_instance.get(vector_id="id1")
 
-    mochow_instance._table.query.assert_called_once_with(primary_key={"id": "id1"}, projections=["id", "metadata"])
+    mochow_instance._table.query.assert_called_once_with(
+        primary_key={"id": "id1"}, projections=["id", "metadata"]
+    )
 
     assert result.id == "id1"
     assert result.score is None
@@ -188,12 +200,17 @@ def test_get(mochow_instance, mock_mochow_client):
 def test_list(mochow_instance, mock_mochow_client):
     # Mock select result
     mock_result = Mock()
-    mock_result.rows = [{"id": "id1", "metadata": {"name": "vector1"}}, {"id": "id2", "metadata": {"name": "vector2"}}]
+    mock_result.rows = [
+        {"id": "id1", "metadata": {"name": "vector1"}},
+        {"id": "id2", "metadata": {"name": "vector2"}},
+    ]
     mochow_instance._table.select.return_value = mock_result
 
     results = mochow_instance.list(limit=2)
 
-    mochow_instance._table.select.assert_called_once_with(filter=None, projections=["id", "metadata"], limit=2)
+    mochow_instance._table.select.assert_called_once_with(
+        filter=None, projections=["id", "metadata"], limit=2
+    )
 
     assert len(results[0]) == 2
     assert results[0][0].id == "id1"

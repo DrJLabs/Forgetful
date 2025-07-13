@@ -17,14 +17,26 @@ def mock_deepseek_client():
 
 def test_deepseek_llm_base_url():
     # case1: default config with deepseek official base url
-    config = BaseLlmConfig(model="deepseek-chat", temperature=0.7, max_tokens=100, top_p=1.0, api_key="api_key")
+    config = BaseLlmConfig(
+        model="deepseek-chat",
+        temperature=0.7,
+        max_tokens=100,
+        top_p=1.0,
+        api_key="api_key",
+    )
     llm = DeepSeekLLM(config)
     assert str(llm.client.base_url) == "https://api.deepseek.com"
 
     # case2: with env variable DEEPSEEK_API_BASE
     provider_base_url = "https://api.provider.com/v1/"
     os.environ["DEEPSEEK_API_BASE"] = provider_base_url
-    config = BaseLlmConfig(model="deepseek-chat", temperature=0.7, max_tokens=100, top_p=1.0, api_key="api_key")
+    config = BaseLlmConfig(
+        model="deepseek-chat",
+        temperature=0.7,
+        max_tokens=100,
+        top_p=1.0,
+        api_key="api_key",
+    )
     llm = DeepSeekLLM(config)
     assert str(llm.client.base_url) == provider_base_url
 
@@ -43,7 +55,9 @@ def test_deepseek_llm_base_url():
 
 
 def test_generate_response_without_tools(mock_deepseek_client):
-    config = BaseLlmConfig(model="deepseek-chat", temperature=0.7, max_tokens=100, top_p=1.0)
+    config = BaseLlmConfig(
+        model="deepseek-chat", temperature=0.7, max_tokens=100, top_p=1.0
+    )
     llm = DeepSeekLLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -51,19 +65,27 @@ def test_generate_response_without_tools(mock_deepseek_client):
     ]
 
     mock_response = Mock()
-    mock_response.choices = [Mock(message=Mock(content="I'm doing well, thank you for asking!"))]
+    mock_response.choices = [
+        Mock(message=Mock(content="I'm doing well, thank you for asking!"))
+    ]
     mock_deepseek_client.chat.completions.create.return_value = mock_response
 
     response = llm.generate_response(messages)
 
     mock_deepseek_client.chat.completions.create.assert_called_once_with(
-        model="deepseek-chat", messages=messages, temperature=0.7, max_tokens=100, top_p=1.0
+        model="deepseek-chat",
+        messages=messages,
+        temperature=0.7,
+        max_tokens=100,
+        top_p=1.0,
     )
     assert response == "I'm doing well, thank you for asking!"
 
 
 def test_generate_response_with_tools(mock_deepseek_client):
-    config = BaseLlmConfig(model="deepseek-chat", temperature=0.7, max_tokens=100, top_p=1.0)
+    config = BaseLlmConfig(
+        model="deepseek-chat", temperature=0.7, max_tokens=100, top_p=1.0
+    )
     llm = DeepSeekLLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -77,7 +99,12 @@ def test_generate_response_with_tools(mock_deepseek_client):
                 "description": "Add a memory",
                 "parameters": {
                     "type": "object",
-                    "properties": {"data": {"type": "string", "description": "Data to add to memory"}},
+                    "properties": {
+                        "data": {
+                            "type": "string",
+                            "description": "Data to add to memory",
+                        }
+                    },
                     "required": ["data"],
                 },
             },

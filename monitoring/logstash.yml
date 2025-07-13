@@ -1,0 +1,103 @@
+node.name: "logstash-mem0"
+path.data: "/usr/share/logstash/data"
+path.logs: "/usr/share/logstash/logs"
+path.settings: "/usr/share/logstash/config"
+path.plugins: "/usr/share/logstash/plugins"
+
+# Pipeline configuration
+pipeline.id: "mem0-stack-pipeline"
+pipeline.workers: 2
+pipeline.batch.size: 1000
+pipeline.batch.delay: 50
+pipeline.max_inflight: 1000
+
+# Memory settings
+pipeline.java_execution: true
+pipeline.plugin_classloaders: true
+pipeline.separate_logs: true
+
+# Queue settings
+queue.type: "memory"
+queue.max_events: 4096
+queue.max_bytes: "1gb"
+queue.checkpoint.writes: 1024
+queue.checkpoint.interval: 1000
+
+# HTTP API settings
+http.enabled: true
+http.host: "0.0.0.0"
+http.port: 9600
+
+# Monitoring
+monitoring.enabled: true
+monitoring.cluster_uuid: "mem0-stack-cluster"
+
+# Logging configuration
+log.level: "info"
+log.format: "json"
+
+# X-Pack settings (if available)
+xpack.monitoring.enabled: false
+xpack.monitoring.elasticsearch.hosts: ["elasticsearch-mem0:9200"]
+
+# Dead letter queue
+dead_letter_queue.enable: true
+dead_letter_queue.max_bytes: "1gb"
+dead_letter_queue.flush_interval: 5000
+dead_letter_queue.commit_offsets: true
+
+# Metrics configuration
+metric.collect: true
+
+# Config reload
+config.reload.automatic: true
+config.reload.interval: 3s
+
+# Module settings
+modules:
+  - name: "mem0-stack-logs"
+    var.input.beats.port: 5044
+    var.input.http.port: 8080
+    var.input.tcp.port: 5001
+    var.elasticsearch.hosts: ["elasticsearch-mem0:9200"]
+    var.elasticsearch.username: ""
+    var.elasticsearch.password: ""
+    var.kibana.host: "kibana-mem0:5601"
+    var.kibana.username: ""
+    var.kibana.password: ""
+
+# JVM settings
+jvm.options: |
+  -Xms1g
+  -Xmx1g
+  -XX:+UseG1GC
+  -XX:G1HeapRegionSize=16m
+  -XX:+UseStringDeduplication
+  -XX:+OptimizeStringConcat
+  -XX:+UseCompressedOops
+  -Djava.awt.headless=true
+  -Dfile.encoding=UTF-8
+  -Djruby.compile.invokedynamic=true
+  -Djruby.jit.threshold=0
+  -Djruby.regexp.interruptible=true
+  -XX:+HeapDumpOnOutOfMemoryError
+  -XX:HeapDumpPath=/usr/share/logstash/logs/
+
+# Security settings
+keystore.seed: "mem0-stack-logstash"
+
+# Network settings
+network.host: "0.0.0.0"
+
+# Shutdown settings
+shutdown.stalled_timeout: 10s
+
+# Performance settings
+slowlog.threshold.warn: 2s
+slowlog.threshold.info: 1s
+slowlog.threshold.debug: 500ms
+slowlog.threshold.trace: 100ms
+
+# Allow duplicate pipeline IDs
+allow_env_var_resolution: true
+allow_superuser: false

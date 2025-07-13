@@ -15,10 +15,19 @@ class AzureOpenAIStructuredLLM(LLMBase):
         if not self.config.model:
             self.config.model = "gpt-4o-2024-08-06"
 
-        api_key = os.getenv("LLM_AZURE_OPENAI_API_KEY") or self.config.azure_kwargs.api_key
-        azure_deployment = os.getenv("LLM_AZURE_DEPLOYMENT") or self.config.azure_kwargs.azure_deployment
-        azure_endpoint = os.getenv("LLM_AZURE_ENDPOINT") or self.config.azure_kwargs.azure_endpoint
-        api_version = os.getenv("LLM_AZURE_API_VERSION") or self.config.azure_kwargs.api_version
+        api_key = (
+            os.getenv("LLM_AZURE_OPENAI_API_KEY") or self.config.azure_kwargs.api_key
+        )
+        azure_deployment = (
+            os.getenv("LLM_AZURE_DEPLOYMENT")
+            or self.config.azure_kwargs.azure_deployment
+        )
+        azure_endpoint = (
+            os.getenv("LLM_AZURE_ENDPOINT") or self.config.azure_kwargs.azure_endpoint
+        )
+        api_version = (
+            os.getenv("LLM_AZURE_API_VERSION") or self.config.azure_kwargs.api_version
+        )
         default_headers = self.config.azure_kwargs.default_headers
 
         # Can display a warning if API version is of model and api-version

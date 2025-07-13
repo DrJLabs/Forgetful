@@ -39,7 +39,7 @@ The test results showed 5 failing tests, all related to the OpenMemory API:
 Added proper serialization using a transformer in the pagination:
 ```python
 paginated_results = sqlalchemy_paginate(
-    query, 
+    query,
     params,
     transformer=lambda items: [
         MemoryResponse(
@@ -133,4 +133,4 @@ All memory system issues have been successfully resolved. The system now handles
 - Single memory deletion alongside bulk operations
 - Robust error handling throughout the API
 
-The memory system is now fully functional and passes all tests. 
+The memory system is now fully functional and passes all tests.

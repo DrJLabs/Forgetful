@@ -14,7 +14,9 @@ except ImportError:
             subprocess.check_call([sys.executable, "-m", "pip", "install", "ollama"])
             from ollama import Client
         except subprocess.CalledProcessError:
-            print("Failed to install 'ollama'. Please install it manually using 'pip install ollama'.")
+            print(
+                "Failed to install 'ollama'. Please install it manually using 'pip install ollama'."
+            )
             sys.exit(1)
     else:
         print("The required 'ollama' library is not installed.")
@@ -39,7 +41,9 @@ class OllamaEmbedding(EmbeddingBase):
         if not any(model.get("name") == self.config.model for model in local_models):
             self.client.pull(self.config.model)
 
-    def embed(self, text, memory_action: Optional[Literal["add", "search", "update"]] = None):
+    def embed(
+        self, text, memory_action: Optional[Literal["add", "search", "update"]] = None
+    ):
         """
         Get the embedding for the given text using Ollama.
 

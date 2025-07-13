@@ -1,0 +1,73 @@
+name: 'CodeQL Advanced Configuration'
+
+# Enhanced query suites for comprehensive security analysis
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+# Optimized path coverage for mem0-stack architecture
+paths:
+  - mem0/
+  - openmemory/
+  - shared/
+  - scripts/
+  - tests/
+  - .github/workflows/ # Include GitHub Actions workflows for security analysis
+
+# Enhanced exclusions for better performance and accuracy
+paths-ignore:
+  # Version control and dependencies
+  - '**/.git/**'
+  - '**/node_modules/**'
+  - '**/venv/**'
+  - '**/env/**'
+  - '**/__pycache__/**'
+
+  # Build and distribution artifacts
+  - '**/build/**'
+  - '**/dist/**'
+  - '**/target/**'
+  - '**/.next/**'
+  - '**/out/**'
+
+  # Test and coverage reports
+  - '**/coverage/**'
+  - '**/test-reports/**'
+  - '**/test-results/**'
+  - '**/htmlcov/**'
+
+  # Data and backup directories
+  - '**/backups/**'
+  - '**/archive/**'
+  - '**/data/**'
+  - '**/logs/**'
+
+  # Documentation and assets
+  - '**/docs/**'
+  - '**/public/**'
+  - 'openmemory/ui/public/**'
+  - 'mem0/docs/**'
+
+  # Embedded or external code
+  - 'mem0/embedchain/**'
+  - '**/vendor/**'
+  - '**/third_party/**'
+
+  # Configuration and temporary files
+  - '**/.cache/**'
+  - '**/.tmp/**'
+  - '**/*.log'
+  - '**/*.tmp'
+  - '**/*.temp'
+
+# Disable default rules to use custom query suites exclusively
+disable-default-rules: false
+
+# Language-specific configurations
+packs:
+  python:
+    - codeql/python-queries
+  javascript:
+    - codeql/javascript-queries
+  actions:
+    - codeql/actions-queries

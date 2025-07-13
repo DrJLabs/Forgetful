@@ -1,0 +1,90 @@
+---
+description:
+alwaysApply: false
+---
+
+# Mem0 MCP Project Memory System
+
+## Core Purpose
+Use mem0 MCP tools to maintain continuous project context and track all coding progress, solutions, and decisions across sessions.
+
+## MANDATORY WORKFLOW
+
+### 1. Before EVERY Response
+- **ALWAYS** call `search_memory` first to retrieve current project state
+- Check for: working solutions, known issues, project structure, recent changes
+- Never assume you remember context from previous messages
+
+### 2. During Work Sessions
+Store these IMMEDIATELY after implementation:
+- **Code Solutions**: Working implementations, bug fixes, optimizations
+- **Project Progress**: Completed features, current tasks, next steps
+- **Technical Decisions**: Architecture choices, library selections, design patterns
+- **Issues & Blockers**: Errors encountered, workarounds applied, open problems
+- **Configuration**: Environment setup, dependencies, deployment details
+
+### 3. Memory Storage Format
+```
+add_memories("Project: [project_name] - [category]: [specific detail]")
+```
+Categories: Solution, Progress, Decision, Issue, Config, Architecture
+
+## Required Memory Points
+
+### After Code Changes
+- Store the exact solution that worked
+- Include file paths and key code snippets
+- Note any dependencies or prerequisites
+
+### After Debugging
+- Store the error and its resolution
+- Include root cause analysis
+- Document prevention strategies
+
+### After Feature Completion
+- Store feature summary and implementation approach
+- List all affected files
+- Note any future improvements needed
+
+### Project Milestones
+- Major refactoring completed
+- New integrations added
+- Performance improvements achieved
+- Breaking changes introduced
+
+## Examples
+
+### Good: Solution Storage
+```
+User: "Fixed the memory leak in the React component"
+Action: add_memories("Project: mem0-stack - Solution: Fixed memory leak in /ui/app/memories/components/MemoryList.tsx by properly cleaning up event listeners in useEffect cleanup function")
+```
+
+### Good: Progress Tracking
+```
+User: "Implemented the new API endpoint"
+Action: add_memories("Project: mem0-stack - Progress: Implemented POST /api/memories endpoint with validation, error handling, and PostgreSQL integration. Next: Add rate limiting")
+```
+
+### Good: Issue Documentation
+```
+User: "Docker compose keeps failing"
+Action: add_memories("Project: mem0-stack - Issue: Docker compose fails with port 5432 conflict. Solution: Stop local postgres or change port mapping in docker-compose.yml to 5433:5432")
+```
+
+## Enforcement Rules
+
+1. **NO coding response without memory search first**
+2. **NO completed task without storing the solution**
+3. **NO debugging session without documenting the fix**
+4. **NO architectural decision without recording rationale**
+5. **Always cite relevant memories when using them**: [[memory:ID]]
+
+## Memory Lifecycle
+
+- **Create**: When implementing new solutions
+- **Update**: When solutions evolve or improve
+- **Search**: BEFORE every response
+- **Delete**: Only outdated/incorrect information
+
+Remember: Your effectiveness depends on maintaining comprehensive project memory!

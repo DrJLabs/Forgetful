@@ -1,0 +1,37 @@
+---
+description:
+alwaysApply: true
+---
+# Mem0 Memory System Usage Rules
+
+When working with the mem0 memory system in this codebase:
+
+## API Endpoints
+- **Main API**: `http://localhost:8000` (mem0 server)
+- **OpenMemory MCP**: `http://localhost:8765` (MCP protocol server)
+- **UI**: `http://localhost:3000` (React interface)
+
+## Memory Operations
+1. **Create**: POST `/memories` with `{"messages": [...], "user_id": "...", "metadata": {...}}`
+2. **Retrieve**: GET `/memories?user_id=...` or `/memories/{memory_id}`
+3. **Search**: POST `/search` with `{"query": "...", "user_id": "..."}`
+4. **Update**: PUT `/memories/{memory_id}` with `{"text": "..."}`
+5. **Delete**: DELETE `/memories/{memory_id}`
+
+## Required Services
+Always ensure these containers are running:
+- `mem0` (main API server)
+- `postgres-mem0` (vector storage)
+- `neo4j-mem0` (graph relationships)
+- `openmemory-ui` (web interface) - in main docker-compose.yml
+- `openmemory-mcp` (MCP protocol server) - in main docker-compose.yml
+
+## Best Practices
+- Always include `user_id` in requests (default: "drj")
+- Use structured messages format with role/content pairs
+- Add meaningful metadata for better memory organization
+- Check service health with `./check_openmemory_health.sh` before operations
+- Test changes with `python test_memory_system.py`
+
+## Data Flow
+Messages → Mem0 API → Processing → PostgreSQL (vectors) + Neo4j (graph) → Response
