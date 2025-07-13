@@ -34,7 +34,7 @@ postgres_vacuum_analyze() {
     check_container "$POSTGRES_CONTAINER"
 
     # Get database size before maintenance
-    DB_SIZE_BEFORE=$(docker exec "$POSTGRES_CONTAINER" psql \
+    DB_SIZE_BEFORE=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "SELECT pg_size_pretty(pg_database_size('mem0'))")
@@ -42,13 +42,13 @@ postgres_vacuum_analyze() {
     log "Database size before maintenance: $DB_SIZE_BEFORE"
 
     # Vacuum and analyze all tables
-    docker exec "$POSTGRES_CONTAINER" psql \
+    docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -c "VACUUM (VERBOSE, ANALYZE);"
 
     # Get database size after maintenance
-    DB_SIZE_AFTER=$(docker exec "$POSTGRES_CONTAINER" psql \
+    DB_SIZE_AFTER=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "SELECT pg_size_pretty(pg_database_size('mem0'))")
@@ -61,7 +61,7 @@ postgres_reindex() {
     log "Starting PostgreSQL REINDEX..."
 
     # Check for bloated indexes
-    BLOATED_INDEXES=$(docker exec "$POSTGRES_CONTAINER" psql \
+    BLOATED_INDEXES=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -75,7 +75,7 @@ postgres_reindex() {
         while IFS= read -r table; do
             if [ -n "$table" ]; then
                 log "Reindexing table: $table"
-                docker exec "$POSTGRES_CONTAINER" psql \
+                docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
                     -U "${POSTGRES_USER:-drj}" \
                     -d mem0 \
                     -c "REINDEX TABLE $table;" || log "Failed to reindex $table"
@@ -90,7 +90,7 @@ postgres_update_statistics() {
     log "Updating PostgreSQL statistics..."
 
     # Update table statistics
-    docker exec "$POSTGRES_CONTAINER" psql \
+    docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -c "ANALYZE;"
@@ -101,7 +101,7 @@ postgres_update_statistics() {
 postgres_check_connections() {
     log "Checking PostgreSQL connection usage..."
 
-    CONNECTIONS=$(docker exec "$POSTGRES_CONTAINER" psql \
+    CONNECTIONS=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -114,7 +114,7 @@ postgres_check_connections() {
     log "Active connections: $CONNECTIONS"
 
     # Check for long-running queries
-    LONG_QUERIES=$(docker exec "$POSTGRES_CONTAINER" psql \
+    LONG_QUERIES=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -215,7 +215,7 @@ cleanup_old_data() {
     log "Checking for old data cleanup..."
 
     # Check for old memories (example: memories older than 1 year)
-    OLD_MEMORIES=$(docker exec "$POSTGRES_CONTAINER" psql \
+    OLD_MEMORIES=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -230,7 +230,7 @@ cleanup_old_data() {
     fi
 
     # Clean up test data (if any)
-    TEST_MEMORIES=$(docker exec "$POSTGRES_CONTAINER" psql \
+    TEST_MEMORIES=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d mem0 \
         -t -c "
@@ -281,8 +281,8 @@ Disk Usage:
 $(df -h /home/drj/projects/mem0-stack/data)
 
 PostgreSQL Information:
-- Database Size: $(docker exec "$POSTGRES_CONTAINER" psql -U "${POSTGRES_USER:-drj}" -d mem0 -t -c "SELECT pg_size_pretty(pg_database_size('mem0'))" 2>/dev/null || echo "Unable to determine")
-- Active Connections: $(docker exec "$POSTGRES_CONTAINER" psql -U "${POSTGRES_USER:-drj}" -d mem0 -t -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'" 2>/dev/null || echo "Unable to determine")
+- Database Size: $(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql -U "${POSTGRES_USER:-drj}" -d mem0 -t -c "SELECT pg_size_pretty(pg_database_size('mem0'))" 2>/dev/null || echo "Unable to determine")
+- Active Connections: $(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql -U "${POSTGRES_USER:-drj}" -d mem0 -t -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active'" 2>/dev/null || echo "Unable to determine")
 
 Neo4j Information:
 - Transaction Log Size: $(docker exec "$NEO4J_CONTAINER" du -sh /data/transactions 2>/dev/null || echo "Unable to determine")
