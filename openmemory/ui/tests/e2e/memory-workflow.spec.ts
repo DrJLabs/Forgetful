@@ -9,7 +9,7 @@ test.describe('Memory Management Workflow', () => {
     await expect(page.locator('h1')).toContainText('OpenMemory')
 
     // Mock API responses to avoid external dependencies
-    await page.route('**/api/memories**', async route => {
+    await page.route('**/api/memories**', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
@@ -22,13 +22,13 @@ test.describe('Memory Management Workflow', () => {
                 user_id: 'test-user',
                 metadata: { source: 'test' },
                 created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              }
+                updated_at: new Date().toISOString(),
+              },
             ],
             total: 1,
             page: 1,
-            page_size: 10
-          })
+            page_size: 10,
+          }),
         })
       } else if (route.request().method() === 'POST') {
         await route.fulfill({
@@ -40,13 +40,13 @@ test.describe('Memory Management Workflow', () => {
             user_id: 'test-user',
             metadata: { source: 'e2e-test' },
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          })
+            updated_at: new Date().toISOString(),
+          }),
         })
       }
     })
 
-    await page.route('**/api/search**', async route => {
+    await page.route('**/api/search**', async (route) => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -59,16 +59,18 @@ test.describe('Memory Management Workflow', () => {
               metadata: { source: 'search-test' },
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              score: 0.95
-            }
+              score: 0.95,
+            },
           ],
-          total: 1
-        })
+          total: 1,
+        }),
       })
     })
   })
 
-  test('should navigate to memories page and display memories', async ({ page }) => {
+  test('should navigate to memories page and display memories', async ({
+    page,
+  }) => {
     // Click on Memories navigation link
     await page.click('a[href="/memories"]')
 
@@ -88,7 +90,9 @@ test.describe('Memory Management Workflow', () => {
     await page.waitForURL('**/memories')
 
     // Look for create memory button or dialog trigger
-    const createButton = page.locator('button', { hasText: /create|add/i }).first()
+    const createButton = page
+      .locator('button', { hasText: /create|add/i })
+      .first()
     if (await createButton.isVisible()) {
       await createButton.click()
 
@@ -97,11 +101,15 @@ test.describe('Memory Management Workflow', () => {
       await textInput.fill('New memory created via E2E test')
 
       // Submit the form
-      const submitButton = page.locator('button', { hasText: /save|create|submit/i }).first()
+      const submitButton = page
+        .locator('button', { hasText: /save|create|submit/i })
+        .first()
       await submitButton.click()
 
       // Verify success message or new memory appears
-      await expect(page.getByText('New memory created via E2E test')).toBeVisible()
+      await expect(
+        page.getByText('New memory created via E2E test'),
+      ).toBeVisible()
     }
   })
 
@@ -111,7 +119,9 @@ test.describe('Memory Management Workflow', () => {
     await page.waitForURL('**/memories')
 
     // Find search input
-    const searchInput = page.locator('input[placeholder*="search" i], input[type="search"]').first()
+    const searchInput = page
+      .locator('input[placeholder*="search" i], input[type="search"]')
+      .first()
     if (await searchInput.isVisible()) {
       await searchInput.fill('test query')
 
@@ -126,7 +136,9 @@ test.describe('Memory Management Workflow', () => {
     }
   })
 
-  test('should navigate through different pages successfully', async ({ page }) => {
+  test('should navigate through different pages successfully', async ({
+    page,
+  }) => {
     // Test Dashboard
     await page.click('a[href="/"]')
     await expect(page.url()).toContain('/')
@@ -147,7 +159,9 @@ test.describe('Memory Management Workflow', () => {
     await expect(page.url()).toContain('/memories')
   })
 
-  test('should handle memory actions (view, edit, delete)', async ({ page }) => {
+  test('should handle memory actions (view, edit, delete)', async ({
+    page,
+  }) => {
     // Navigate to memories page
     await page.click('a[href="/memories"]')
     await page.waitForURL('**/memories')
@@ -156,7 +170,9 @@ test.describe('Memory Management Workflow', () => {
     await expect(page.getByText('Test memory for E2E testing')).toBeVisible()
 
     // Look for action buttons (three dots menu, edit icon, etc.)
-    const actionButton = page.locator('button[aria-label*="action" i], button[aria-label*="menu" i]').first()
+    const actionButton = page
+      .locator('button[aria-label*="action" i], button[aria-label*="menu" i]')
+      .first()
     if (await actionButton.isVisible()) {
       await actionButton.click()
 
@@ -173,11 +189,11 @@ test.describe('Memory Management Workflow', () => {
 
   test('should handle error states gracefully', async ({ page }) => {
     // Mock API error
-    await page.route('**/api/memories**', async route => {
+    await page.route('**/api/memories**', async (route) => {
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({ error: 'Internal server error' })
+        body: JSON.stringify({ error: 'Internal server error' }),
       })
     })
 
@@ -204,7 +220,11 @@ test.describe('Memory Management Workflow', () => {
     await expect(page.locator('header')).toBeVisible()
 
     // Check if mobile menu exists and works
-    const mobileMenuButton = page.locator('button[aria-label*="menu" i], button[aria-label*="navigation" i]').first()
+    const mobileMenuButton = page
+      .locator(
+        'button[aria-label*="menu" i], button[aria-label*="navigation" i]',
+      )
+      .first()
     if (await mobileMenuButton.isVisible()) {
       await mobileMenuButton.click()
       await expect(page.locator('nav, [role="navigation"]')).toBeVisible()
@@ -215,14 +235,14 @@ test.describe('Memory Management Workflow', () => {
 test.describe('Settings and Configuration', () => {
   test.beforeEach(async ({ page }) => {
     // Mock configuration API
-    await page.route('**/api/config**', async route => {
+    await page.route('**/api/config**', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             openmemory: {
-              custom_instructions: 'Test instructions'
+              custom_instructions: 'Test instructions',
             },
             mem0: {
               llm: {
@@ -230,24 +250,24 @@ test.describe('Settings and Configuration', () => {
                 config: {
                   model: 'gpt-4',
                   api_key: 'test-key',
-                  temperature: 0.7
-                }
+                  temperature: 0.7,
+                },
               },
               embedder: {
                 provider: 'openai',
                 config: {
                   model: 'text-embedding-ada-002',
-                  api_key: 'test-key'
-                }
-              }
-            }
-          })
+                  api_key: 'test-key',
+                },
+              },
+            },
+          }),
         })
       } else if (route.request().method() === 'POST') {
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ success: true })
+          body: JSON.stringify({ success: true }),
         })
       }
     })
@@ -281,7 +301,9 @@ test.describe('Settings and Configuration', () => {
     }
 
     // Save settings
-    const saveButton = page.locator('button', { hasText: /save|apply|update/i }).first()
+    const saveButton = page
+      .locator('button', { hasText: /save|apply|update/i })
+      .first()
     if (await saveButton.isVisible()) {
       await saveButton.click()
 
@@ -327,10 +349,14 @@ test.describe('Performance and Accessibility', () => {
 
     // Check for critical performance metrics
     const performanceMetrics = await page.evaluate(() => {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
+      const navigation = performance.getEntriesByType(
+        'navigation',
+      )[0] as PerformanceNavigationTiming
       return {
-        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
-        loadComplete: navigation.loadEventEnd - navigation.loadEventStart
+        domContentLoaded:
+          navigation.domContentLoadedEventEnd -
+          navigation.domContentLoadedEventStart,
+        loadComplete: navigation.loadEventEnd - navigation.loadEventStart,
       }
     })
 

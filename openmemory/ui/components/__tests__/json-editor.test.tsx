@@ -7,16 +7,25 @@ import { JsonEditor } from '../json-editor'
 // Mock the UI components
 jest.mock('../ui/alert', () => ({
   Alert: ({ children, variant, ...props }: any) => (
-    <div data-testid="alert" data-variant={variant} {...props}>{children}</div>
+    <div data-testid='alert' data-variant={variant} {...props}>
+      {children}
+    </div>
   ),
   AlertDescription: ({ children, ...props }: any) => (
-    <div data-testid="alert-description" {...props}>{children}</div>
+    <div data-testid='alert-description' {...props}>
+      {children}
+    </div>
   ),
 }))
 
 jest.mock('../ui/button', () => ({
   Button: ({ children, onClick, disabled, ...props }: any) => (
-    <button data-testid="button" onClick={onClick} disabled={disabled} {...props}>
+    <button
+      data-testid='button'
+      onClick={onClick}
+      disabled={disabled}
+      {...props}
+    >
       {children}
     </button>
   ),
@@ -25,7 +34,7 @@ jest.mock('../ui/button', () => ({
 jest.mock('../ui/textarea', () => ({
   Textarea: ({ value, onChange, ...props }: any) => (
     <textarea
-      data-testid="textarea"
+      data-testid='textarea'
       value={value}
       onChange={onChange}
       {...props}
@@ -34,8 +43,8 @@ jest.mock('../ui/textarea', () => ({
 }))
 
 jest.mock('lucide-react', () => ({
-  AlertCircle: () => <span data-testid="alert-circle-icon">⚠️</span>,
-  CheckCircle2: () => <span data-testid="check-circle-icon">✅</span>,
+  AlertCircle: () => <span data-testid='alert-circle-icon'>⚠️</span>,
+  CheckCircle2: () => <span data-testid='check-circle-icon'>✅</span>,
 }))
 
 describe('JsonEditor', () => {
@@ -92,7 +101,9 @@ describe('JsonEditor', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('alert-circle-icon')).toBeInTheDocument()
-        expect(screen.queryByTestId('check-circle-icon')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('check-circle-icon'),
+        ).not.toBeInTheDocument()
       })
     })
 
@@ -130,7 +141,9 @@ describe('JsonEditor', () => {
       await user.type(textarea, '{ "valid": true }')
 
       await waitFor(() => {
-        expect(screen.queryByText('Invalid JSON syntax')).not.toBeInTheDocument()
+        expect(
+          screen.queryByText('Invalid JSON syntax'),
+        ).not.toBeInTheDocument()
         expect(screen.getByTestId('check-circle-icon')).toBeInTheDocument()
       })
     })
@@ -190,7 +203,7 @@ describe('JsonEditor', () => {
       const applyButton = screen.getByTestId('button')
 
       // Should be enabled with valid initial JSON
-      expect(applyButton).not.toBeDisabled()
+      expect(applyButton).toBeEnabled()
     })
 
     it('shows error when apply fails with invalid JSON', async () => {
@@ -216,7 +229,9 @@ describe('JsonEditor', () => {
       await user.click(applyButton)
 
       await waitFor(() => {
-        expect(screen.getByText('Failed to apply changes: Invalid JSON')).toBeInTheDocument()
+        expect(
+          screen.getByText('Failed to apply changes: Invalid JSON'),
+        ).toBeInTheDocument()
       })
 
       // Restore JSON.parse
@@ -229,7 +244,9 @@ describe('JsonEditor', () => {
 
   describe('Value Updates', () => {
     it('updates display when value prop changes', () => {
-      const { rerender } = render(<JsonEditor value={validObject} onChange={mockOnChange} />)
+      const { rerender } = render(
+        <JsonEditor value={validObject} onChange={mockOnChange} />,
+      )
 
       const newObject = { different: 'object', array: [1, 2, 3] }
       rerender(<JsonEditor value={newObject} onChange={mockOnChange} />)
@@ -255,7 +272,9 @@ describe('JsonEditor', () => {
 
     it('preserves user edits when external value changes', async () => {
       const user = userEvent.setup()
-      const { rerender } = render(<JsonEditor value={validObject} onChange={mockOnChange} />)
+      const { rerender } = render(
+        <JsonEditor value={validObject} onChange={mockOnChange} />,
+      )
 
       const textarea = screen.getByTestId('textarea')
 
@@ -288,7 +307,7 @@ describe('JsonEditor', () => {
     })
 
     it('handles primitive values', () => {
-      render(<JsonEditor value="string value" onChange={mockOnChange} />)
+      render(<JsonEditor value='string value' onChange={mockOnChange} />)
 
       const textarea = screen.getByTestId('textarea')
       expect(textarea).toHaveValue('"string value"')
@@ -305,7 +324,10 @@ describe('JsonEditor', () => {
 
     it('handles very large JSON objects', () => {
       const largeObject = {
-        data: Array.from({ length: 1000 }, (_, i) => ({ id: i, value: `item_${i}` }))
+        data: Array.from({ length: 1000 }, (_, i) => ({
+          id: i,
+          value: `item_${i}`,
+        })),
       }
 
       render(<JsonEditor value={largeObject} onChange={mockOnChange} />)
@@ -331,7 +353,9 @@ describe('JsonEditor', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('alert-circle-icon')).toBeInTheDocument()
-        expect(screen.queryByTestId('check-circle-icon')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('check-circle-icon'),
+        ).not.toBeInTheDocument()
       })
     })
 

@@ -1,12 +1,12 @@
-"use client"
+'use client'
 
-import type React from "react"
+import React from 'react'
 
-import { useState, useEffect } from "react"
-import { AlertCircle, CheckCircle2 } from "lucide-react"
-import { Alert, AlertDescription } from "./ui/alert"
-import { Button } from "./ui/button"
-import { Textarea } from "./ui/textarea"
+import { useState, useEffect } from 'react'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Alert, AlertDescription } from './ui/alert'
+import { Button } from './ui/button'
+import { Textarea } from './ui/textarea'
 
 interface JsonEditorProps {
   value: any
@@ -14,7 +14,7 @@ interface JsonEditorProps {
 }
 
 export function JsonEditor({ value, onChange }: JsonEditorProps) {
-  const [jsonString, setJsonString] = useState("")
+  const [jsonString, setJsonString] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isValid, setIsValid] = useState(true)
 
@@ -24,7 +24,7 @@ export function JsonEditor({ value, onChange }: JsonEditorProps) {
       setIsValid(true)
       setError(null)
     } catch (err) {
-      setError("Invalid JSON object")
+      setError('Invalid JSON object')
       setIsValid(false)
     }
   }, [value])
@@ -36,7 +36,7 @@ export function JsonEditor({ value, onChange }: JsonEditorProps) {
       setIsValid(true)
       setError(null)
     } catch (err) {
-      setError("Invalid JSON syntax")
+      setError('Invalid JSON syntax')
       setIsValid(false)
     }
   }
@@ -48,30 +48,34 @@ export function JsonEditor({ value, onChange }: JsonEditorProps) {
       setIsValid(true)
       setError(null)
     } catch (err) {
-      setError("Failed to apply changes: Invalid JSON")
+      setError('Failed to apply changes: Invalid JSON')
     }
   }
 
   return (
-    <div className="space-y-4">
-      <div className="relative">
-        <Textarea value={jsonString} onChange={handleTextChange} className="font-mono h-[600px] resize-none" />
-        <div className="absolute top-3 right-3">
+    <div className='space-y-4'>
+      <div className='relative'>
+        <Textarea
+          value={jsonString}
+          onChange={handleTextChange}
+          className='font-mono h-[600px] resize-none'
+        />
+        <div className='absolute top-3 right-3'>
           {isValid ? (
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className='h-5 w-5 text-green-500' />
           ) : (
-            <AlertCircle className="h-5 w-5 text-red-500" />
+            <AlertCircle className='h-5 w-5 text-red-500' />
           )}
         </div>
       </div>
 
       {error && (
-        <Alert variant="destructive">
+        <Alert variant='destructive'>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Button onClick={handleApply} disabled={!isValid} className="w-full">
+      <Button onClick={handleApply} disabled={!isValid} className='w-full'>
         Apply Changes
       </Button>
     </div>

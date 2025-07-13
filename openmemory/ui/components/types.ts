@@ -1,5 +1,19 @@
-export type Category = "personal" | "work" | "health" | "finance" | "travel" | "education" | "preferences" | "relationships"
-export type Client = "chrome" | "chatgpt" | "cursor" | "windsurf" | "terminal" | "api"
+export type Category =
+  | 'personal'
+  | 'work'
+  | 'health'
+  | 'finance'
+  | 'travel'
+  | 'education'
+  | 'preferences'
+  | 'relationships'
+export type Client =
+  | 'chrome'
+  | 'chatgpt'
+  | 'cursor'
+  | 'windsurf'
+  | 'terminal'
+  | 'api'
 
 export interface Memory {
   id: string
@@ -9,5 +23,5 @@ export interface Memory {
   categories: Category[]
   created_at: number
   app_name: string
-  state: "active" | "paused" | "archived" | "deleted"
+  state: 'active' | 'paused' | 'archived' | 'deleted'
 }

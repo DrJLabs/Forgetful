@@ -1,15 +1,15 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 interface DialogState {
   updateMemory: {
-    isOpen: boolean;
-    memoryId: string | null;
-    memoryContent: string | null;
-  };
+    isOpen: boolean
+    memoryId: string | null
+    memoryContent: string | null
+  }
 }
 
 interface UIState {
-  dialogs: DialogState;
+  dialogs: DialogState
 }
 
 const initialState: UIState = {
@@ -20,28 +20,29 @@ const initialState: UIState = {
       memoryContent: null,
     },
   },
-};
+}
 
 const uiSlice = createSlice({
   name: 'ui',
   initialState,
   reducers: {
-    openUpdateMemoryDialog: (state, action: PayloadAction<{ memoryId: string; memoryContent: string }>) => {
-      state.dialogs.updateMemory.isOpen = true;
-      state.dialogs.updateMemory.memoryId = action.payload.memoryId;
-      state.dialogs.updateMemory.memoryContent = action.payload.memoryContent;
+    openUpdateMemoryDialog: (
+      state,
+      action: PayloadAction<{ memoryId: string; memoryContent: string }>,
+    ) => {
+      state.dialogs.updateMemory.isOpen = true
+      state.dialogs.updateMemory.memoryId = action.payload.memoryId
+      state.dialogs.updateMemory.memoryContent = action.payload.memoryContent
     },
     closeUpdateMemoryDialog: (state) => {
-      state.dialogs.updateMemory.isOpen = false;
-      state.dialogs.updateMemory.memoryId = null;
-      state.dialogs.updateMemory.memoryContent = null;
+      state.dialogs.updateMemory.isOpen = false
+      state.dialogs.updateMemory.memoryId = null
+      state.dialogs.updateMemory.memoryContent = null
     },
   },
-});
+})
 
-export const {
-  openUpdateMemoryDialog,
-  closeUpdateMemoryDialog,
-} = uiSlice.actions;
+export const { openUpdateMemoryDialog, closeUpdateMemoryDialog } =
+  uiSlice.actions
 
-export default uiSlice.reducer;
+export default uiSlice.reducer

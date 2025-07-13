@@ -1,12 +1,12 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
 interface ProfileState {
-  userId: string;
-  totalMemories: number;
-  totalApps: number;
-  status: 'idle' | 'loading' | 'succeeded' | 'failed';
-  error: string | null;
-  apps: any[];
+  userId: string
+  totalMemories: number
+  totalApps: number
+  status: 'idle' | 'loading' | 'succeeded' | 'failed'
+  error: string | null
+  apps: any[]
 }
 
 const initialState: ProfileState = {
@@ -16,39 +16,39 @@ const initialState: ProfileState = {
   status: 'idle',
   error: null,
   apps: [],
-};
+}
 
 const profileSlice = createSlice({
   name: 'profile',
   initialState,
   reducers: {
     setUserId: (state, action: PayloadAction<string>) => {
-      state.userId = action.payload;
+      state.userId = action.payload
     },
     setProfileLoading: (state) => {
-      state.status = 'loading';
-      state.error = null;
+      state.status = 'loading'
+      state.error = null
     },
     setProfileError: (state, action: PayloadAction<string>) => {
-      state.status = 'failed';
-      state.error = action.payload;
+      state.status = 'failed'
+      state.error = action.payload
     },
     resetProfileState: (state) => {
-      state.status = 'idle';
-      state.error = null;
-      state.userId = process.env.NEXT_PUBLIC_USER_ID || 'user';
+      state.status = 'idle'
+      state.error = null
+      state.userId = process.env.NEXT_PUBLIC_USER_ID || 'user'
     },
     setTotalMemories: (state, action: PayloadAction<number>) => {
-      state.totalMemories = action.payload;
+      state.totalMemories = action.payload
     },
     setTotalApps: (state, action: PayloadAction<number>) => {
-      state.totalApps = action.payload;
+      state.totalApps = action.payload
     },
     setApps: (state, action: PayloadAction<any[]>) => {
-      state.apps = action.payload;
-    }
+      state.apps = action.payload
+    },
   },
-});
+})
 
 export const {
   setUserId,
@@ -57,7 +57,7 @@ export const {
   resetProfileState,
   setTotalMemories,
   setTotalApps,
-  setApps
-} = profileSlice.actions;
+  setApps,
+} = profileSlice.actions
 
-export default profileSlice.reducer;
+export default profileSlice.reducer

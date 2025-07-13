@@ -35,7 +35,9 @@ jest.mock('@/hooks/useConfig', () => ({
 
 // Mock the CreateMemoryDialog component
 jest.mock('@/app/memories/components/CreateMemoryDialog', () => ({
-  CreateMemoryDialog: () => <div data-testid="create-memory-dialog">Create Memory</div>,
+  CreateMemoryDialog: () => (
+    <div data-testid='create-memory-dialog'>Create Memory</div>
+  ),
 }))
 
 // Mock next/navigation with a controllable pathname
@@ -171,7 +173,11 @@ describe('Navbar', () => {
       render(<Navbar />)
 
       const refreshButton = screen.getByText('Refresh').closest('button')
-      expect(refreshButton).toHaveClass('border-zinc-700/50', 'bg-zinc-900', 'hover:bg-zinc-800')
+      expect(refreshButton).toHaveClass(
+        'border-zinc-700/50',
+        'bg-zinc-900',
+        'hover:bg-zinc-800',
+      )
     })
   })
 
@@ -201,7 +207,12 @@ describe('Navbar', () => {
       expect(header).toHaveClass('sticky', 'top-0', 'z-50', 'w-full')
 
       const container = header.querySelector('.container')
-      expect(container).toHaveClass('flex', 'h-14', 'items-center', 'justify-between')
+      expect(container).toHaveClass(
+        'flex',
+        'h-14',
+        'items-center',
+        'justify-between',
+      )
     })
   })
 
@@ -222,7 +233,7 @@ describe('Navbar', () => {
       const buttons = screen.getAllByRole('button')
       expect(buttons.length).toBeGreaterThan(0)
 
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         expect(button).toBeInTheDocument()
       })
     })

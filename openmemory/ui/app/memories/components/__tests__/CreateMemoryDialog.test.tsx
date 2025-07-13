@@ -8,25 +8,37 @@ import { CreateMemoryDialog } from '../CreateMemoryDialog'
 jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
-    error: jest.fn()
-  }
+    error: jest.fn(),
+  },
 }))
 
 // Mock useMemoriesApi hook
 jest.mock('@/hooks/useMemoriesApi', () => ({
-  useMemoriesApi: jest.fn()
+  useMemoriesApi: jest.fn(),
 }))
 
 // Mock UI components
 jest.mock('@/components/ui/dialog', () => ({
   Dialog: ({ children, open, onOpenChange }: any) =>
-    open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({ children }: any) => <div data-testid="dialog-content">{children}</div>,
-  DialogDescription: ({ children }: any) => <p data-testid="dialog-description">{children}</p>,
-  DialogFooter: ({ children }: any) => <div data-testid="dialog-footer">{children}</div>,
-  DialogHeader: ({ children }: any) => <div data-testid="dialog-header">{children}</div>,
-  DialogTitle: ({ children }: any) => <h2 data-testid="dialog-title">{children}</h2>,
-  DialogTrigger: ({ children }: any) => <div data-testid="dialog-trigger">{children}</div>
+    open ? <div data-testid='dialog'>{children}</div> : null,
+  DialogContent: ({ children }: any) => (
+    <div data-testid='dialog-content'>{children}</div>
+  ),
+  DialogDescription: ({ children }: any) => (
+    <p data-testid='dialog-description'>{children}</p>
+  ),
+  DialogFooter: ({ children }: any) => (
+    <div data-testid='dialog-footer'>{children}</div>
+  ),
+  DialogHeader: ({ children }: any) => (
+    <div data-testid='dialog-header'>{children}</div>
+  ),
+  DialogTitle: ({ children }: any) => (
+    <h2 data-testid='dialog-title'>{children}</h2>
+  ),
+  DialogTrigger: ({ children }: any) => (
+    <div data-testid='dialog-trigger'>{children}</div>
+  ),
 }))
 
 jest.mock('@/components/ui/button', () => ({
@@ -39,32 +51,34 @@ jest.mock('@/components/ui/button', () => ({
     >
       {children}
     </button>
-  )
+  ),
 }))
 
 jest.mock('@/components/ui/textarea', () => ({
   Textarea: ({ placeholder, id, ...props }: any) => (
     <textarea
-      data-testid="memory-textarea"
+      data-testid='memory-textarea'
       placeholder={placeholder}
       id={id}
       {...props}
     />
-  )
+  ),
 }))
 
 jest.mock('@/components/ui/label', () => ({
   Label: ({ children, htmlFor }: any) => (
-    <label data-testid="memory-label" htmlFor={htmlFor}>{children}</label>
-  )
+    <label data-testid='memory-label' htmlFor={htmlFor}>
+      {children}
+    </label>
+  ),
 }))
 
 jest.mock('lucide-react', () => ({
-  Loader2: () => <div data-testid="loading-spinner">Loading...</div>
+  Loader2: () => <div data-testid='loading-spinner'>Loading...</div>,
 }))
 
 jest.mock('react-icons/go', () => ({
-  GoPlus: () => <div data-testid="plus-icon">+</div>
+  GoPlus: () => <div data-testid='plus-icon'>+</div>,
 }))
 
 describe('CreateMemoryDialog', () => {
@@ -80,7 +94,7 @@ describe('CreateMemoryDialog', () => {
     useMemoriesApi.mockReturnValue({
       createMemory: mockCreateMemory,
       fetchMemories: mockFetchMemories,
-      isLoading: false
+      isLoading: false,
     })
   })
 
@@ -119,9 +133,13 @@ describe('CreateMemoryDialog', () => {
       await user.click(triggerButton)
 
       expect(screen.getByText('Create New Memory')).toBeInTheDocument()
-      expect(screen.getByText('Add a new memory to your OpenMemory instance')).toBeInTheDocument()
+      expect(
+        screen.getByText('Add a new memory to your OpenMemory instance'),
+      ).toBeInTheDocument()
       expect(screen.getByText('Memory')).toBeInTheDocument()
-      expect(screen.getByPlaceholderText('e.g., Lives in San Francisco')).toBeInTheDocument()
+      expect(
+        screen.getByPlaceholderText('e.g., Lives in San Francisco'),
+      ).toBeInTheDocument()
     })
 
     it('renders action buttons in dialog footer', async () => {
@@ -319,7 +337,9 @@ describe('CreateMemoryDialog', () => {
       await user.click(saveButton)
 
       await waitFor(() => {
-        expect(toast.success).toHaveBeenCalledWith('Memory created successfully')
+        expect(toast.success).toHaveBeenCalledWith(
+          'Memory created successfully',
+        )
       })
     })
 
@@ -346,7 +366,7 @@ describe('CreateMemoryDialog', () => {
       useMemoriesApi.mockReturnValue({
         createMemory: mockCreateMemory,
         fetchMemories: mockFetchMemories,
-        isLoading: true
+        isLoading: true,
       })
 
       render(<CreateMemoryDialog />)
@@ -363,7 +383,7 @@ describe('CreateMemoryDialog', () => {
       useMemoriesApi.mockReturnValue({
         createMemory: mockCreateMemory,
         fetchMemories: mockFetchMemories,
-        isLoading: true
+        isLoading: true,
       })
 
       render(<CreateMemoryDialog />)
@@ -382,7 +402,7 @@ describe('CreateMemoryDialog', () => {
       await user.click(triggerButton)
 
       const saveButton = screen.getByText('Save Memory')
-      expect(saveButton).not.toBeDisabled()
+      expect(saveButton).toBeEnabled()
       expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument()
     })
   })

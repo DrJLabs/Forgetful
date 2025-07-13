@@ -12,7 +12,7 @@ const customJestConfig = {
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
-    '<rootDir>/coverage/'
+    '<rootDir>/coverage/',
   ],
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you based on your tsconfig.json paths)
@@ -31,7 +31,8 @@ const customJestConfig = {
     '^.+\\.(css|sass|scss)$': 'identity-obj-proxy',
 
     // Handle image imports
-    '^.+\\.(jpg|jpeg|png|gif|webp|avif|svg)$': '<rootDir>/__mocks__/fileMock.js',
+    '^.+\\.(jpg|jpeg|png|gif|webp|avif|svg)$':
+      '<rootDir>/__mocks__/fileMock.js',
   },
   collectCoverageFrom: [
     'components/**/*.{js,jsx,ts,tsx}',

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 test.describe('Settings Configuration Management', () => {
   test.beforeEach(async ({ page }) => {
     // Mock configuration API endpoints
-    await page.route('**/api/config**', async route => {
+    await page.route('**/api/config**', async (route) => {
       const method = route.request().method()
 
       if (method === 'GET') {
@@ -12,7 +12,7 @@ test.describe('Settings Configuration Management', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             openmemory: {
-              custom_instructions: 'Default instructions for memory processing'
+              custom_instructions: 'Default instructions for memory processing',
             },
             mem0: {
               llm: {
@@ -21,18 +21,18 @@ test.describe('Settings Configuration Management', () => {
                   model: 'gpt-4',
                   api_key: 'env:OPENAI_API_KEY',
                   temperature: 0.7,
-                  max_tokens: 2000
-                }
+                  max_tokens: 2000,
+                },
               },
               embedder: {
                 provider: 'openai',
                 config: {
                   model: 'text-embedding-ada-002',
-                  api_key: 'env:OPENAI_API_KEY'
-                }
-              }
-            }
-          })
+                  api_key: 'env:OPENAI_API_KEY',
+                },
+              },
+            },
+          }),
         })
       } else if (method === 'POST' || method === 'PUT') {
         await route.fulfill({
@@ -40,31 +40,41 @@ test.describe('Settings Configuration Management', () => {
           contentType: 'application/json',
           body: JSON.stringify({
             success: true,
-            message: 'Configuration updated successfully'
-          })
+            message: 'Configuration updated successfully',
+          }),
         })
       }
     })
   })
 
-  test('should load and modify OpenMemory custom instructions', async ({ page }) => {
+  test('should load and modify OpenMemory custom instructions', async ({
+    page,
+  }) => {
     await page.goto('/settings')
 
     // Wait for settings page to load
     await expect(page.getByText('OpenMemory Settings')).toBeVisible()
 
     // Find custom instructions textarea
-    const customInstructions = page.locator('textarea[id="custom-instructions"]')
+    const customInstructions = page.locator(
+      'textarea[id="custom-instructions"]',
+    )
     await expect(customInstructions).toBeVisible()
 
     // Verify default content is loaded
-    await expect(customInstructions).toHaveValue('Default instructions for memory processing')
+    await expect(customInstructions).toHaveValue(
+      'Default instructions for memory processing',
+    )
 
     // Update instructions
-    await customInstructions.fill('Updated custom instructions for comprehensive memory management and fact extraction')
+    await customInstructions.fill(
+      'Updated custom instructions for comprehensive memory management and fact extraction',
+    )
 
     // Verify the change was applied
-    await expect(customInstructions).toHaveValue('Updated custom instructions for comprehensive memory management and fact extraction')
+    await expect(customInstructions).toHaveValue(
+      'Updated custom instructions for comprehensive memory management and fact extraction',
+    )
   })
 
   test('should configure LLM provider settings correctly', async ({ page }) => {
@@ -196,7 +206,10 @@ test.describe('Settings Configuration Management', () => {
     await expect(apiKeyInput).toHaveAttribute('type', 'password')
 
     // Find and click the visibility toggle button
-    const visibilityToggle = page.locator('button').filter({ hasText: /👁|🙈/ }).first()
+    const visibilityToggle = page
+      .locator('button')
+      .filter({ hasText: /👁|🙈/ })
+      .first()
     await visibilityToggle.click()
 
     // Type should change to text (though this depends on implementation)
@@ -213,7 +226,9 @@ test.describe('Settings Configuration Management', () => {
 
     // Look for validation messages or disabled submit buttons
     // This test depends on the actual validation implementation
-    const saveButton = page.locator('button', { hasText: /save|apply|update/i }).first()
+    const saveButton = page
+      .locator('button', { hasText: /save|apply|update/i })
+      .first()
 
     if (await saveButton.isVisible()) {
       // If validation is implemented, button might be disabled or show errors
@@ -228,7 +243,9 @@ test.describe('Settings Form Interactions', () => {
     await page.goto('/settings')
 
     // Look for view toggle buttons (Form/JSON)
-    const jsonViewToggle = page.locator('button', { hasText: /json|raw|code/i }).first()
+    const jsonViewToggle = page
+      .locator('button', { hasText: /json|raw|code/i })
+      .first()
 
     if (await jsonViewToggle.isVisible()) {
       await jsonViewToggle.click()
@@ -237,7 +254,9 @@ test.describe('Settings Form Interactions', () => {
       await expect(page.locator('textarea[class*="font-mono"]')).toBeVisible()
 
       // Switch back to form view
-      const formViewToggle = page.locator('button', { hasText: /form|visual/i }).first()
+      const formViewToggle = page
+        .locator('button', { hasText: /form|visual/i })
+        .first()
       if (await formViewToggle.isVisible()) {
         await formViewToggle.click()
 
@@ -251,7 +270,9 @@ test.describe('Settings Form Interactions', () => {
     await page.goto('/settings')
 
     // Look for export functionality
-    const exportButton = page.locator('button', { hasText: /export|download/i }).first()
+    const exportButton = page
+      .locator('button', { hasText: /export|download/i })
+      .first()
 
     if (await exportButton.isVisible()) {
       // Start waiting for download before clicking
@@ -264,7 +285,9 @@ test.describe('Settings Form Interactions', () => {
     }
 
     // Look for import functionality
-    const importButton = page.locator('button', { hasText: /import|upload/i }).first()
+    const importButton = page
+      .locator('button', { hasText: /import|upload/i })
+      .first()
 
     if (await importButton.isVisible()) {
       // This would require file upload testing
@@ -276,12 +299,16 @@ test.describe('Settings Form Interactions', () => {
     await page.goto('/settings')
 
     // Make a configuration change
-    const customInstructions = page.locator('textarea[id="custom-instructions"]')
+    const customInstructions = page.locator(
+      'textarea[id="custom-instructions"]',
+    )
     const testInstructions = 'Persistent test instructions'
     await customInstructions.fill(testInstructions)
 
     // Save if there's a save button
-    const saveButton = page.locator('button', { hasText: /save|apply/i }).first()
+    const saveButton = page
+      .locator('button', { hasText: /save|apply/i })
+      .first()
     if (await saveButton.isVisible()) {
       await saveButton.click()
 
@@ -293,20 +320,22 @@ test.describe('Settings Form Interactions', () => {
     await page.reload()
 
     // Verify the setting persisted
-    await expect(page.locator('textarea[id="custom-instructions"]')).toHaveValue(testInstructions)
+    await expect(
+      page.locator('textarea[id="custom-instructions"]'),
+    ).toHaveValue(testInstructions)
   })
 
   test('should handle configuration errors gracefully', async ({ page }) => {
     // Mock API error
-    await page.route('**/api/config**', async route => {
+    await page.route('**/api/config**', async (route) => {
       if (route.request().method() === 'POST') {
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
           body: JSON.stringify({
             error: 'Invalid configuration',
-            details: 'API key format is invalid'
-          })
+            details: 'API key format is invalid',
+          }),
         })
       }
     })
@@ -317,7 +346,9 @@ test.describe('Settings Form Interactions', () => {
     const apiKeyInput = page.locator('input[id="llm-api-key"]')
     await apiKeyInput.fill('invalid-key-format')
 
-    const saveButton = page.locator('button', { hasText: /save|apply/i }).first()
+    const saveButton = page
+      .locator('button', { hasText: /save|apply/i })
+      .first()
     if (await saveButton.isVisible()) {
       await saveButton.click()
 

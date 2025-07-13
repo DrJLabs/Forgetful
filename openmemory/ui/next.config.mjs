@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    // ESLint is now properly configured - remove the ignore flag
+    dirs: ['pages', 'components', 'lib', 'hooks', 'store', 'app'],
   },
   typescript: {
+    // Keep this for now to avoid breaking the build, but should be addressed later
     ignoreBuildErrors: true,
   },
   images: {

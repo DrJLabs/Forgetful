@@ -10,36 +10,40 @@ import memoriesSlice from '@/store/memoriesSlice'
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
-  useSearchParams: jest.fn()
+  useSearchParams: jest.fn(),
 }))
 
 // Mock hooks
 jest.mock('@/hooks/useMemoriesApi', () => ({
-  useMemoriesApi: jest.fn()
+  useMemoriesApi: jest.fn(),
 }))
 
 // Mock child components
 jest.mock('../MemoryTable', () => ({
-  MemoryTable: () => <div data-testid="memory-table">Memory Table</div>
+  MemoryTable: () => <div data-testid='memory-table'>Memory Table</div>,
 }))
 
 jest.mock('../MemoryPagination', () => ({
   MemoryPagination: ({ currentPage, totalPages, setCurrentPage }: any) => (
-    <div data-testid="memory-pagination">
-      <span>Page {currentPage} of {totalPages}</span>
+    <div data-testid='memory-pagination'>
+      <span>
+        Page {currentPage} of {totalPages}
+      </span>
       <button onClick={() => setCurrentPage(currentPage + 1)}>Next</button>
     </div>
-  )
+  ),
 }))
 
 jest.mock('../CreateMemoryDialog', () => ({
-  CreateMemoryDialog: () => <button data-testid="create-memory-dialog">Create Memory</button>
+  CreateMemoryDialog: () => (
+    <button data-testid='create-memory-dialog'>Create Memory</button>
+  ),
 }))
 
 jest.mock('../PageSizeSelector', () => ({
   PageSizeSelector: ({ pageSize, onPageSizeChange }: any) => (
     <select
-      data-testid="page-size-selector"
+      data-testid='page-size-selector'
       value={pageSize}
       onChange={(e) => onPageSizeChange(Number(e.target.value))}
     >
@@ -47,11 +51,13 @@ jest.mock('../PageSizeSelector', () => ({
       <option value={20}>20</option>
       <option value={50}>50</option>
     </select>
-  )
+  ),
 }))
 
 jest.mock('@/skeleton/MemoryTableSkeleton', () => ({
-  MemoryTableSkeleton: () => <div data-testid="memory-table-skeleton">Loading...</div>
+  MemoryTableSkeleton: () => (
+    <div data-testid='memory-table-skeleton'>Loading...</div>
+  ),
 }))
 
 // Mock data
@@ -64,7 +70,7 @@ const mockMemories = [
     metadata: {},
     categories: ['work'],
     client: 'api' as const,
-    app_name: 'test_app'
+    app_name: 'test_app',
   },
   {
     id: 'mem2',
@@ -74,27 +80,28 @@ const mockMemories = [
     metadata: {},
     categories: ['personal'],
     client: 'api' as const,
-    app_name: 'test_app'
-  }
+    app_name: 'test_app',
+  },
 ]
 
-const createTestStore = (initialState = {}) => configureStore({
-  reducer: {
-    memories: memoriesSlice
-  },
-  preloadedState: {
-    memories: {
-      memories: [],
-      selectedMemoryIds: [],
-      selectedMemory: null,
-      accessLogs: [],
-      relatedMemories: [],
-      loading: false,
-      error: null,
-      ...initialState
-    }
-  }
-})
+const createTestStore = (initialState = {}) =>
+  configureStore({
+    reducer: {
+      memories: memoriesSlice,
+    },
+    preloadedState: {
+      memories: {
+        memories: [],
+        selectedMemoryIds: [],
+        selectedMemory: null,
+        accessLogs: [],
+        relatedMemories: [],
+        loading: false,
+        error: null,
+        ...initialState,
+      },
+    },
+  })
 
 const renderWithStore = (store = createTestStore()) => {
   return {
@@ -102,8 +109,8 @@ const renderWithStore = (store = createTestStore()) => {
     ...render(
       <Provider store={store}>
         <MemoriesSection />
-      </Provider>
-    )
+      </Provider>,
+    ),
   }
 }
 
@@ -117,28 +124,32 @@ describe('MemoriesSection', () => {
 
     // Mock router
     ;(useRouter as jest.Mock).mockReturnValue({
-      push: mockPush
+      push: mockPush,
     })
 
     // Mock search params
     ;(useSearchParams as jest.Mock).mockReturnValue({
       get: mockGet,
-      toString: () => 'page=1&size=10'
+      toString: () => 'page=1&size=10',
     })
 
     // Mock useMemoriesApi
     const { useMemoriesApi } = require('@/hooks/useMemoriesApi')
     useMemoriesApi.mockReturnValue({
-      fetchMemories: mockFetchMemories
+      fetchMemories: mockFetchMemories,
     })
 
     // Set default URL params
     mockGet.mockImplementation((param: string) => {
       switch (param) {
-        case 'page': return '1'
-        case 'size': return '10'
-        case 'search': return ''
-        default: return null
+        case 'page':
+          return '1'
+        case 'size':
+          return '10'
+        case 'search':
+          return ''
+        default:
+          return null
       }
     })
   })
@@ -182,7 +193,9 @@ describe('MemoriesSection', () => {
       renderWithStore(store)
 
       await waitFor(() => {
-        expect(screen.getByText(/Showing 1 to 10 of 25 memories/)).toBeInTheDocument()
+        expect(
+          screen.getByText(/Showing 1 to 10 of 25 memories/),
+        ).toBeInTheDocument()
       })
     })
   })
@@ -195,7 +208,9 @@ describe('MemoriesSection', () => {
 
       await waitFor(() => {
         expect(screen.getByText('No memories found')).toBeInTheDocument()
-        expect(screen.getByText('Create your first memory to see it here')).toBeInTheDocument()
+        expect(
+          screen.getByText('Create your first memory to see it here'),
+        ).toBeInTheDocument()
         expect(screen.getByTestId('create-memory-dialog')).toBeInTheDocument()
       })
     })
@@ -225,10 +240,14 @@ describe('MemoriesSection', () => {
     it('fetches memories with search query from URL', () => {
       mockGet.mockImplementation((param: string) => {
         switch (param) {
-          case 'search': return 'test query'
-          case 'page': return '1'
-          case 'size': return '10'
-          default: return null
+          case 'search':
+            return 'test query'
+          case 'page':
+            return '1'
+          case 'size':
+            return '10'
+          default:
+            return null
         }
       })
 
@@ -242,10 +261,14 @@ describe('MemoriesSection', () => {
     it('fetches memories with custom page and size from URL', () => {
       mockGet.mockImplementation((param: string) => {
         switch (param) {
-          case 'page': return '3'
-          case 'size': return '25'
-          case 'search': return ''
-          default: return null
+          case 'page':
+            return '3'
+          case 'size':
+            return '25'
+          case 'search':
+            return ''
+          default:
+            return null
         }
       })
 
@@ -263,7 +286,10 @@ describe('MemoriesSection', () => {
       renderWithStore()
 
       await waitFor(() => {
-        expect(consoleError).toHaveBeenCalledWith('Failed to fetch memories:', expect.any(Error))
+        expect(consoleError).toHaveBeenCalledWith(
+          'Failed to fetch memories:',
+          expect.any(Error),
+        )
       })
 
       consoleError.mockRestore()
@@ -302,10 +328,14 @@ describe('MemoriesSection', () => {
     it('resets to page 1 when page size changes', async () => {
       mockGet.mockImplementation((param: string) => {
         switch (param) {
-          case 'page': return '5'
-          case 'size': return '10'
-          case 'search': return ''
-          default: return null
+          case 'page':
+            return '5'
+          case 'size':
+            return '10'
+          case 'search':
+            return ''
+          default:
+            return null
         }
       })
 
@@ -336,10 +366,14 @@ describe('MemoriesSection', () => {
     it('handles invalid URL parameters', () => {
       mockGet.mockImplementation((param: string) => {
         switch (param) {
-          case 'page': return 'invalid'
-          case 'size': return 'invalid'
-          case 'search': return ''
-          default: return null
+          case 'page':
+            return 'invalid'
+          case 'size':
+            return 'invalid'
+          case 'search':
+            return ''
+          default:
+            return null
         }
       })
 
@@ -372,13 +406,13 @@ describe('MemoriesSection', () => {
       // Update store with new memories
       store.dispatch({
         type: 'memories/setMemoriesSuccess',
-        payload: mockMemories
+        payload: mockMemories,
       })
 
       rerender(
         <Provider store={store}>
           <MemoriesSection />
-        </Provider>
+        </Provider>,
       )
 
       await waitFor(() => {
@@ -389,8 +423,11 @@ describe('MemoriesSection', () => {
 
   describe('Loading States', () => {
     it('shows loading state during initial fetch', () => {
-      mockFetchMemories.mockImplementation(() =>
-        new Promise(resolve => setTimeout(() => resolve({ total: 0, pages: 0 }), 100))
+      mockFetchMemories.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ total: 0, pages: 0 }), 100),
+          ),
       )
 
       renderWithStore()
@@ -409,8 +446,11 @@ describe('MemoriesSection', () => {
       })
 
       // Simulate pagination causing loading
-      mockFetchMemories.mockImplementation(() =>
-        new Promise(resolve => setTimeout(() => resolve({ total: 20, pages: 2 }), 100))
+      mockFetchMemories.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve({ total: 20, pages: 2 }), 100),
+          ),
       )
 
       const nextButton = screen.getByText('Next')
@@ -436,10 +476,14 @@ describe('MemoriesSection', () => {
     it('correctly passes page size to PageSizeSelector', async () => {
       mockGet.mockImplementation((param: string) => {
         switch (param) {
-          case 'size': return '25'
-          case 'page': return '1'
-          case 'search': return ''
-          default: return null
+          case 'size':
+            return '25'
+          case 'page':
+            return '1'
+          case 'search':
+            return ''
+          default:
+            return null
         }
       })
 
@@ -449,7 +493,9 @@ describe('MemoriesSection', () => {
       renderWithStore(store)
 
       await waitFor(() => {
-        const selector = screen.getByTestId('page-size-selector') as HTMLSelectElement
+        const selector = screen.getByTestId(
+          'page-size-selector',
+        ) as HTMLSelectElement
         expect(selector.value).toBe('25')
       })
     })
@@ -474,13 +520,15 @@ describe('MemoriesSection', () => {
       for (let i = 0; i < 5; i++) {
         store.dispatch({
           type: 'memories/setMemoriesSuccess',
-          payload: mockMemories.slice(0, i % 2)
+          payload: mockMemories.slice(0, i % 2),
         })
       }
 
       // Should handle rapid updates without errors
       await waitFor(() => {
-        expect(screen.queryByTestId('memory-table-skeleton')).not.toBeInTheDocument()
+        expect(
+          screen.queryByTestId('memory-table-skeleton'),
+        ).not.toBeInTheDocument()
       })
     })
   })
@@ -495,7 +543,7 @@ describe('MemoriesSection', () => {
         metadata: {},
         categories: [`cat${i % 10}`],
         client: 'api' as const,
-        app_name: 'test_app'
+        app_name: 'test_app',
       }))
 
       const store = createTestStore({ memories: largeMemorySet })

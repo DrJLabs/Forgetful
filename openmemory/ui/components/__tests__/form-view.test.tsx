@@ -6,26 +6,50 @@ import { FormView } from '../form-view'
 
 // Mock the UI components
 jest.mock('../ui/card', () => ({
-  Card: ({ children, ...props }: any) => <div data-testid="card" {...props}>{children}</div>,
-  CardContent: ({ children, ...props }: any) => <div data-testid="card-content" {...props}>{children}</div>,
-  CardDescription: ({ children, ...props }: any) => <div data-testid="card-description" {...props}>{children}</div>,
-  CardHeader: ({ children, ...props }: any) => <div data-testid="card-header" {...props}>{children}</div>,
-  CardTitle: ({ children, ...props }: any) => <h3 data-testid="card-title" {...props}>{children}</h3>,
+  Card: ({ children, ...props }: any) => (
+    <div data-testid='card' {...props}>
+      {children}
+    </div>
+  ),
+  CardContent: ({ children, ...props }: any) => (
+    <div data-testid='card-content' {...props}>
+      {children}
+    </div>
+  ),
+  CardDescription: ({ children, ...props }: any) => (
+    <div data-testid='card-description' {...props}>
+      {children}
+    </div>
+  ),
+  CardHeader: ({ children, ...props }: any) => (
+    <div data-testid='card-header' {...props}>
+      {children}
+    </div>
+  ),
+  CardTitle: ({ children, ...props }: any) => (
+    <h3 data-testid='card-title' {...props}>
+      {children}
+    </h3>
+  ),
 }))
 
 jest.mock('../ui/input', () => ({
-  Input: ({ ...props }: any) => <input data-testid="input" {...props} />,
+  Input: ({ ...props }: any) => <input data-testid='input' {...props} />,
 }))
 
 jest.mock('../ui/label', () => ({
-  Label: ({ children, ...props }: any) => <label data-testid="label" {...props}>{children}</label>,
+  Label: ({ children, ...props }: any) => (
+    <label data-testid='label' {...props}>
+      {children}
+    </label>
+  ),
 }))
 
 jest.mock('../ui/slider', () => ({
   Slider: ({ onValueChange, value, ...props }: any) => (
     <input
-      data-testid="slider"
-      type="range"
+      data-testid='slider'
+      type='range'
       value={value?.[0] || 0}
       onChange={(e) => onValueChange?.([parseFloat(e.target.value)])}
       {...props}
@@ -36,8 +60,8 @@ jest.mock('../ui/slider', () => ({
 jest.mock('../ui/switch', () => ({
   Switch: ({ checked, onCheckedChange, ...props }: any) => (
     <input
-      data-testid="switch"
-      type="checkbox"
+      data-testid='switch'
+      type='checkbox'
       checked={checked}
       onChange={(e) => onCheckedChange?.(e.target.checked)}
       {...props}
@@ -47,15 +71,17 @@ jest.mock('../ui/switch', () => ({
 
 jest.mock('../ui/button', () => ({
   Button: ({ children, onClick, ...props }: any) => (
-    <button data-testid="button" onClick={onClick} {...props}>{children}</button>
+    <button data-testid='button' onClick={onClick} {...props}>
+      {children}
+    </button>
   ),
 }))
 
 jest.mock('../ui/select', () => ({
   Select: ({ children, onValueChange, value }: any) => (
-    <div data-testid="select">
+    <div data-testid='select'>
       <select
-        data-testid="select-trigger"
+        data-testid='select-trigger'
         value={value}
         onChange={(e) => onValueChange?.(e.target.value)}
       >
@@ -63,21 +89,31 @@ jest.mock('../ui/select', () => ({
       </select>
     </div>
   ),
-  SelectContent: ({ children }: any) => <div data-testid="select-content">{children}</div>,
-  SelectItem: ({ children, value }: any) => (
-    <option data-testid="select-item" value={value}>{children}</option>
+  SelectContent: ({ children }: any) => (
+    <div data-testid='select-content'>{children}</div>
   ),
-  SelectTrigger: ({ children }: any) => <div data-testid="select-trigger">{children}</div>,
-  SelectValue: ({ placeholder }: any) => <span data-testid="select-value">{placeholder}</span>,
+  SelectItem: ({ children, value }: any) => (
+    <option data-testid='select-item' value={value}>
+      {children}
+    </option>
+  ),
+  SelectTrigger: ({ children }: any) => (
+    <div data-testid='select-trigger'>{children}</div>
+  ),
+  SelectValue: ({ placeholder }: any) => (
+    <span data-testid='select-value'>{placeholder}</span>
+  ),
 }))
 
 jest.mock('../ui/textarea', () => ({
-  Textarea: ({ ...props }: any) => <textarea data-testid="textarea" {...props} />,
+  Textarea: ({ ...props }: any) => (
+    <textarea data-testid='textarea' {...props} />
+  ),
 }))
 
 jest.mock('lucide-react', () => ({
-  Eye: () => <span data-testid="eye-icon">👁</span>,
-  EyeOff: () => <span data-testid="eye-off-icon">🙈</span>,
+  Eye: () => <span data-testid='eye-icon'>👁</span>,
+  EyeOff: () => <span data-testid='eye-off-icon'>🙈</span>,
 }))
 
 describe('FormView', () => {
@@ -226,9 +262,13 @@ describe('FormView', () => {
       const user = userEvent.setup()
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
 
-      const eyeButton = screen.getAllByTestId('button').find(button =>
-        button.textContent?.includes('👁') || button.textContent?.includes('🙈')
-      )
+      const eyeButton = screen
+        .getAllByTestId('button')
+        .find(
+          (button) =>
+            button.textContent?.includes('👁') ||
+            button.textContent?.includes('🙈'),
+        )
       expect(eyeButton).toBeInTheDocument()
 
       await user.click(eyeButton!)
@@ -367,12 +407,14 @@ describe('FormView', () => {
     it('handles undefined nested settings gracefully', () => {
       const incompleteSettings = {
         mem0: {
-          llm: {}
-        }
+          llm: {},
+        },
       }
 
       expect(() => {
-        render(<FormView settings={incompleteSettings} onChange={mockOnChange} />)
+        render(
+          <FormView settings={incompleteSettings} onChange={mockOnChange} />,
+        )
       }).not.toThrow()
     })
 
@@ -380,8 +422,8 @@ describe('FormView', () => {
       const incompleteSettings = {
         mem0: {
           llm: { provider: 'openai' },
-          embedder: { provider: 'openai' }
-        }
+          embedder: { provider: 'openai' },
+        },
       }
 
       render(<FormView settings={incompleteSettings} onChange={mockOnChange} />)
@@ -407,8 +449,14 @@ describe('FormView', () => {
     it('provides help text for important fields', () => {
       render(<FormView settings={defaultSettings} onChange={mockOnChange} />)
 
-      expect(screen.getByText(/Custom instructions that will be used to guide memory processing/)).toBeInTheDocument()
-      expect(screen.getByText(/Use "env:API_KEY" to load from environment variable/)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          /Custom instructions that will be used to guide memory processing/,
+        ),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(/Use "env:API_KEY" to load from environment variable/),
+      ).toBeInTheDocument()
     })
   })
 })
