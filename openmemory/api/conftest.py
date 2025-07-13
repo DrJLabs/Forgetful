@@ -100,6 +100,7 @@ def docker_postgres_engine(docker_postgres_url):
     # Create pgvector extension if not exists
     with engine.connect() as conn:
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+        conn.commit()
 
     # Create all tables
     Base.metadata.create_all(bind=engine)
@@ -274,6 +275,7 @@ def migration_test_engine():
         # Create pgvector extension
         with engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            conn.commit()
 
         yield engine, migration_url
 

@@ -168,6 +168,7 @@ def validate_database_connection(config: Config) -> ValidationResult:
 
             try:
                 cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+                conn.commit()
                 cur.execute(
                     "SELECT version() FROM pg_extension WHERE extname = 'vector';"
                 )
