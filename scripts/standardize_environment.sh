@@ -213,7 +213,7 @@ collect_configuration_values() {
 
     # Environment type
     local env_type="${ENVIRONMENT_TYPE:-development}"
-    
+
     # Generate secure defaults
     local db_user="drj"
     local db_password=$(generate_password 16)
@@ -273,7 +273,7 @@ apply_configuration_values() {
     # Environment-specific settings
     local debug_mode="true"
     local log_level="INFO"
-    
+
     case "$env_type" in
         "production")
             debug_mode="false"
@@ -335,11 +335,11 @@ generate_api_env_file() {
 
     if [[ -f "$api_env_example" ]]; then
         cp "$api_env_example" "$api_env_file"
-        
+
         # Source main .env file to get variables
         if [[ -f "$ENV_FILE" ]]; then
             source "$ENV_FILE"
-            
+
             # Escape variables for sed replacement
             local escaped_db_user=$(escape_sed_replacement "$DATABASE_USER")
             local escaped_db_password=$(escape_sed_replacement "$DATABASE_PASSWORD")
@@ -349,7 +349,7 @@ generate_api_env_file() {
             local escaped_app_environment=$(escape_sed_replacement "$APP_ENVIRONMENT")
             local escaped_app_debug=$(escape_sed_replacement "$APP_DEBUG")
             local escaped_app_log_level=$(escape_sed_replacement "$APP_LOG_LEVEL")
-            
+
             # Apply values from main .env
             sed -i.bak \
                 -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$escaped_db_user/g" \
@@ -361,10 +361,10 @@ generate_api_env_file() {
                 -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_app_debug/g" \
                 -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_app_log_level/g" \
                 "$api_env_file"
-                
+
             rm -f "${api_env_file}.bak"
         fi
-        
+
         log_success "Generated OpenMemory API .env file"
     else
         log_warning "OpenMemory API .env.example not found"
@@ -377,17 +377,17 @@ generate_ui_env_file() {
 
     if [[ -f "$ui_env_example" ]]; then
         cp "$ui_env_example" "$ui_env_file"
-        
+
         # Source main .env file to get variables
         if [[ -f "$ENV_FILE" ]]; then
             source "$ENV_FILE"
-            
+
             # Escape variables for sed replacement
             local escaped_app_user_id=$(escape_sed_replacement "$APP_USER_ID")
             local escaped_app_environment=$(escape_sed_replacement "$APP_ENVIRONMENT")
             local escaped_app_debug=$(escape_sed_replacement "$APP_DEBUG")
             local escaped_app_log_level=$(escape_sed_replacement "$APP_LOG_LEVEL")
-            
+
             # Apply values from main .env
             sed -i.bak \
                 -e "s/NEXT_PUBLIC_USER_ID=your_username_here/NEXT_PUBLIC_USER_ID=$escaped_app_user_id/g" \
@@ -396,10 +396,10 @@ generate_ui_env_file() {
                 -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_app_debug/g" \
                 -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_app_log_level/g" \
                 "$ui_env_file"
-                
+
             rm -f "${ui_env_file}.bak"
         fi
-        
+
         log_success "Generated OpenMemory UI .env file"
     else
         log_warning "OpenMemory UI .env.example not found"
@@ -465,7 +465,7 @@ validate_main_env_file() {
     )
 
     local missing_vars=()
-    
+
     for var in "${required_vars[@]}"; do
         if ! grep -q "^${var}=" "$ENV_FILE"; then
             missing_vars+=("$var")
@@ -479,19 +479,19 @@ validate_main_env_file() {
 
     # Check for placeholder values
     local placeholder_vars=()
-    
+
     if grep -q "your_username_here" "$ENV_FILE"; then
         placeholder_vars+=("DATABASE_USER or APP_USER_ID")
     fi
-    
+
     if grep -q "your_secure_password_here" "$ENV_FILE"; then
         placeholder_vars+=("DATABASE_PASSWORD")
     fi
-    
+
     if grep -q "your_neo4j_password_here" "$ENV_FILE"; then
         placeholder_vars+=("NEO4J_PASSWORD")
     fi
-    
+
     if grep -q "sk-proj-your-openai-api-key-here" "$ENV_FILE"; then
         placeholder_vars+=("OPENAI_API_KEY")
     fi
@@ -643,7 +643,7 @@ migrate_main_env_file() {
 
     # Create temporary file for migration
     local temp_file=$(mktemp)
-    
+
     # Copy template as base
     cp "$ENV_TEMPLATE" "$temp_file"
 
@@ -730,7 +730,7 @@ USER=test_user
 API_KEY=sk-test-key-for-mocking-only
 
 # CI-specific Configuration
-PYTHONPATH=\${PWD}:\${PWD}/openmemory/api
+PYTHONPATH=\${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
 CI_DATABASE_URL=postgresql://postgres:testpass@localhost:5432/test_db
 CI_NEO4J_URI=bolt://localhost:7687
 CI_COVERAGE_THRESHOLD=80
@@ -757,7 +757,7 @@ env:
   APP_DEBUG: false
   APP_LOG_LEVEL: INFO
   APP_USER_ID: test_user
-  
+
   # Database Configuration
   DATABASE_HOST: localhost
   DATABASE_PORT: 5432
@@ -765,7 +765,7 @@ env:
   DATABASE_USER: postgres
   DATABASE_PASSWORD: testpass
   DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
-  
+
   # Neo4j Configuration
   NEO4J_HOST: localhost
   NEO4J_PORT: 7687
@@ -773,18 +773,18 @@ env:
   NEO4J_PASSWORD: testpass
   NEO4J_URI: bolt://localhost:7687
   NEO4J_AUTH: neo4j/testpass
-  
+
   # OpenAI Configuration
   OPENAI_API_KEY: sk-test-key-for-mocking-only
   OPENAI_MODEL: gpt-4o-mini
   OPENAI_EMBEDDING_MODEL: text-embedding-3-small
-  
+
   # Testing Configuration
   TESTING: true
   CI: true
   GITHUB_ACTIONS: true
   COVERAGE_THRESHOLD: 80
-  
+
   # Legacy Variables (for backward compatibility)
   POSTGRES_HOST: localhost
   POSTGRES_DB: test_db
@@ -792,9 +792,9 @@ env:
   POSTGRES_PASSWORD: testpass
   USER: test_user
   API_KEY: sk-test-key-for-mocking-only
-  
+
   # CI-specific Configuration
-  PYTHONPATH: \${PWD}:\${PWD}/openmemory/api
+  PYTHONPATH: \${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
   CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
   CI_NEO4J_URI: bolt://localhost:7687
   CI_COVERAGE_THRESHOLD: 80
@@ -866,7 +866,7 @@ test_database_connections() {
 
     # Test DATABASE_URL construction
     local expected_url="postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}"
-    
+
     if [[ "$DATABASE_URL" == "$expected_url" ]]; then
         log_success "DATABASE_URL is correctly constructed"
     else
@@ -877,7 +877,7 @@ test_database_connections() {
 
     # Test Neo4j URI construction
     local expected_neo4j_uri="bolt://${NEO4J_HOST}:${NEO4J_PORT}"
-    
+
     if [[ "$NEO4J_URI" == "$expected_neo4j_uri" ]]; then
         log_success "NEO4J_URI is correctly constructed"
     else
