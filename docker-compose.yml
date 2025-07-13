@@ -185,7 +185,7 @@ services:
     env_file:
       - ./openmemory/api/.env
     ports:
-      - '127.0.0.1:${OPENMEMORY_API_PORT:-8765}:8765'
+      - '127.0.0.1:${OPENMEMORY_API_PORT:-8765}:${OPENMEMORY_API_PORT:-8765}'
     volumes:
       - ./openmemory/api:/usr/src/openmemory
     command: >
