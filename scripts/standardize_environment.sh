@@ -32,7 +32,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-ENV_TEMPLATE="${PROJECT_ROOT}/env.template"
+ENV_TEMPLATE="${PROJECT_ROOT}/.env.template"
 ENV_FILE="${PROJECT_ROOT}/.env"
 
 # Colors for output
@@ -160,7 +160,7 @@ ${YELLOW}Environment Variables:${NC}
   SKIP_SERVICE_VALIDATION       # Skip service-specific validation
 
 ${YELLOW}Configuration Files:${NC}
-  env.template                  # Main environment template
+  .env.template                 # Main environment template
   .env                          # Main environment file
   openmemory/api/.env.example   # API service template
   openmemory/ui/.env.example    # UI service template
@@ -253,13 +253,6 @@ collect_configuration_values() {
     log_success "Configuration values collected and applied"
 }
 
-# Helper function to escape special sed characters
-escape_sed_replacement() {
-    local string="$1"
-    # Escape backslashes first, then forward slashes, then ampersands
-    printf '%s\n' "$string" | sed 's/\\/\\\\/g; s/\//\\\//g; s/&/\\&/g'
-}
-
 apply_configuration_values() {
     local env_type="$1"
     local db_user="$2"
@@ -289,26 +282,16 @@ apply_configuration_values() {
             ;;
     esac
 
-    # Escape variables for sed replacement
-    local escaped_env_type=$(escape_sed_replacement "$env_type")
-    local escaped_debug_mode=$(escape_sed_replacement "$debug_mode")
-    local escaped_log_level=$(escape_sed_replacement "$log_level")
-    local escaped_app_user_id=$(escape_sed_replacement "$app_user_id")
-    local escaped_db_user=$(escape_sed_replacement "$db_user")
-    local escaped_db_password=$(escape_sed_replacement "$db_password")
-    local escaped_neo4j_password=$(escape_sed_replacement "$neo4j_password")
-    local escaped_openai_key=$(escape_sed_replacement "$openai_key")
-
     # Apply replacements
     sed -i.bak \
-        -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$escaped_env_type/g" \
-        -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_debug_mode/g" \
-        -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_log_level/g" \
-        -e "s/APP_USER_ID=drj/APP_USER_ID=$escaped_app_user_id/g" \
-        -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$escaped_db_user/g" \
-        -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$escaped_db_password/g" \
-        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$escaped_neo4j_password/g" \
-        -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$escaped_openai_key/g" \
+        -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$env_type/g" \
+        -e "s/APP_DEBUG=true/APP_DEBUG=$debug_mode/g" \
+        -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$log_level/g" \
+        -e "s/APP_USER_ID=drj/APP_USER_ID=$app_user_id/g" \
+        -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$db_user/g" \
+        -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$db_password/g" \
+        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$neo4j_password/g" \
+        -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$openai_key/g" \
         "$ENV_FILE"
 
     # Remove backup file
@@ -340,26 +323,16 @@ generate_api_env_file() {
         if [[ -f "$ENV_FILE" ]]; then
             source "$ENV_FILE"
 
-            # Escape variables for sed replacement
-            local escaped_db_user=$(escape_sed_replacement "$DATABASE_USER")
-            local escaped_db_password=$(escape_sed_replacement "$DATABASE_PASSWORD")
-            local escaped_neo4j_password=$(escape_sed_replacement "$NEO4J_PASSWORD")
-            local escaped_openai_key=$(escape_sed_replacement "$OPENAI_API_KEY")
-            local escaped_app_user_id=$(escape_sed_replacement "$APP_USER_ID")
-            local escaped_app_environment=$(escape_sed_replacement "$APP_ENVIRONMENT")
-            local escaped_app_debug=$(escape_sed_replacement "$APP_DEBUG")
-            local escaped_app_log_level=$(escape_sed_replacement "$APP_LOG_LEVEL")
-
             # Apply values from main .env
             sed -i.bak \
-                -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$escaped_db_user/g" \
-                -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$escaped_db_password/g" \
-                -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$escaped_neo4j_password/g" \
-                -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$escaped_openai_key/g" \
-                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$escaped_app_user_id/g" \
-                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$escaped_app_environment/g" \
-                -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_app_debug/g" \
-                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_app_log_level/g" \
+                -e "s/DATABASE_USER=your_username_here/DATABASE_USER=$DATABASE_USER/g" \
+                -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=$DATABASE_PASSWORD/g" \
+                -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=$NEO4J_PASSWORD/g" \
+                -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=$OPENAI_API_KEY/g" \
+                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$APP_USER_ID/g" \
+                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$APP_ENVIRONMENT/g" \
+                -e "s/APP_DEBUG=true/APP_DEBUG=$APP_DEBUG/g" \
+                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$APP_LOG_LEVEL/g" \
                 "$api_env_file"
 
             rm -f "${api_env_file}.bak"
@@ -382,19 +355,13 @@ generate_ui_env_file() {
         if [[ -f "$ENV_FILE" ]]; then
             source "$ENV_FILE"
 
-            # Escape variables for sed replacement
-            local escaped_app_user_id=$(escape_sed_replacement "$APP_USER_ID")
-            local escaped_app_environment=$(escape_sed_replacement "$APP_ENVIRONMENT")
-            local escaped_app_debug=$(escape_sed_replacement "$APP_DEBUG")
-            local escaped_app_log_level=$(escape_sed_replacement "$APP_LOG_LEVEL")
-
             # Apply values from main .env
             sed -i.bak \
-                -e "s/NEXT_PUBLIC_USER_ID=your_username_here/NEXT_PUBLIC_USER_ID=$escaped_app_user_id/g" \
-                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$escaped_app_user_id/g" \
-                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$escaped_app_environment/g" \
-                -e "s/APP_DEBUG=true/APP_DEBUG=$escaped_app_debug/g" \
-                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$escaped_app_log_level/g" \
+                -e "s/NEXT_PUBLIC_USER_ID=your_username_here/NEXT_PUBLIC_USER_ID=$APP_USER_ID/g" \
+                -e "s/APP_USER_ID=your_username_here/APP_USER_ID=$APP_USER_ID/g" \
+                -e "s/APP_ENVIRONMENT=development/APP_ENVIRONMENT=$APP_ENVIRONMENT/g" \
+                -e "s/APP_DEBUG=true/APP_DEBUG=$APP_DEBUG/g" \
+                -e "s/APP_LOG_LEVEL=INFO/APP_LOG_LEVEL=$APP_LOG_LEVEL/g" \
                 "$ui_env_file"
 
             rm -f "${ui_env_file}.bak"
@@ -730,7 +697,7 @@ USER=test_user
 API_KEY=sk-test-key-for-mocking-only
 
 # CI-specific Configuration
-PYTHONPATH=\${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
+PYTHONPATH=\${PWD}:\${PWD}/openmemory/api
 CI_DATABASE_URL=postgresql://postgres:testpass@localhost:5432/test_db
 CI_NEO4J_URI=bolt://localhost:7687
 CI_COVERAGE_THRESHOLD=80
@@ -794,7 +761,7 @@ env:
   API_KEY: sk-test-key-for-mocking-only
 
   # CI-specific Configuration
-  PYTHONPATH: \${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
+  PYTHONPATH: \${PWD}:\${PWD}/openmemory/api
   CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
   CI_NEO4J_URI: bolt://localhost:7687
   CI_COVERAGE_THRESHOLD: 80
