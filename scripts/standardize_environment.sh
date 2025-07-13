@@ -32,7 +32,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-ENV_TEMPLATE="${PROJECT_ROOT}/.env.template"
+ENV_TEMPLATE="${PROJECT_ROOT}/env.template"
 ENV_FILE="${PROJECT_ROOT}/.env"
 
 # Colors for output
@@ -160,7 +160,7 @@ ${YELLOW}Environment Variables:${NC}
   SKIP_SERVICE_VALIDATION       # Skip service-specific validation
 
 ${YELLOW}Configuration Files:${NC}
-  .env.template                 # Main environment template
+  env.template                  # Main environment template
   .env                          # Main environment file
   openmemory/api/.env.example   # API service template
   openmemory/ui/.env.example    # UI service template
