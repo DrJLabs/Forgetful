@@ -1,3 +1,4 @@
+import logging
 import os
 
 from dotenv import load_dotenv
@@ -11,17 +12,21 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./openmemory.db")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set in environment")
 
+# Setup logging
+logger = logging.getLogger(__name__)
+
+
 def redact_database_url(url: str) -> str:
     """
     Redact sensitive information from a database URL.
-    
+
     Handles:
     - Multiple '@' characters in usernames/passwords
     - URLs without proper scheme (://missing)
     """
     if not url:
         return url
-    
+
     # Check if URL has proper scheme
     if "://" not in url:
         # For URLs without scheme, assume they start with credentials
@@ -33,14 +38,14 @@ def redact_database_url(url: str) -> str:
         else:
             # No credentials to redact
             return url
-    
+
     # For URLs with proper scheme
     if "@" in url:
         # Split by '://' to separate scheme from the rest
         scheme_sep = url.split("://", 1)
         scheme = scheme_sep[0]
         rest = scheme_sep[1]
-        
+
         # Find the authority part (before the path)
         # The path starts with '/' after the host
         path_start = rest.find("/")
@@ -51,18 +56,22 @@ def redact_database_url(url: str) -> str:
         else:
             authority = rest[:path_start]
             path = rest[path_start:]
-        
+
         # Find the '@' in the authority part - this is the credential separator
         auth_at_pos = authority.rfind("@")
         if auth_at_pos != -1:
-            host_and_port = authority[auth_at_pos+1:]
+            host_and_port = authority[auth_at_pos + 1 :]
             return f"{scheme}://[REDACTED]@{host_and_port}{path}"
         else:
             # No credentials in authority part
             return url
-    
+
     # No credentials to redact
     return url
+
+
+# Log database connection info with proper redaction
+logger.info(f"Connecting to database: {redact_database_url(DATABASE_URL)}")
 
 # SQLAlchemy engine & session
 # Only add check_same_thread for SQLite databases
