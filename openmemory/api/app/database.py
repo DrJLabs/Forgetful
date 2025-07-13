@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Optional
+
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, event
