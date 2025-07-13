@@ -17,7 +17,7 @@ echo -n "Memories via filter: "
 curl -s -X POST "http://localhost:8765/api/v1/memories/filter" -H "Content-Type: application/json" -d '{"user_id": "drj"}' | jq -r '.total' 2>/dev/null || echo "0"
 
 echo -e "\n4. Database status:"
-docker exec postgres-mem0 psql -U drj -d mem0 -t -c "SELECT 'mem0_memories:', COUNT(*) FROM mem0_memories UNION ALL SELECT 'memories:', COUNT(*) FROM memories;"
+docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" postgres-mem0 psql -U drj -d mem0 -t -c "SELECT 'mem0_memories:', COUNT(*) FROM mem0_memories UNION ALL SELECT 'memories:', COUNT(*) FROM memories;"
 
 echo -e "\n5. Running db monitor:"
 ./scripts/db_monitor.sh health | grep "Application health"

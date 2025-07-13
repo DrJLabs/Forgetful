@@ -180,17 +180,17 @@ restore_postgres() {
 
     # Drop and recreate database
     log "Dropping existing database..."
-    docker exec "$POSTGRES_CONTAINER" psql \
+    docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d postgres \
         -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'mem0' AND pid <> pg_backend_pid();" >/dev/null 2>&1 || true
 
-    docker exec "$POSTGRES_CONTAINER" psql \
+    docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d postgres \
         -c "DROP DATABASE IF EXISTS mem0;" >/dev/null 2>&1 || true
 
-    docker exec "$POSTGRES_CONTAINER" psql \
+    docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
         -U "${POSTGRES_USER:-drj}" \
         -d postgres \
         -c "CREATE DATABASE mem0;" >/dev/null 2>&1
@@ -248,12 +248,12 @@ verify_restore() {
 
     # Verify PostgreSQL
     if [ "$RESTORE_POSTGRES" = true ]; then
-        PG_TABLES=$(docker exec "$POSTGRES_CONTAINER" psql \
+        PG_TABLES=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
             -U "${POSTGRES_USER:-drj}" \
             -d mem0 \
             -t -c "SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public';" 2>/dev/null || echo "0")
 
-        PG_RECORDS=$(docker exec "$POSTGRES_CONTAINER" psql \
+        PG_RECORDS=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" "$POSTGRES_CONTAINER" psql \
             -U "${POSTGRES_USER:-drj}" \
             -d mem0 \
             -t -c "SELECT count(*) FROM memories;" 2>/dev/null || echo "0")
