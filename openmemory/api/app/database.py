@@ -1,17 +1,20 @@
 import logging
 import os
+from typing import Generator
 from urllib.parse import urlparse, urlunparse
 
 from dotenv import load_dotenv
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
 
-# Configure logging
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# load .env file (make sure you have DATABASE_URL set)
+# Load environment variables
 load_dotenv()
 
 
@@ -84,14 +87,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./openmemory.db")
 if not DATABASE_URL:
     raise RuntimeError("DATABASE_URL is not set in environment")
 
-
-def _enable_sqlite_foreign_keys(dbapi_connection, connection_record):
-    """Enable foreign key enforcement for SQLite databases."""
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
-
 # Log database connection info
 logger.info(f"Connecting to database: {_redact_database_url(DATABASE_URL)}")
 
@@ -105,3 +100,48 @@ if DATABASE_URL.startswith("sqlite"):
     event.listen(engine, "connect", _enable_sqlite_foreign_keys)
 else:
     engine = create_engine(DATABASE_URL)
+
+
+def _enable_sqlite_foreign_keys(dbapi_connection, connection_record):
+    """Enable foreign key enforcement for SQLite databases."""
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()
+
+
+# Initialize SessionLocal
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Base class for models
+Base = declarative_base()
+
+
+# Dependency for FastAPI
+def get_db() -> Generator[Session, None, None]:
+    """
+    Get database session for dependency injection.
+
+    Yields:
+        Session: SQLAlchemy database session
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+def test_database_connection() -> bool:
+    """
+    Test database connection health.
+
+    Returns:
+        bool: True if connection is healthy, False otherwise
+    """
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return True
+    except SQLAlchemyError as e:
+        logger.error(f"Database connection test failed: {e}")
+        return False
