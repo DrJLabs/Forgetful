@@ -443,6 +443,9 @@ async def get_memory(memory_id: str, db: Session = Depends(get_db)):
     try:
         # Validate UUID format
         memory_uuid = UUID(memory_id)
+        # Reject nil UUID as invalid
+        if memory_uuid == UUID("00000000-0000-0000-0000-000000000000"):
+            raise ValueError("Nil UUID is not allowed")
     except ValueError:
         raise HTTPException(status_code=422, detail="Invalid UUID format")
 
