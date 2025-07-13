@@ -145,6 +145,13 @@ jobs:
             sleep 2
           done
 
+      - name: Initialize Database
+        run: |
+          export PGPASSWORD=testpass
+          psql -h localhost -p 5432 -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+        env:
+          PGPASSWORD: testpass
+
       - name: Run Unit Tests
         run: |
           echo "🧪 Running comprehensive unit tests..."
@@ -350,6 +357,13 @@ jobs:
             echo "Waiting for Neo4j..."
             sleep 2
           done
+
+      - name: Initialize Database
+        run: |
+          export PGPASSWORD=testpass
+          psql -h localhost -p 5432 -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+        env:
+          PGPASSWORD: testpass
 
       - name: Run Database Tests
         run: |
