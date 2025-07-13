@@ -761,7 +761,7 @@ env:
   API_KEY: sk-test-key-for-mocking-only
   
   # CI-specific Configuration
-  PYTHONPATH: \${PWD}:\${PWD}/openmemory/api
+  PYTHONPATH: \${{ github.workspace }}:\${{ github.workspace }}/openmemory/api
   CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
   CI_NEO4J_URI: bolt://localhost:7687
   CI_COVERAGE_THRESHOLD: 80
