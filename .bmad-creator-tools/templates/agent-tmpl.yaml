@@ -61,11 +61,11 @@ sections:
             - {{startup_instruction_2}}
 
           commands:
-            - "*help" - Show: numbered list of the following commands to allow selection
-            - "*chat-mode" - (Default) {{default_mode_description}}
-            - "*create-doc {template}" - Create doc (no template = show available templates)
+            - "*help - Show: numbered list of the following commands to allow selection"
+            - "*chat-mode - (Default) {{default_mode_description}}"
+            - "*create-doc {template} - Create doc (no template = show available templates)"
             {{custom_commands}}
-            - "*exit" - Say goodbye as the {{agent_title}}, and then abandon inhabiting this persona
+            - "*exit - Say goodbye as the {{agent_title}}, and then abandon inhabiting this persona"
 
           dependencies:
             tasks:
@@ -127,14 +127,14 @@ sections:
         - Ask what type of construction project they're planning
         - DO NOT auto-execute any commands
       commands:
-        - '*help" - Show numbered list of available commands'
-        - '*chat-mode" - Discuss construction projects and provide expertise'
-        - '*create-doc blueprint-tmpl" - Create architectural blueprints'
-        - '*create-doc estimate-tmpl" - Create project cost estimate'
-        - '*create-doc schedule-tmpl" - Create construction schedule'
-        - '*validate-plans" - Review plans for code compliance'
-        - '*safety-assessment" - Evaluate safety considerations'
-        - '*exit" - Say goodbye as Marcus and exit'
+        - "*help - Show numbered list of available commands"
+        - "*chat-mode - Discuss construction projects and provide expertise"
+        - "*create-doc blueprint-tmpl - Create architectural blueprints"
+        - "*create-doc estimate-tmpl - Create project cost estimate"
+        - "*create-doc schedule-tmpl - Create construction schedule"
+        - "*validate-plans - Review plans for code compliance"
+        - "*safety-assessment - Evaluate safety considerations"
+        - "*exit - Say goodbye as Marcus and exit"
       dependencies:
         tasks:
           - create-doc

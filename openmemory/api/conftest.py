@@ -305,9 +305,7 @@ def test_user_factory():
     """Factory for creating test users."""
 
     def create_user(
-        user_id: str = None,
-        name: str = "Test User",
-        email: str = "test@example.com"
+        user_id: str = None, name: str = "Test User", email: str = "test@example.com"
     ) -> User:
         return User(
             id=uuid4(),
@@ -340,9 +338,7 @@ def test_memory_factory():
     """Factory for creating test memories."""
 
     def create_memory(
-        content: str = "Test memory content",
-        user_id: str = None,
-        app_id: str = None
+        content: str = "Test memory content", user_id: str = None, app_id: str = None
     ) -> Memory:
         return Memory(
             id=uuid4(),
@@ -385,11 +381,7 @@ def db_inspector():
                 if table_name not in tables:
                     tables[table_name] = []
                 tables[table_name].append(
-                    {
-                        "column": row[1],
-                        "type": row[2],
-                        "nullable": row[3] == "YES"
-                    }
+                    {"column": row[1], "type": row[2], "nullable": row[3] == "YES"}
                 )
 
             return tables
@@ -459,10 +451,8 @@ def mock_openai_client():
         )
 
         # Mock chat completion response
-        mock_client.return_value.chat.completions.create.return_value = (
-            MagicMock(
-                choices=[MagicMock(message=MagicMock(content="Test response"))]
-            )
+        mock_client.return_value.chat.completions.create.return_value = MagicMock(
+            choices=[MagicMock(message=MagicMock(content="Test response"))]
         )
 
         yield mock_client
@@ -482,6 +472,7 @@ def mock_neo4j_driver():
 # ============================================================================
 # DIRECT TEST FIXTURES
 # ============================================================================
+
 
 @pytest.fixture
 def test_user(test_db_session):

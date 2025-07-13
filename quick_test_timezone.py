@@ -10,7 +10,7 @@ This script performs a simplified test to verify that:
 
 import sys
 import traceback
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def test_timezone_utilities():
@@ -19,9 +19,9 @@ def test_timezone_utilities():
 
     try:
         from mem0.memory.timezone_utils import (
-            safe_datetime_now,
-            safe_datetime_diff,
             create_memory_timestamp,
+            safe_datetime_diff,
+            safe_datetime_now,
         )
 
         # Test safe_datetime_now

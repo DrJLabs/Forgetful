@@ -8,19 +8,19 @@
 main:
   protection:
     required_status_checks:
-      strict: true  # Require branches to be up-to-date before merging
+      strict: true # Require branches to be up-to-date before merging
       contexts:
         # All 7 Quality Gates must pass
-        - "🧪 Unit Tests (Quality Gate 1)"
-        - "📋 API Contract Tests (Quality Gate 2)"
-        - "🔒 Security Tests (Quality Gate 3)"
-        - "🗄️ Database Tests (Quality Gate 4)"
-        - "🔗 Integration Tests (Quality Gate 5)"
-        - "⚡ Performance Tests (Quality Gate 6)"
-        - "🔍 Code Quality (Quality Gate 7)"
-        - "🚦 Merge Decision (Final Quality Gate)"
+        - '🧪 Unit Tests (Quality Gate 1)'
+        - '📋 API Contract Tests (Quality Gate 2)'
+        - '🔒 Security Tests (Quality Gate 3)'
+        - '🗄️ Database Tests (Quality Gate 4)'
+        - '🔗 Integration Tests (Quality Gate 5)'
+        - '⚡ Performance Tests (Quality Gate 6)'
+        - '🔍 Code Quality (Quality Gate 7)'
+        - '🚦 Merge Decision (Final Quality Gate)'
 
-    enforce_admins: true  # Include administrators in restrictions
+    enforce_admins: true # Include administrators in restrictions
     required_pull_request_reviews:
       required_approving_review_count: 1
       dismiss_stale_reviews: true
@@ -48,14 +48,14 @@ develop:
       strict: true
       contexts:
         # Same quality gates for develop branch
-        - "🧪 Unit Tests (Quality Gate 1)"
-        - "📋 API Contract Tests (Quality Gate 2)"
-        - "🔒 Security Tests (Quality Gate 3)"
-        - "🗄️ Database Tests (Quality Gate 4)"
-        - "🔗 Integration Tests (Quality Gate 5)"
-        - "⚡ Performance Tests (Quality Gate 6)"
-        - "🔍 Code Quality (Quality Gate 7)"
-        - "🚦 Merge Decision (Final Quality Gate)"
+        - '🧪 Unit Tests (Quality Gate 1)'
+        - '📋 API Contract Tests (Quality Gate 2)'
+        - '🔒 Security Tests (Quality Gate 3)'
+        - '🗄️ Database Tests (Quality Gate 4)'
+        - '🔗 Integration Tests (Quality Gate 5)'
+        - '⚡ Performance Tests (Quality Gate 6)'
+        - '🔍 Code Quality (Quality Gate 7)'
+        - '🚦 Merge Decision (Final Quality Gate)'
 
     enforce_admins: true
     required_pull_request_reviews:
@@ -79,50 +79,49 @@ develop:
 # QUALITY GATE REQUIREMENTS
 # =============================================================================
 quality_gates:
-  description: "All quality gates must pass before merge is allowed"
+  description: 'All quality gates must pass before merge is allowed'
 
   gate_1_unit_tests:
-    name: "🧪 Unit Tests (Quality Gate 1)"
-    description: "Comprehensive unit test suite (106+ tests)"
-    coverage_requirement: "80%"
+    name: '🧪 Unit Tests (Quality Gate 1)'
+    description: 'Comprehensive unit test suite (106+ tests)'
+    coverage_requirement: '80%'
     blocking: true
 
   gate_2_contract_tests:
-    name: "📋 API Contract Tests (Quality Gate 2)"
-    description: "API endpoint validation and contract testing"
-    coverage_requirement: "100% of endpoints"
+    name: '📋 API Contract Tests (Quality Gate 2)'
+    description: 'API endpoint validation and contract testing'
+    coverage_requirement: '100% of endpoints'
     blocking: true
 
   gate_3_security_tests:
-    name: "🔒 Security Tests (Quality Gate 3)"
-    description: "Security vulnerability testing (150+ test cases)"
-    coverage_requirement: "100% of endpoints"
+    name: '🔒 Security Tests (Quality Gate 3)'
+    description: 'Security vulnerability testing (150+ test cases)'
+    coverage_requirement: '100% of endpoints'
     blocking: true
 
   gate_4_database_tests:
-    name: "🗄️ Database Tests (Quality Gate 4)"
-    description: "Database integrity and migration testing"
-    coverage_requirement: "All migrations tested"
+    name: '🗄️ Database Tests (Quality Gate 4)'
+    description: 'Database integrity and migration testing'
+    coverage_requirement: 'All migrations tested'
     blocking: true
 
   gate_5_integration_tests:
-    name: "🔗 Integration Tests (Quality Gate 5)"
-    description: "Cross-service integration testing"
-    coverage_requirement: "All integration points"
+    name: '🔗 Integration Tests (Quality Gate 5)'
+    description: 'Cross-service integration testing'
+    coverage_requirement: 'All integration points'
     blocking: true
 
   gate_6_performance_tests:
-    name: "⚡ Performance Tests (Quality Gate 6)"
-    description: "Performance benchmarking and regression testing"
-    coverage_requirement: "No performance regressions"
+    name: '⚡ Performance Tests (Quality Gate 6)'
+    description: 'Performance benchmarking and regression testing'
+    coverage_requirement: 'No performance regressions'
     blocking: true
 
   gate_7_code_quality:
-    name: "🔍 Code Quality (Quality Gate 7)"
-    description: "Code formatting, linting, and security scanning"
-    coverage_requirement: "No quality violations"
+    name: '🔍 Code Quality (Quality Gate 7)'
+    description: 'Code formatting, linting, and security scanning'
+    coverage_requirement: 'No quality violations'
     blocking: true
-
 # =============================================================================
 # GITHUB CLI COMMANDS TO APPLY RULES
 # =============================================================================

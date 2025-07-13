@@ -4,8 +4,8 @@ template:
   version: 2.0
   output:
     format: markdown
-    filename: "{{pack_name}}-expansion-pack-plan.md"
-    title: "{{pack_display_name}} Expansion Pack Plan"
+    filename: '{{pack_name}}-expansion-pack-plan.md'
+    title: '{{pack_display_name}} Expansion Pack Plan'
 
 workflow:
   mode: interactive
@@ -23,12 +23,12 @@ sections:
   - id: problem-statement
     title: Problem Statement
     instruction: What specific challenges does this expansion pack solve?
-    template: "{{problem_description}}"
+    template: '{{problem_description}}'
 
   - id: target-users
     title: Target Users
     instruction: Who will benefit from this expansion pack?
-    template: "{{target_user_description}}"
+    template: '{{target_user_description}}'
 
   - id: components
     title: Components to Create
@@ -56,21 +56,21 @@ sections:
         type: checklist
         instruction: List all tasks to be created
         repeatable: true
-        template: "`{{task_name}}.md` - {{purpose}} (used by: {{using_agents}})"
+        template: '`{{task_name}}.md` - {{purpose}} (used by: {{using_agents}})'
 
       - id: templates
         title: Templates
         type: checklist
         instruction: List all templates to be created
         repeatable: true
-        template: "`{{template_name}}-tmpl.md` - {{document_type}} (used by: {{using_components}})"
+        template: '`{{template_name}}-tmpl.md` - {{document_type}} (used by: {{using_components}})'
 
       - id: checklists
         title: Checklists
         type: checklist
         instruction: List all checklists to be created
         repeatable: true
-        template: "`{{checklist_name}}-checklist.md` - {{validation_purpose}}"
+        template: '`{{checklist_name}}-checklist.md` - {{validation_purpose}}'
 
       - id: data-files
         title: Data Files Required from User
@@ -88,7 +88,7 @@ sections:
     title: Workflow Overview
     type: numbered-list
     instruction: Describe the typical workflow steps
-    template: "{{workflow_step}}"
+    template: '{{workflow_step}}'
 
   - id: integration-points
     title: Integration Points
@@ -100,18 +100,18 @@ sections:
     title: Success Criteria
     type: checklist
     items:
-      - "All components created and cross-referenced"
-      - "No orphaned task/template references"
-      - "Data requirements clearly documented"
-      - "Orchestrator provides clear workflow"
-      - "README includes setup instructions"
+      - 'All components created and cross-referenced'
+      - 'No orphaned task/template references'
+      - 'Data requirements clearly documented'
+      - 'Orchestrator provides clear workflow'
+      - 'README includes setup instructions'
 
   - id: user-approval
     title: User Approval
     type: checklist
     items:
-      - "Plan reviewed by user"
-      - "Approval to proceed with implementation"
+      - 'Plan reviewed by user'
+      - 'Approval to proceed with implementation'
 
   - id: next-steps
     content: |

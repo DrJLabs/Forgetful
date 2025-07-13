@@ -4,10 +4,11 @@ BMad Service Validation Script
 Validates that mem0 and Context7 MCP servers are accessible before BMad operations.
 """
 
-import requests
 import json
 import sys
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional, Tuple
+
+import requests
 
 
 class ServiceValidator:

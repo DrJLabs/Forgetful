@@ -19,7 +19,7 @@ services:
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
     ports:
-      - "127.0.0.1:9090:9090"
+      - '127.0.0.1:9090:9090'
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml
@@ -30,12 +30,12 @@ services:
     networks:
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.drjlabs.com`)"
-      - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.tls=true"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.prometheus.rule=Host(`prometheus.drjlabs.com`)'
+      - 'traefik.http.routers.prometheus.entrypoints=websecure'
+      - 'traefik.http.routers.prometheus.tls=true'
+      - 'traefik.http.services.prometheus.loadbalancer.server.port=9090'
     deploy:
       resources:
         limits:
@@ -54,7 +54,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel
     ports:
-      - "127.0.0.1:3001:3000"
+      - '127.0.0.1:3001:3000'
     volumes:
       - ./data/grafana:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
@@ -64,12 +64,12 @@ services:
     networks:
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.drjlabs.com`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls=true"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.grafana.rule=Host(`grafana.drjlabs.com`)'
+      - 'traefik.http.routers.grafana.entrypoints=websecure'
+      - 'traefik.http.routers.grafana.tls=true'
+      - 'traefik.http.services.grafana.loadbalancer.server.port=3000'
     deploy:
       resources:
         limits:
@@ -88,7 +88,7 @@ services:
       - '--storage.path=/alertmanager'
       - '--web.external-url=http://localhost:9093'
     ports:
-      - "127.0.0.1:9093:9093"
+      - '127.0.0.1:9093:9093'
     volumes:
       - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
       - ./data/alertmanager:/alertmanager
@@ -114,7 +114,7 @@ services:
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     ports:
-      - "127.0.0.1:9100:9100"
+      - '127.0.0.1:9100:9100'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -134,7 +134,7 @@ services:
     environment:
       - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-drj}:${POSTGRES_PASSWORD}@postgres-mem0:5432/mem0?sslmode=disable
     ports:
-      - "127.0.0.1:9187:9187"
+      - '127.0.0.1:9187:9187'
     depends_on:
       - postgres-mem0
     networks:
@@ -156,7 +156,7 @@ services:
     environment:
       - discovery.type=single-node
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - 'ES_JAVA_OPTS=-Xms1g -Xmx1g'
       - xpack.security.enabled=false
       - xpack.monitoring.collection.enabled=true
     ulimits:
@@ -164,7 +164,7 @@ services:
         soft: -1
         hard: -1
     ports:
-      - "127.0.0.1:9200:9200"
+      - '127.0.0.1:9200:9200'
     volumes:
       - ./data/elasticsearch:/usr/share/elasticsearch/data
     networks:
@@ -183,8 +183,8 @@ services:
     container_name: logstash-mem0
     restart: unless-stopped
     ports:
-      - "127.0.0.1:5000:5000"
-      - "127.0.0.1:9600:9600"
+      - '127.0.0.1:5000:5000'
+      - '127.0.0.1:9600:9600'
     volumes:
       - ./monitoring/logstash.conf:/usr/share/logstash/pipeline/logstash.conf
       - ./monitoring/logstash.yml:/usr/share/logstash/config/logstash.yml
@@ -206,18 +206,18 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch-mem0:9200
       - SERVER_NAME=kibana-mem0
     ports:
-      - "127.0.0.1:5601:5601"
+      - '127.0.0.1:5601:5601'
     depends_on:
       - elasticsearch
     networks:
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.kibana.rule=Host(`kibana.drjlabs.com`)"
-      - "traefik.http.routers.kibana.entrypoints=websecure"
-      - "traefik.http.routers.kibana.tls=true"
-      - "traefik.http.services.kibana.loadbalancer.server.port=5601"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.kibana.rule=Host(`kibana.drjlabs.com`)'
+      - 'traefik.http.routers.kibana.entrypoints=websecure'
+      - 'traefik.http.routers.kibana.tls=true'
+      - 'traefik.http.services.kibana.loadbalancer.server.port=5601'
     deploy:
       resources:
         limits:
@@ -256,19 +256,19 @@ services:
       - COLLECTOR_ZIPKIN_HOST_PORT=:9411
       - COLLECTOR_OTLP_ENABLED=true
     ports:
-      - "127.0.0.1:16686:16686"  # Jaeger UI
-      - "127.0.0.1:14268:14268"  # HTTP collector
-      - "127.0.0.1:4317:4317"    # OTLP gRPC receiver
-      - "127.0.0.1:4318:4318"    # OTLP HTTP receiver
+      - '127.0.0.1:16686:16686' # Jaeger UI
+      - '127.0.0.1:14268:14268' # HTTP collector
+      - '127.0.0.1:4317:4317' # OTLP gRPC receiver
+      - '127.0.0.1:4318:4318' # OTLP HTTP receiver
     networks:
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.jaeger.rule=Host(`jaeger.drjlabs.com`)"
-      - "traefik.http.routers.jaeger.entrypoints=websecure"
-      - "traefik.http.routers.jaeger.tls=true"
-      - "traefik.http.services.jaeger.loadbalancer.server.port=16686"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.jaeger.rule=Host(`jaeger.drjlabs.com`)'
+      - 'traefik.http.routers.jaeger.entrypoints=websecure'
+      - 'traefik.http.routers.jaeger.tls=true'
+      - 'traefik.http.services.jaeger.loadbalancer.server.port=16686'
     deploy:
       resources:
         limits:
@@ -284,18 +284,18 @@ services:
     container_name: uptime-kuma-mem0
     restart: unless-stopped
     ports:
-      - "127.0.0.1:3001:3001"
+      - '127.0.0.1:3001:3001'
     volumes:
       - ./data/uptime-kuma:/app/data
     networks:
       - traefik
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.uptime-kuma.rule=Host(`uptime.drjlabs.com`)"
-      - "traefik.http.routers.uptime-kuma.entrypoints=websecure"
-      - "traefik.http.routers.uptime-kuma.tls=true"
-      - "traefik.http.services.uptime-kuma.loadbalancer.server.port=3001"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.uptime-kuma.rule=Host(`uptime.drjlabs.com`)'
+      - 'traefik.http.routers.uptime-kuma.entrypoints=websecure'
+      - 'traefik.http.routers.uptime-kuma.tls=true'
+      - 'traefik.http.services.uptime-kuma.loadbalancer.server.port=3001'
     deploy:
       resources:
         limits:

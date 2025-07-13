@@ -4,6 +4,7 @@ OpenMemory API main application module.
 FastAPI application setup with CORS middleware, database initialization,
 and router configuration for the OpenMemory API service.
 """
+
 import datetime
 import os
 from uuid import uuid4

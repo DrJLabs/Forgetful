@@ -3,16 +3,17 @@ Enhanced deduplication algorithms for autonomous AI memory storage.
 This module provides advanced deduplication logic optimized for coding contexts.
 """
 
-import logging
 import hashlib
 import json
-from typing import Dict, List, Any, Optional, Tuple, Set
+import logging
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import numpy as np
 
-from mem0.memory.utils import extract_json
 from mem0.configs.coding_config import CodingFactExtractor
 from mem0.memory.timezone_utils import safe_datetime_diff
+from mem0.memory.utils import extract_json
 
 logger = logging.getLogger(__name__)
 

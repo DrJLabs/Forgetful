@@ -4,20 +4,21 @@ This module extends the base Memory class with coding-specific optimizations.
 """
 
 import asyncio
+import hashlib
 import json
 import logging
-import hashlib
-from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 import pytz
 
-from mem0.memory.main import Memory, AsyncMemory
-from mem0.configs.coding_config import CodingMemoryConfig, CodingFactExtractor
-from mem0.memory.utils import parse_messages, remove_code_blocks
+from mem0.configs.coding_config import CodingFactExtractor, CodingMemoryConfig
 from mem0.memory.enhanced_deduplication import (
-    EnhancedDeduplicator,
     AutonomousDeduplicationManager,
+    EnhancedDeduplicator,
 )
+from mem0.memory.main import AsyncMemory, Memory
+from mem0.memory.utils import parse_messages, remove_code_blocks
 from mem0.utils.factory import EmbedderFactory, LlmFactory, VectorStoreFactory
 
 logger = logging.getLogger(__name__)
@@ -248,6 +249,7 @@ class CodingMemory(Memory):
         """
         import uuid
         from datetime import datetime
+
         import pytz
 
         # Generate memory ID and prepare enhanced metadata

@@ -9,14 +9,15 @@ Usage:
     python scripts/benchmark_vector_performance.py
 """
 
-import time
-import random
-import psycopg2
-import numpy as np
-from typing import List, Dict, Tuple
 import json
-import sys
 import os
+import random
+import sys
+import time
+from typing import Dict, List, Tuple
+
+import numpy as np
+import psycopg2
 
 # Add the project root to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

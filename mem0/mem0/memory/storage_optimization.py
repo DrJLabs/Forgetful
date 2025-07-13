@@ -3,18 +3,18 @@ Enhanced storage optimization system for autonomous AI memory storage.
 This module provides advanced storage limits and intelligent purging logic.
 """
 
+import json
 import logging
 import math
-from typing import Dict, List, Any, Optional, Tuple, Set
-from datetime import datetime, timedelta
 from collections import defaultdict
-import json
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from mem0.configs.coding_config import CodingMemoryConfig
 from mem0.memory.timezone_utils import (
-    safe_datetime_now,
-    safe_datetime_diff,
     create_memory_timestamp,
+    safe_datetime_diff,
+    safe_datetime_now,
 )
 
 logger = logging.getLogger(__name__)

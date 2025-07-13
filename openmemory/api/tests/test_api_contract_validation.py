@@ -20,7 +20,6 @@ from uuid import UUID, uuid4
 import jsonschema
 import pytest
 from app.database import SessionLocal, get_db
-from main import app
 from app.models import App, Memory, MemoryState, User
 from app.routers.config import ConfigSchema, LLMConfig, LLMProvider
 from app.routers.mem0_memories import CreateMemoryRequest
@@ -35,6 +34,7 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from jsonschema import ValidationError as JsonSchemaValidationError
 from jsonschema import validate
+from main import app
 from pydantic import ValidationError
 
 

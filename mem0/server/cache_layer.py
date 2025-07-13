@@ -11,11 +11,12 @@ This module provides caching specifically for memory operations including:
 import asyncio
 import hashlib
 import json
-import numpy as np
 import time
-from typing import List, Dict, Optional, Any
 from functools import wraps
+from typing import Any, Dict, List, Optional
+
 import msgpack
+import numpy as np
 
 from shared.caching import MultiLayerCache, MultiLayerCacheConfig
 from shared.logging_system import get_logger, performance_logger

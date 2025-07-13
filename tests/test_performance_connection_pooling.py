@@ -311,7 +311,9 @@ class TestConnectionPoolPerformance:
         with (
             patch("asyncpg.create_pool", side_effect=mock_create_pool),
             patch("neo4j.AsyncGraphDatabase.driver", return_value=mock_neo4j_driver),
-            patch("redis.asyncio.ConnectionPool.from_url", return_value=mock_redis_pool),
+            patch(
+                "redis.asyncio.ConnectionPool.from_url", return_value=mock_redis_pool
+            ),
             patch("redis.asyncio.Redis", return_value=mock_redis_client),
         ):
 
@@ -427,7 +429,9 @@ class TestConnectionPoolPerformance:
 
             # In a properly mocked scenario, we expect most connections to succeed
             # since we're not actually hitting real connection limits
-            assert successful_connections >= 0, "At least some connections should succeed"
+            assert (
+                successful_connections >= 0
+            ), "At least some connections should succeed"
 
             print(
                 f"Pool Exhaustion Test: Time={test_time:.3f}s, Success={successful_connections}, Failed={failed_connections}"

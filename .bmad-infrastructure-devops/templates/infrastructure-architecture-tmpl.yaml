@@ -5,23 +5,23 @@ template:
   output:
     format: markdown
     filename: docs/infrastructure-architecture.md
-    title: "{{project_name}} Infrastructure Architecture"
+    title: '{{project_name}} Infrastructure Architecture'
 
 workflow:
   mode: interactive
   elicitation: advanced-elicitation
   custom_elicitation:
-    title: "Infrastructure Architecture Elicitation Actions"
+    title: 'Infrastructure Architecture Elicitation Actions'
     sections:
       - id: infrastructure-overview
         options:
-          - "Multi-Cloud Strategy Analysis - Evaluate cloud provider options and vendor lock-in considerations"
-          - "Regional Distribution Planning - Analyze latency requirements and data residency needs"
-          - "Environment Isolation Strategy - Design security boundaries and resource segregation"
-          - "Scalability Patterns Review - Assess auto-scaling needs and traffic patterns"
-          - "Compliance Requirements Analysis - Review regulatory and security compliance needs"
-          - "Cost-Benefit Analysis - Compare infrastructure options and TCO"
-          - "Proceed to next section"
+          - 'Multi-Cloud Strategy Analysis - Evaluate cloud provider options and vendor lock-in considerations'
+          - 'Regional Distribution Planning - Analyze latency requirements and data residency needs'
+          - 'Environment Isolation Strategy - Design security boundaries and resource segregation'
+          - 'Scalability Patterns Review - Assess auto-scaling needs and traffic patterns'
+          - 'Compliance Requirements Analysis - Review regulatory and security compliance needs'
+          - 'Cost-Benefit Analysis - Compare infrastructure options and TCO'
+          - 'Proceed to next section'
 
 sections:
   - id: initial-setup
@@ -81,7 +81,7 @@ sections:
     sections:
       - id: environments
         repeatable: true
-        title: "{{environment_name}} Environment"
+        title: '{{environment_name}} Environment'
         template: |
           - **Purpose:** {{environment_purpose}}
           - **Resources:** {{environment_resources}}

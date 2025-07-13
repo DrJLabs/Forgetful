@@ -7,9 +7,10 @@ from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
-from tests.utils.contract_test_helpers import TestDataFactory
 from fastapi import status
 from httpx import AsyncClient
+
+from tests.utils.contract_test_helpers import TestDataFactory
 
 
 @pytest.mark.unit

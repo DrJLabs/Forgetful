@@ -1,67 +1,14 @@
 {
-  "name": "@mem0/community",
-  "version": "0.0.1",
-  "description": "Community features for Mem0",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
-    },
-    "./langchain": {
-      "types": "./dist/integrations/langchain/index.d.ts",
-      "require": "./dist/integrations/langchain/index.js",
-      "import": "./dist/integrations/langchain/index.mjs"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && npx prettier --check . && npx tsup",
-    "dev": "npx nodemon",
-    "test": "jest",
-    "test:ts": "jest --config jest.config.js",
-    "test:watch": "jest --config jest.config.js --watch",
-    "format": "npm run clean && prettier --write .",
-    "format:check": "npm run clean && prettier --check .",
-    "prepublishOnly": "npm run build"
-  },
-  "tsup": {
-    "entry": {
-      "index": "src/index.ts",
-      "integrations/langchain/index": "src/integrations/langchain/index.ts"
-    },
-    "format": [
-      "cjs",
-      "esm"
-    ],
-    "dts": {
-      "resolve": true,
-      "compilerOptions": {
-        "rootDir": "src"
-      }
-    },
-    "splitting": false,
-    "sourcemap": true,
-    "clean": true,
-    "treeshake": true,
-    "minify": false,
-    "outDir": "dist",
-    "tsconfig": "./tsconfig.json"
-  },
-  "keywords": [
-    "mem0",
-    "community",
-    "ai",
-    "memory"
-  ],
   "author": "Deshraj Yadav",
-  "license": "Apache-2.0",
+  "dependencies": {
+    "@langchain/community": "^0.3.36",
+    "@langchain/core": "^0.3.42",
+    "axios": "1.7.7",
+    "mem0ai": "^2.1.8",
+    "uuid": "9.0.1",
+    "zod": "3.22.4"
+  },
+  "description": "Community features for Mem0",
   "devDependencies": {
     "@types/node": "^22.7.6",
     "@types/uuid": "^9.0.8",
@@ -74,18 +21,71 @@
     "tsup": "^8.3.0",
     "typescript": "5.5.4"
   },
-  "dependencies": {
-    "@langchain/community": "^0.3.36",
-    "@langchain/core": "^0.3.42",
-    "axios": "1.7.7",
-    "mem0ai": "^2.1.8",
-    "uuid": "9.0.1",
-    "zod": "3.22.4"
-  },
   "engines": {
     "node": ">=18"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./langchain": {
+      "import": "./dist/integrations/langchain/index.mjs",
+      "require": "./dist/integrations/langchain/index.js",
+      "types": "./dist/integrations/langchain/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mem0",
+    "community",
+    "ai",
+    "memory"
+  ],
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "name": "@mem0/community",
   "publishConfig": {
     "access": "public"
-  }
+  },
+  "scripts": {
+    "build": "npm run clean && npx prettier --check . && npx tsup",
+    "clean": "rimraf dist",
+    "dev": "npx nodemon",
+    "format": "npm run clean && prettier --write .",
+    "format:check": "npm run clean && prettier --check .",
+    "prepublishOnly": "npm run build",
+    "test": "jest",
+    "test:ts": "jest --config jest.config.js",
+    "test:watch": "jest --config jest.config.js --watch"
+  },
+  "tsup": {
+    "clean": true,
+    "dts": {
+      "compilerOptions": {
+        "rootDir": "src"
+      },
+      "resolve": true
+    },
+    "entry": {
+      "index": "src/index.ts",
+      "integrations/langchain/index": "src/integrations/langchain/index.ts"
+    },
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "minify": false,
+    "outDir": "dist",
+    "sourcemap": true,
+    "splitting": false,
+    "treeshake": true,
+    "tsconfig": "./tsconfig.json"
+  },
+  "types": "./dist/index.d.ts",
+  "version": "0.0.1"
 }

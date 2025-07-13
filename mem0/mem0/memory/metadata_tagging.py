@@ -3,19 +3,19 @@ Enhanced metadata tagging system for autonomous AI memory storage.
 This module provides advanced metadata tagging and semantic enrichment.
 """
 
+import hashlib
+import json
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple, Set
-from datetime import datetime, timedelta
 from collections import defaultdict
-import json
-import hashlib
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from mem0.configs.coding_config import CodingMemoryConfig
 from mem0.memory.timezone_utils import (
-    safe_datetime_now,
-    safe_datetime_diff,
     get_memory_age_hours,
+    safe_datetime_diff,
+    safe_datetime_now,
 )
 
 logger = logging.getLogger(__name__)

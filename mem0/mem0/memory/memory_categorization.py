@@ -3,12 +3,12 @@ Enhanced memory categorization system for autonomous AI memory storage.
 This module provides advanced categorization logic optimized for coding contexts.
 """
 
+import json
 import logging
 import re
-from typing import Dict, List, Any, Optional, Tuple, Set
-from datetime import datetime
 from collections import defaultdict
-import json
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from mem0.configs.coding_config import CodingMemoryConfig
 

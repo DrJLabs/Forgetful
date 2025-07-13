@@ -15,7 +15,6 @@ import pytz
 from pydantic import ValidationError
 
 from mem0.configs.base import MemoryConfig, MemoryItem
-from mem0.memory.timezone_utils import create_memory_timestamp
 from mem0.configs.enums import MemoryType
 from mem0.configs.prompts import (
     PROCEDURAL_MEMORY_SYSTEM_PROMPT,
@@ -25,6 +24,7 @@ from mem0.memory.base import MemoryBase
 from mem0.memory.setup import mem0_dir, setup_config
 from mem0.memory.storage import SQLiteManager
 from mem0.memory.telemetry import capture_event
+from mem0.memory.timezone_utils import create_memory_timestamp
 from mem0.memory.utils import (
     get_fact_retrieval_messages,
     parse_messages,

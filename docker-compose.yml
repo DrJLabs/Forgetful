@@ -14,11 +14,12 @@ services:
       - POSTGRES_DB=mem0
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_COLLECTION_NAME=mem0_memories
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     volumes:
       - ./data/mem0/history:/app/history
     ports:
-      - "127.0.0.1:8000:8000"
+      - '127.0.0.1:8000:8000'
     depends_on:
       postgres:
         condition: service_healthy
@@ -26,12 +27,12 @@ services:
         condition: service_healthy
     networks: [traefik]
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.mem0-oma.rule=Host(`mem0.drjlabs.com`)"
-      - "traefik.http.routers.mem0-oma.entrypoints=websecure"
-      - "traefik.http.routers.mem0-oma.tls=true"
-      - "traefik.http.services.mem0-oma.loadbalancer.server.port=8000"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.mem0-oma.rule=Host(`mem0.drjlabs.com`)'
+      - 'traefik.http.routers.mem0-oma.entrypoints=websecure'
+      - 'traefik.http.routers.mem0-oma.tls=true'
+      - 'traefik.http.services.mem0-oma.loadbalancer.server.port=8000'
     deploy:
       resources:
         limits:
@@ -55,7 +56,7 @@ services:
       -c 'min_wal_size=1GB' -c 'wal_buffers=64MB' -c 'default_statistics_target=100'
     networks: [traefik]
     healthcheck:
-      test: ["CMD", "pg_isready", "-q", "-d", "mem0", "-U", "${POSTGRES_USER}"]
+      test: ['CMD', 'pg_isready', '-q', '-d', 'mem0', '-U', '${POSTGRES_USER}']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -86,17 +87,17 @@ services:
       - ./data/neo4j:/data
     networks: [traefik]
     healthcheck:
-      test: ["CMD-SHELL", "wget -O /dev/null http://localhost:7474/ || exit 1"]
+      test: ['CMD-SHELL', 'wget -O /dev/null http://localhost:7474/ || exit 1']
       interval: 5s
       timeout: 5s
       retries: 5
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.neo4j-oma.rule=Host(`neo4j.drjlabs.com`)"
-      - "traefik.http.routers.neo4j-oma.entrypoints=websecure"
-      - "traefik.http.routers.neo4j-oma.tls=true"
-      - "traefik.http.services.neo4j-oma.loadbalancer.server.port=7474"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.neo4j-oma.rule=Host(`neo4j.drjlabs.com`)'
+      - 'traefik.http.routers.neo4j-oma.entrypoints=websecure'
+      - 'traefik.http.routers.neo4j-oma.tls=true'
+      - 'traefik.http.services.neo4j-oma.loadbalancer.server.port=7474'
     deploy:
       resources:
         limits:
@@ -109,7 +110,9 @@ services:
   # OpenMemory Services
   openmemory-mcp:
     image: mem0/openmemory-mcp
-    build: ./openmemory/api/
+    build:
+      context: .
+      dockerfile: ./openmemory/api/Dockerfile
     container_name: openmemory-mcp
     restart: unless-stopped
     environment:
@@ -126,7 +129,7 @@ services:
     env_file:
       - ./openmemory/api/.env
     ports:
-      - "127.0.0.1:8765:8765"
+      - '127.0.0.1:8765:8765'
     volumes:
       - ./openmemory/api:/usr/src/openmemory
     command: >
@@ -159,15 +162,15 @@ services:
     env_file:
       - ./openmemory/ui/.env
     ports:
-      - "127.0.0.1:3000:3000"
+      - '127.0.0.1:3000:3000'
     networks: [traefik]
     labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=traefik"
-      - "traefik.http.routers.openmemory-ui.rule=Host(`memory.drjlabs.com`)"
-      - "traefik.http.routers.openmemory-ui.entrypoints=websecure"
-      - "traefik.http.routers.openmemory-ui.tls=true"
-      - "traefik.http.services.openmemory-ui.loadbalancer.server.port=3000"
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.openmemory-ui.rule=Host(`memory.drjlabs.com`)'
+      - 'traefik.http.routers.openmemory-ui.entrypoints=websecure'
+      - 'traefik.http.routers.openmemory-ui.tls=true'
+      - 'traefik.http.services.openmemory-ui.loadbalancer.server.port=3000'
     deploy:
       resources:
         limits:

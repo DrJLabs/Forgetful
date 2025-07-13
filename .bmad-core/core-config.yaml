@@ -28,15 +28,15 @@ workflow:
 externalServices:
   mem0:
     enabled: true
-    apiUrl: "http://localhost:8000"
+    apiUrl: 'http://localhost:8000'
     enforceUsage: true
-    defaultUserId: "drj"
+    defaultUserId: 'drj'
     searchBeforeResponse: true
     healthCheckRequired: true
   context7:
     enabled: true
     enforceDocLookup: true
-    serverUrl: "http://localhost:8765"
+    serverUrl: 'http://localhost:8765'
     lookupBeforeTechnical: true
     healthCheckRequired: true
 

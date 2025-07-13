@@ -32,7 +32,7 @@ class TestCORSValidation:
         response = await test_client.get(
             "/api/v1/memories/",
             params={"user_id": "test"},
-            headers={"Origin": "http://localhost:3000"}  # Use allowed origin
+            headers={"Origin": "http://localhost:3000"},  # Use allowed origin
         )
 
         # Check for CORS headers
@@ -41,7 +41,8 @@ class TestCORSValidation:
         # Access-Control-Allow-Origin should be present for allowed origins
         if "access-control-allow-origin" in headers:
             assert headers["access-control-allow-origin"] in [
-                "http://localhost:3000", "http://127.0.0.1:3000"
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
             ]
             logger.info(
                 f"CORS Allow-Origin: {headers.get('access-control-allow-origin')}"
@@ -110,11 +111,10 @@ class TestCORSValidation:
 
             if should_allow:
                 # Allowed origins should get CORS headers
-                assert (
-                    allow_origin == origin or allow_origin in [
-                        "http://localhost:3000", "http://127.0.0.1:3000"
-                    ]
-                )
+                assert allow_origin == origin or allow_origin in [
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
+                ]
                 logger.info(f"✓ Origin {origin} correctly allowed: {allow_origin}")
             else:
                 # Disallowed origins should not get CORS headers or get null
@@ -145,7 +145,8 @@ class TestCORSValidation:
                     allow_origin != "*"
                 ), "CORS should not allow credentials with wildcard origin"
                 assert allow_origin in [
-                    "http://localhost:3000", "http://127.0.0.1:3000"
+                    "http://localhost:3000",
+                    "http://127.0.0.1:3000",
                 ], f"Unexpected allow-origin: {allow_origin}"
                 logger.info(
                     "✓ CORS credentials properly configured with specific origin"
@@ -485,9 +486,7 @@ class TestSecurityHeadersIntegration:
 
         for endpoint in endpoints:
             try:
-                response = await test_client.get(
-                    endpoint, params={"user_id": "test"}
-                )
+                response = await test_client.get(endpoint, params={"user_id": "test"})
 
                 # Check basic security headers
                 security_headers = [
@@ -544,8 +543,7 @@ class TestSecurityHeadersIntegration:
     async def test_post_request_security_headers(self, test_client: AsyncClient):
         """Test security headers on POST requests."""
         response = await test_client.post(
-            "/api/v1/memories/",
-            json={"user_id": "test", "text": "test", "app": "test"}
+            "/api/v1/memories/", json={"user_id": "test", "text": "test", "app": "test"}
         )
 
         # Check security headers on POST response

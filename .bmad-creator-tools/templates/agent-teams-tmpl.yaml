@@ -4,8 +4,8 @@ template:
   version: 2.0
   output:
     format: yaml
-    filename: "agent-teams/{{team_name}}.yaml"
-    title: "{{team_name}}"
+    filename: 'agent-teams/{{team_name}}.yaml'
+    title: '{{team_name}}'
 
 workflow:
   mode: interactive
@@ -107,7 +107,7 @@ sections:
     title: Examples
     sections:
       - id: example-1
-        title: "Example 1: Standard fullstack team"
+        title: 'Example 1: Standard fullstack team'
         type: code
         language: yaml
         template: |
@@ -131,7 +131,7 @@ sections:
             - brownfield-service
             - brownfield-ui
       - id: example-2
-        title: "Example 2: Healthcare expansion pack team"
+        title: 'Example 2: Healthcare expansion pack team'
         type: code
         language: yaml
         template: |
@@ -151,7 +151,7 @@ sections:
             - healthcare-compliance-audit
             - clinical-trial-management
       - id: example-3
-        title: "Example 3: Minimal IDE team"
+        title: 'Example 3: Minimal IDE team'
         type: code
         language: yaml
         template: |

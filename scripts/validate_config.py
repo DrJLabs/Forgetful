@@ -18,13 +18,13 @@ Usage:
     python scripts/validate_config.py --fix-issues
 """
 
-import sys
-import os
 import argparse
-import time
-from typing import List, Dict, Tuple, Optional
 import logging
+import os
+import sys
+import time
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent

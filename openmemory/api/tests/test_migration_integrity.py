@@ -33,7 +33,11 @@ from sqlalchemy.orm import sessionmaker
 alembic_dir = Path("alembic")
 skip_migration_tests = not alembic_dir.exists()
 
-@pytest.mark.skipif(skip_migration_tests, reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.")
+
+@pytest.mark.skipif(
+    skip_migration_tests,
+    reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.",
+)
 class TestMigrationIntegrity:
     """Test Alembic migration integrity and schema evolution."""
 
@@ -259,7 +263,10 @@ class TestMigrationIntegrity:
                         session.close()
 
 
-@pytest.mark.skipif(skip_migration_tests, reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.")
+@pytest.mark.skipif(
+    skip_migration_tests,
+    reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.",
+)
 class TestMigrationDependencies:
     """Test migration dependency validation and ordering."""
 
@@ -374,7 +381,10 @@ class TestMigrationDependencies:
                 ), f"Circular dependency detected involving {revision.revision}"
 
 
-@pytest.mark.skipif(skip_migration_tests, reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.")
+@pytest.mark.skipif(
+    skip_migration_tests,
+    reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.",
+)
 class TestSchemaEvolution:
     """Test database schema evolution and compatibility."""
 
@@ -468,7 +478,10 @@ class TestSchemaEvolution:
                 # This will depend on your actual schema
 
 
-@pytest.mark.skipif(skip_migration_tests, reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.")
+@pytest.mark.skipif(
+    skip_migration_tests,
+    reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.",
+)
 class TestMigrationPerformance:
     """Test migration performance and optimization."""
 
@@ -541,7 +554,10 @@ class TestMigrationPerformance:
         ), f"Migration with data took too long: {migration_time} seconds"
 
 
-@pytest.mark.skipif(skip_migration_tests, reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.")
+@pytest.mark.skipif(
+    skip_migration_tests,
+    reason="Alembic directory not found in current working directory. Migration tests require running from openmemory/api directory.",
+)
 class TestMigrationErrorHandling:
     """Test migration error handling and recovery."""
 
