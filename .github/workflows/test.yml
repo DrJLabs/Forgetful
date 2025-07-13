@@ -123,53 +123,82 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          key: ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', 'mem0/pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
-            ${{ runner.os }}-pip-
+            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ matrix.python-version }}-
+            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-
 
       - name: Cache Virtual Environment
         uses: actions/cache@v4
         with:
-          path: |
-            venv/
-            openmemory/api/venv/
-          key: ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+          path: ~/venv
+          key: ${{ env.CACHE_VERSION }}-venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', 'mem0/pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-
-            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-
+            ${{ env.CACHE_VERSION }}-venv-${{ runner.os }}-${{ matrix.python-version }}-
 
-      - name: Install Dependencies
+      - name: Install Dependencies (optimized)
+        if: steps.venv-cache.outputs.cache-hit != 'true'
         run: |
+          python -m venv ~/venv
+          source ~/venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
-
-          # Install mem0 package in development mode
           pip install -e mem0/
 
-          cd openmemory/api
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
-
-      - name: Wait for PostgreSQL
+      - name: Activate Virtual Environment
         run: |
+          source ~/venv/bin/activate
+          echo "PATH=$PATH" >> $GITHUB_ENV
+
+      - name: Wait for Services
+        run: |
+          echo "🔄 Waiting for PostgreSQL..."
           until pg_isready -h localhost -p 5432; do
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
 
+          echo "🔄 Waiting for Neo4j..."
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
+          echo "✅ Neo4j is ready"
+
+      - name: Setup Test Database
+        run: |
+          source ~/venv/bin/activate
+
+          # Create pgvector extension
+          psql -h localhost -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+          # Run database migrations
+          echo "🔄 Running database migrations..."
+          cd openmemory/api
+
+          # Run Alembic migrations
+          alembic upgrade head
+
+          echo "✅ Database migrations completed"
+
       - name: Run Unit Tests
         run: |
+          source ~/venv/bin/activate
           echo "🧪 Running comprehensive unit tests..."
 
-          # Run shared library tests
-          python -m pytest tests/ -v --cov=shared --cov-report=term-missing --cov-report=xml:coverage-shared.xml
+          # Run unit tests with coverage
+          pytest tests/ \
+            -v \
+            --cov=app \
+            --cov=shared \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD }} \
+            --durations=10 \
+            --maxfail=3 \
+            -x
 
-          # Run OpenMemory API tests
-          cd openmemory/api
-          python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml:coverage-api.xml
-
-          echo "✅ Unit tests completed"
+          echo "✅ Unit tests completed successfully"
 
       - name: Upload Coverage Reports
         uses: actions/upload-artifact@v4
@@ -177,8 +206,8 @@ jobs:
         with:
           name: coverage-reports-${{ matrix.python-version }}
           path: |
-            coverage-*.xml
-            openmemory/api/coverage-*.xml
+            coverage.xml
+            htmlcov/
           retention-days: 30
 
       - name: Upload Test Results
