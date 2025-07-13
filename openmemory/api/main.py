@@ -92,8 +92,8 @@ if os.getenv("TESTING") != "true":
 # Setup MCP server
 setup_mcp_server(app)
 
-# Include routers - using the new mem0_memories router
-app.include_router(memories_router.router)
+# Include routers - using the corrected memories router
+app.include_router(memories_router)
 app.include_router(apps_router)
 app.include_router(stats_router)
 app.include_router(config_router)
