@@ -622,7 +622,7 @@ migrate_main_env_file() {
         -e "s/APP_USER_ID=drj/APP_USER_ID=${USER:-${APP_USER_ID:-drj}}/g" \
         -e "s/DATABASE_USER=your_username_here/DATABASE_USER=${POSTGRES_USER:-${DATABASE_USER:-drj}}/g" \
         -e "s/DATABASE_PASSWORD=your_secure_password_here/DATABASE_PASSWORD=${POSTGRES_PASSWORD:-${DATABASE_PASSWORD:-}}/g" \
-        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=${NEO4J_PASSWORD:-}}/g" \
+        -e "s/NEO4J_PASSWORD=your_neo4j_password_here/NEO4J_PASSWORD=${NEO4J_PASSWORD:-}/g" \
         -e "s/OPENAI_API_KEY=sk-proj-your-openai-api-key-here/OPENAI_API_KEY=${OPENAI_API_KEY:-${API_KEY:-}}/g" \
         "$temp_file"
 
