@@ -99,14 +99,14 @@ fi
 
 echo -e "\n🔍 Database Content:"
 echo -n "mem0 memories table: "
-if result=$(docker exec postgres-mem0 psql -U drj -d mem0 -t -c "SELECT COUNT(*) FROM mem0_memories;" 2>/dev/null); then
+if result=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" postgres-mem0 psql -U drj -d mem0 -t -c "SELECT COUNT(*) FROM mem0_memories;" 2>/dev/null); then
     echo "✅ $(echo $result | tr -d ' ') records"
 else
     echo "❌ QUERY FAILED"
 fi
 
 echo -n "OpenMemory memories table: "
-if result=$(docker exec postgres-mem0 psql -U drj -d mem0 -t -c "SELECT COUNT(*) FROM memories;" 2>/dev/null); then
+if result=$(docker exec -e PGPASSWORD="${DATABASE_PASSWORD:-testpass}" postgres-mem0 psql -U drj -d mem0 -t -c "SELECT COUNT(*) FROM memories;" 2>/dev/null); then
     echo "✅ $(echo $result | tr -d ' ') records"
 else
     echo "❌ QUERY FAILED"

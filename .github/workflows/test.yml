@@ -24,7 +24,7 @@ env:
   APP_DEBUG: false
   APP_LOG_LEVEL: INFO
   APP_USER_ID: test_user
-  
+
   # Database Configuration
   DATABASE_HOST: localhost
   DATABASE_PORT: 5432
@@ -32,7 +32,7 @@ env:
   DATABASE_USER: postgres
   DATABASE_PASSWORD: testpass
   DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
-  
+
   # Neo4j Configuration
   NEO4J_HOST: localhost
   NEO4J_PORT: 7687
@@ -40,26 +40,27 @@ env:
   NEO4J_PASSWORD: testpass
   NEO4J_URI: bolt://localhost:7687
   NEO4J_AUTH: neo4j/testpass
-  
+
   # OpenAI Configuration
   OPENAI_API_KEY: sk-test-key-for-mocking-only
   OPENAI_MODEL: gpt-4o-mini
   OPENAI_EMBEDDING_MODEL: text-embedding-3-small
-  
+
   # Testing Configuration
   TESTING: true
   CI: true
   GITHUB_ACTIONS: true
   COVERAGE_THRESHOLD: 80
-  
+
   # Legacy Variables (for backward compatibility)
   POSTGRES_HOST: localhost
   POSTGRES_DB: test_db
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: testpass
+  PGPASSWORD: testpass # Required for psql authentication
   USER: test_user
   API_KEY: sk-test-key-for-mocking-only
-  
+
   # CI-specific Configuration
   PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
   CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
@@ -80,7 +81,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: test_db
@@ -92,6 +93,19 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+
+      neo4j:
+        image: neo4j:5.15
+        env:
+          NEO4J_AUTH: neo4j/testpass
+          NEO4J_PLUGINS: '["apoc"]'
+        options: >-
+          --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 7687:7687
 
     steps:
       - name: Checkout Repository
@@ -110,53 +124,85 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
+          key: ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', 'mem0/pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-
-            ${{ runner.os }}-pip-
+            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-${{ matrix.python-version }}-
+            ${{ env.CACHE_VERSION }}-pip-${{ runner.os }}-
 
       - name: Cache Virtual Environment
         uses: actions/cache@v4
         with:
-          path: |
-            venv/
-            openmemory/api/venv/
-          key: ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt') }}
+          path: ~/venv
+          key: ${{ env.CACHE_VERSION }}-venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/requirements*.txt', 'mem0/pyproject.toml') }}
           restore-keys: |
-            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-${{ matrix.python-version }}-
-            ${{ runner.os }}-venv-${{ env.CACHE_VERSION }}-
+            ${{ env.CACHE_VERSION }}-venv-${{ runner.os }}-${{ matrix.python-version }}-
 
-      - name: Install Dependencies
+      - name: Install Dependencies (optimized)
+        if: steps.venv-cache.outputs.cache-hit != 'true'
         run: |
+          python -m venv ~/venv
+          source ~/venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
-
-          # Install mem0 package in development mode
           pip install -e mem0/
 
-          cd openmemory/api
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
-
-      - name: Wait for PostgreSQL
+      - name: Activate Virtual Environment
         run: |
+          source ~/venv/bin/activate
+          echo "PATH=$PATH" >> $GITHUB_ENV
+
+      - name: Wait for Services
+        run: |
+          echo "🔄 Waiting for PostgreSQL..."
           until pg_isready -h localhost -p 5432; do
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
 
+          echo "🔄 Waiting for Neo4j..."
+          until nc -z localhost 7687; do
+            echo "Waiting for Neo4j..."
+            sleep 2
+          done
+          echo "✅ Neo4j is ready"
+
+      - name: Setup Test Database
+        run: |
+          source ~/venv/bin/activate
+
+          # Create pgvector extension with proper authentication
+          export PGPASSWORD=testpass
+          psql -h localhost -p 5432 -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+          # Run database migrations
+          echo "🔄 Running database migrations..."
+          cd openmemory/api
+
+          # Run Alembic migrations
+          alembic upgrade head
+
+          echo "✅ Database migrations completed"
+        env:
+          PGPASSWORD: testpass
+
       - name: Run Unit Tests
         run: |
+          source ~/venv/bin/activate
           echo "🧪 Running comprehensive unit tests..."
-          
-          # Run shared library tests
-          python -m pytest tests/ -v --cov=shared --cov-report=term-missing --cov-report=xml:coverage-shared.xml
-          
-          # Run OpenMemory API tests
-          cd openmemory/api
-          python -m pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml:coverage-api.xml
-          
-          echo "✅ Unit tests completed"
+
+          # Run unit tests with coverage
+          pytest tests/ \
+            -v \
+            --cov=app \
+            --cov=shared \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD }} \
+            --durations=10 \
+            --maxfail=3 \
+            -x
+
+          echo "✅ Unit tests completed successfully"
 
       - name: Upload Coverage Reports
         uses: actions/upload-artifact@v4
@@ -164,8 +210,18 @@ jobs:
         with:
           name: coverage-reports-${{ matrix.python-version }}
           path: |
-            coverage-*.xml
-            openmemory/api/coverage-*.xml
+            coverage.xml
+            htmlcov/
+          retention-days: 30
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            test-results/
+            pytest.xml
           retention-days: 30
 
   # ============================================================================
@@ -293,7 +349,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: test_db
@@ -334,30 +390,70 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
-
-          cd openmemory/api
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
+          pip install -e mem0/
 
       - name: Wait for Services
         run: |
+          echo "🔄 Waiting for PostgreSQL..."
           until pg_isready -h localhost -p 5432; do
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
-          
+          echo "✅ PostgreSQL is ready"
+
+          echo "🔄 Waiting for Neo4j..."
           until nc -z localhost 7687; do
             echo "Waiting for Neo4j..."
             sleep 2
           done
+          echo "✅ Neo4j is ready"
+
+      - name: Setup Test Database
+        run: |
+          # Create pgvector extension
+          psql -h localhost -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+          # Run database migrations
+          echo "🔄 Running database migrations..."
+          cd openmemory/api
+          alembic upgrade head
+          echo "✅ Database migrations completed"
+
+      - name: Initialize Database
+        run: |
+          export PGPASSWORD=testpass
+          psql -h localhost -p 5432 -U postgres -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;"
+        env:
+          PGPASSWORD: testpass
 
       - name: Run Database Tests
         run: |
-          echo "🗄️ Running database integration tests..."
+          echo "🗄️ Running database integrity and migration tests..."
           cd openmemory/api
-          ./run_database_tests.sh --verbose --fail-fast
+
+          # Run database-specific tests
+          pytest tests/test_database_framework.py tests/test_migration_integrity.py \
+            -v \
+            --cov=app.database \
+            --cov=app.models \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --durations=10 \
+            --maxfail=3 \
+            -x
 
           echo "✅ Database tests completed"
+
+      - name: Test Migration Rollback
+        run: |
+          echo "🔄 Testing migration rollback..."
+          cd openmemory/api
+
+          # Test migration rollback
+          alembic downgrade -1
+          alembic upgrade head
+
+          echo "✅ Migration rollback test completed"
 
       - name: Upload Database Test Results
         uses: actions/upload-artifact@v4
@@ -365,8 +461,8 @@ jobs:
         with:
           name: database-test-results
           path: |
-            openmemory/api/database-test-results.xml
-            openmemory/api/database-test-report.html
+            openmemory/api/coverage.xml
+            openmemory/api/test-results/
           retention-days: 30
 
   # ============================================================================
@@ -434,7 +530,7 @@ jobs:
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
-          
+
           until nc -z localhost 7687; do
             echo "Waiting for Neo4j..."
             sleep 2
@@ -443,10 +539,10 @@ jobs:
       - name: Run Integration Tests
         run: |
           echo "🔗 Running end-to-end integration tests..."
-          
+
           # Run comprehensive integration tests
           python -m pytest tests/test_integration.py -v --tb=short
-          
+
           # Run system integration tests
           cd openmemory/api
           python -m pytest tests/test_system_integration.py -v --tb=short
@@ -525,7 +621,7 @@ jobs:
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
-          
+
           until nc -z localhost 7687; do
             echo "Waiting for Neo4j..."
             sleep 2
@@ -534,10 +630,10 @@ jobs:
       - name: Run Performance Tests
         run: |
           echo "⚡ Running performance benchmark tests..."
-          
+
           # Run performance tests
           python scripts/benchmark_vector_performance.py
-          
+
           echo "✅ Performance tests completed"
 
       - name: Upload Performance Test Results
@@ -578,19 +674,19 @@ jobs:
       - name: Run Code Quality Checks
         run: |
           echo "🔍 Running code quality analysis..."
-          
+
           # Format checking
           black --check --diff .
-          
+
           # Import sorting
           isort --check-only --diff .
-          
+
           # Linting
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          
+
           # Type checking
           mypy shared/ openmemory/api/app/ --ignore-missing-imports
-          
+
           echo "✅ Code quality checks completed"
 
   # ============================================================================
@@ -599,7 +695,17 @@ jobs:
   merge-decision:
     name: '🚦 Merge Decision (Final Quality Gate)'
     runs-on: ubuntu-latest
-    needs: [performance-tests, code-quality]
+    # CRITICAL: All quality gates must pass before merge is allowed
+    needs:
+      [
+        unit-tests,
+        contract-tests,
+        security-tests,
+        database-tests,
+        integration-tests,
+        performance-tests,
+        code-quality,
+      ]
     if: always()
 
     steps:
@@ -611,14 +717,39 @@ jobs:
       - name: Evaluate Quality Gates
         run: |
           echo "🚦 Evaluating all quality gates..."
+          echo "================================================="
           
+          # CRITICAL: All quality gates must pass for merge approval
           # Check if all required tests passed
-          if [ "${{ needs.performance-tests.result }}" == "success" ] && 
+          if [ "${{ needs.unit-tests.result }}" == "success" ] && \
+             [ "${{ needs.contract-tests.result }}" == "success" ] && \
+             [ "${{ needs.security-tests.result }}" == "success" ] && \
+             [ "${{ needs.database-tests.result }}" == "success" ] && \
+             [ "${{ needs.integration-tests.result }}" == "success" ] && \
+             [ "${{ needs.performance-tests.result }}" == "success" ] && \
              [ "${{ needs.code-quality.result }}" == "success" ]; then
             echo "✅ All quality gates passed - Ready for merge"
+            echo "📊 Quality Gate Summary:"
+            echo "  - Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "  - Contract Tests: ${{ needs.contract-tests.result }}"
+            echo "  - Security Tests: ${{ needs.security-tests.result }}"
+            echo "  - Database Tests: ${{ needs.database-tests.result }}"
+            echo "  - Integration Tests: ${{ needs.integration-tests.result }}"
+            echo "  - Performance Tests: ${{ needs.performance-tests.result }}"
+            echo "  - Code Quality: ${{ needs.code-quality.result }}"
             exit 0
           else
             echo "❌ Quality gates failed - Blocking merge"
+            echo "📊 Quality Gate Summary:"
+            echo "  - Unit Tests: ${{ needs.unit-tests.result }}"
+            echo "  - Contract Tests: ${{ needs.contract-tests.result }}"
+            echo "  - Security Tests: ${{ needs.security-tests.result }}"
+            echo "  - Database Tests: ${{ needs.database-tests.result }}"
+            echo "  - Integration Tests: ${{ needs.integration-tests.result }}"
+            echo "  - Performance Tests: ${{ needs.performance-tests.result }}"
+            echo "  - Code Quality: ${{ needs.code-quality.result }}"
+            echo "================================================="
+            echo "🔧 Please fix all failing tests before attempting to merge"
             exit 1
           fi
 
@@ -626,16 +757,16 @@ jobs:
         if: always()
         run: |
           echo "📊 Generating quality gate report..."
-          
+
           cat > quality-report.md << EOF
           # Quality Gate Report
-          
+
           **Branch:** ${{ github.ref }}
           **Commit:** ${{ github.sha }}
           **Workflow:** ${{ github.workflow }}
-          
+
           ## Quality Gate Results
-          
+
           - Unit Tests: ${{ needs.unit-tests.result }}
           - Contract Tests: ${{ needs.contract-tests.result }}
           - Security Tests: ${{ needs.security-tests.result }}
@@ -643,16 +774,21 @@ jobs:
           - Integration Tests: ${{ needs.integration-tests.result }}
           - Performance Tests: ${{ needs.performance-tests.result }}
           - Code Quality: ${{ needs.code-quality.result }}
-          
+
           ## Environment Configuration
-          
+
           - App Environment: ${{ env.APP_ENVIRONMENT }}
           - Database URL: ${{ env.DATABASE_URL }}
           - Neo4j URI: ${{ env.NEO4J_URI }}
           - Coverage Threshold: ${{ env.COVERAGE_THRESHOLD }}%
-          
+
+          ## Merge Decision
+
+          **Status:** ${{ needs.unit-tests.result == 'success' && needs.contract-tests.result == 'success' && needs.security-tests.result == 'success' && needs.database-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.performance-tests.result == 'success' && needs.code-quality.result == 'success' && 'APPROVED FOR MERGE ✅' || 'BLOCKED FROM MERGE ❌' }}
+
+          This report validates that all quality gates have been met before allowing merge to protected branches.
           EOF
-          
+
           cat quality-report.md
 
       - name: Upload Quality Report
