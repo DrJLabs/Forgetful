@@ -34,6 +34,32 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+def get_database_url_for_migration():
+    """Get database URL for migrations with environment detection."""
+    # Check if we're in CI environment
+    is_ci = os.getenv("CI", "false").lower() == "true"
+    is_testing = os.getenv("TESTING", "false").lower() == "true"
+    
+    database_url = os.getenv("DATABASE_URL")
+    
+    if database_url:
+        return database_url
+    
+    if is_testing and is_ci:
+        # CI environment - use localhost for GitHub Actions services
+        return "postgresql://postgres:testpass@localhost:5432/test_db"
+    elif is_testing:
+        # Local testing - use test database
+        return "sqlite:///./test_openmemory.db"
+    else:
+        # Production/development - use docker-compose hostnames
+        postgres_host = os.getenv("POSTGRES_HOST", "postgres-mem0")
+        postgres_port = os.getenv("POSTGRES_PORT", "5432")
+        postgres_db = os.getenv("POSTGRES_DB", "mem0")
+        postgres_user = os.getenv("POSTGRES_USER", "postgres")
+        postgres_password = os.getenv("POSTGRES_PASSWORD", "postgres")
+        
+        return f"postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}"
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -47,12 +73,15 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = os.getenv("DATABASE_URL", "sqlite:///./openmemory.db")
+    url = get_database_url_for_migration()
     context.configure(
         url=url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        compare_type=True,
+        compare_server_default=True,
+        render_as_batch=url.startswith("sqlite"),  # Enable batch mode for SQLite
     )
 
     with context.begin_transaction():
@@ -67,17 +96,33 @@ def run_migrations_online() -> None:
 
     """
     configuration = config.get_section(config.config_ini_section)
-    configuration["sqlalchemy.url"] = os.getenv(
-        "DATABASE_URL", "sqlite:///./openmemory.db"
-    )
-    connectable = engine_from_config(
-        configuration,
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    database_url = get_database_url_for_migration()
+    configuration["sqlalchemy.url"] = database_url
+    
+    # Configure connection pooling for PostgreSQL
+    if database_url.startswith("postgresql"):
+        connectable = engine_from_config(
+            configuration,
+            prefix="sqlalchemy.",
+            poolclass=pool.NullPool,
+        )
+    else:
+        # SQLite configuration
+        connectable = engine_from_config(
+            configuration,
+            prefix="sqlalchemy.",
+            poolclass=pool.StaticPool,
+            connect_args={"check_same_thread": False},
+        )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection, 
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
+            render_as_batch=database_url.startswith("sqlite"),  # Enable batch mode for SQLite
+        )
 
         with context.begin_transaction():
             context.run_migrations()
