@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import QueuePool
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -105,6 +106,11 @@ if DATABASE_URL.startswith("sqlite"):
 else:
     engine = create_engine(DATABASE_URL)
 
+# Initialize database components
+DATABASE_URL = get_database_url()
+logger.info("Database connection initialized successfully.")
+
+engine = create_database_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for models
@@ -113,8 +119,29 @@ Base = declarative_base()
 
 # Dependency for FastAPI
 def get_db():
+    """Database session dependency for FastAPI."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+# Health check function
+def check_database_health() -> bool:
+    """Check if database connection is healthy."""
+    try:
+        with engine.connect() as conn:
+            conn.execute("SELECT 1")
+        return True
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return False
+
+
+# Migration helper function
+def get_migration_database_url() -> str:
+    """Get database URL specifically for migrations."""
+    # For migrations, always use the actual database URL
+    # This ensures migrations run against the correct database
+    return DATABASE_URL
