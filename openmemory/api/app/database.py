@@ -1,7 +1,7 @@
 import logging
 import os
 from typing import Generator
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, event, text
