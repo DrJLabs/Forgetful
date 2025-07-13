@@ -57,6 +57,7 @@ env:
   POSTGRES_DB: test_db
   POSTGRES_USER: postgres
   POSTGRES_PASSWORD: testpass
+  PGPASSWORD: testpass # Required for psql authentication
   USER: test_user
   API_KEY: sk-test-key-for-mocking-only
 
