@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import axios from 'axios'
 import { useDispatch } from 'react-redux'
-import { type AppDispatch, RootState } from '@/store/store'
+import { type AppDispatch } from '@/store/store'
 import {
   setConfigLoading,
   setConfigSuccess,
