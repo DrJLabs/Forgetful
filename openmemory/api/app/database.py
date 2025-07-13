@@ -117,13 +117,6 @@ def create_database_engine(database_url: str) -> Engine:
             pool_pre_ping=True,
         )
 
-        @event.listens_for(engine, "connect")
-        def set_sqlite_pragma(dbapi_connection, connection_record):
-            if "sqlite" in str(engine.url):
-                cursor = dbapi_connection.cursor()
-                cursor.execute("PRAGMA foreign_keys=ON")
-                cursor.close()
-
     return engine
 
 
