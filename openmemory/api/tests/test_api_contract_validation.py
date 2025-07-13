@@ -47,9 +47,23 @@ class TestAPIContractValidation:
     """
 
     @pytest.fixture
-    def client(self):
+    def client(self, test_db_session):
         """Create test client with proper configuration"""
-        return TestClient(app)
+
+        # Override database dependency
+        def override_get_db():
+            try:
+                yield test_db_session
+            finally:
+                pass
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        client = TestClient(app)
+        yield client
+
+        # Clean up the override
+        app.dependency_overrides.clear()
 
     @pytest.fixture
     def db(self):

@@ -14,11 +14,34 @@ from app.database import Base, SessionLocal, engine
 from app.mcp_server import setup_mcp_server
 from app.models import App, User
 from app.routers import apps_router, config_router, memories_router, stats_router
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi_pagination import add_pagination
 
+from shared.errors import ExternalServiceError, NotFoundError, ValidationError
+
 app = FastAPI(title="OpenMemory API")
+
+
+# Exception handlers for custom errors
+@app.exception_handler(NotFoundError)
+async def not_found_handler(request: Request, exc: NotFoundError):
+    """Handle NotFoundError by returning HTTP 404"""
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(ValidationError)
+async def validation_error_handler(request: Request, exc: ValidationError):
+    """Handle ValidationError by returning HTTP 422"""
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
+@app.exception_handler(ExternalServiceError)
+async def external_service_error_handler(request: Request, exc: ExternalServiceError):
+    """Handle ExternalServiceError by returning HTTP 503"""
+    return JSONResponse(status_code=503, content={"detail": str(exc)})
+
 
 app.add_middleware(
     CORSMiddleware,
