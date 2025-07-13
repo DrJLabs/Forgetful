@@ -1,17 +1,20 @@
 import logging
 import os
+from typing import Generator
 from urllib.parse import urlparse, urlunparse
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
 
-# Configure logging
+# Set up logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# load .env file (make sure you have DATABASE_URL set)
+# Load environment variables
 load_dotenv()
 
 
@@ -134,7 +137,13 @@ Base = declarative_base()
 
 
 # Dependency for FastAPI
-def get_db():
+def get_db() -> Generator[Session, None, None]:
+    """
+    Get database session for dependency injection.
+
+    Yields:
+        Session: SQLAlchemy database session
+    """
     db = SessionLocal()
     try:
         yield db
@@ -143,7 +152,12 @@ def get_db():
 
 
 def check_database_health() -> bool:
-    """Check database health by executing a simple query with proper SQLAlchemy syntax."""
+    """
+    Check database health by executing a simple query with proper SQLAlchemy syntax.
+
+    Returns:
+        bool: True if connection is healthy, False otherwise
+    """
     try:
         with engine.connect() as conn:
             result = conn.execute(text("SELECT 1"))
