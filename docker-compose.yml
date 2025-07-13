@@ -185,11 +185,11 @@ services:
     env_file:
       - ./openmemory/api/.env
     ports:
-      - '127.0.0.1:${OPENMEMORY_API_PORT:-8765}:${OPENMEMORY_API_PORT:-8765}'
+      - '127.0.0.1:${OPENMEMORY_API_PORT:-8765}:8765'
     volumes:
       - ./openmemory/api:/usr/src/openmemory
     command: >
-      sh -c "uvicorn main:app --host 0.0.0.0 --port ${OPENMEMORY_API_PORT:-8765} --workers ${API_WORKERS:-4}"
+      sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --workers ${API_WORKERS:-4}"
     networks: [traefik]
     depends_on:
       postgres:
