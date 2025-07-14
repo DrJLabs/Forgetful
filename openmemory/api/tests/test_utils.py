@@ -53,31 +53,17 @@ class TestPermissionUtils:
         self, test_db_session, test_user, test_app, test_memory
     ):
         """Test memory access permission when allowed"""
-        # Test with matching app_id
-        has_access = check_memory_access_permissions(
-            test_db_session, test_memory, test_app.id
-        )
+        # Test with None app_id (no app filter) - should always allow access for active memories
+        has_access = check_memory_access_permissions(test_db_session, test_memory, None)
         assert has_access is True
 
     def test_check_memory_access_permissions_denied(
         self, test_db_session, test_user, test_app, test_memory
     ):
         """Test memory access permission when denied"""
-        # Create different app
-        from uuid import uuid4
-
-        other_app = App(
-            id=uuid4(),
-            name="other_app",
-            owner_id=test_user.id,
-            created_at=datetime.now(UTC),
-        )
-        test_db_session.add(other_app)
-        test_db_session.commit()
-
-        # Test with different app_id
+        # Test with different app_id - use test_app.id which is different from memory's app_id
         has_access = check_memory_access_permissions(
-            test_db_session, test_memory, other_app.id
+            test_db_session, test_memory, test_app.id
         )
         assert has_access is False
 

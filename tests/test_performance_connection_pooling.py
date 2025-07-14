@@ -182,7 +182,7 @@ class TestConnectionPoolPerformance:
                 return None
 
         # Setup mock behavior
-        mock_driver.session.return_value = MockSessionContextManager()
+        mock_driver.session = Mock(return_value=MockSessionContextManager())
         mock_driver.close = AsyncMock()
         mock_session.run.return_value = mock_result
         mock_result.consume.return_value = None
@@ -276,7 +276,7 @@ class TestConnectionPoolPerformance:
         mock_pg_acquire_cm = AsyncMock()
         mock_pg_acquire_cm.__aenter__ = AsyncMock(return_value=mock_pg_conn)
         mock_pg_acquire_cm.__aexit__ = AsyncMock(return_value=None)
-        mock_pg_pool.acquire.return_value = mock_pg_acquire_cm
+        mock_pg_pool.acquire = Mock(return_value=mock_pg_acquire_cm)
         mock_pg_pool.close = AsyncMock()
         mock_pg_conn.fetchval.return_value = 1
 
@@ -292,7 +292,7 @@ class TestConnectionPoolPerformance:
             async def __aexit__(self, exc_type, exc_val, exc_tb):
                 return None
 
-        mock_neo4j_driver.session.return_value = MockNeo4jSessionContextManager()
+        mock_neo4j_driver.session = Mock(return_value=MockNeo4jSessionContextManager())
         mock_neo4j_driver.close = AsyncMock()
         mock_neo4j_result = AsyncMock()
         mock_neo4j_session.run.return_value = mock_neo4j_result
@@ -388,7 +388,7 @@ class TestConnectionPoolPerformance:
             mock_acquire_cm.__aexit__ = AsyncMock(return_value=None)
             return mock_acquire_cm
 
-        mock_pool.acquire.side_effect = mock_acquire
+        mock_pool.acquire = Mock(side_effect=mock_acquire)
         mock_pool.get_size.return_value = pool_config.postgres_max_size
         mock_pool.get_idle_size.return_value = 0
         mock_pool.close = AsyncMock()
@@ -462,7 +462,7 @@ class TestConnectionPoolPerformance:
             mock_acquire_cm.__aexit__ = AsyncMock(return_value=None)
             return mock_acquire_cm
 
-        mock_pool.acquire.side_effect = mock_acquire
+        mock_pool.acquire = Mock(side_effect=mock_acquire)
         mock_pool.get_size.return_value = pool_config.postgres_min_size
         mock_pool.get_idle_size.return_value = pool_config.postgres_min_size - 1
         mock_pool.close = AsyncMock()
@@ -510,7 +510,7 @@ class TestConnectionPoolPerformance:
             mock_acquire_cm.__aexit__ = AsyncMock(return_value=None)
             return mock_acquire_cm
 
-        mock_pool.acquire.side_effect = mock_acquire
+        mock_pool.acquire = Mock(side_effect=mock_acquire)
         mock_pool.get_size.return_value = pool_config.postgres_max_size
         mock_pool.get_idle_size.return_value = pool_config.postgres_max_size // 2
         mock_pool.close = AsyncMock()
