@@ -136,6 +136,27 @@ services:
           cpus: '2.0'
           memory: 4GB
 
+  # Host-based MCP Bridge Service (Linux approach)
+  mcp-bridge:
+    image: nginx:alpine
+    container_name: mcp-bridge
+    restart: unless-stopped
+    networks: [traefik]
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.mcp-bridge.rule=Host(`mem-mcp.onemainarmy.com`)'
+      - 'traefik.http.routers.mcp-bridge.entrypoints=websecure'
+      - 'traefik.http.routers.mcp-bridge.tls=true'
+      - 'traefik.http.services.mcp-bridge.loadbalancer.server.port=80'
+      - 'traefik.http.middlewares.mcp-ratelimit.ratelimit.burst=100'
+      - 'traefik.http.middlewares.mcp-ratelimit.ratelimit.average=50'
+      - 'traefik.http.routers.mcp-bridge.middlewares=mcp-ratelimit'
+    volumes:
+      - ./nginx-mcp-proxy.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
   # OpenMemory Services
   openmemory-mcp:
     image: mem0/openmemory-mcp

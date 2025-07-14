@@ -1,12 +1,12 @@
 ---
-description:
+# description: Use mem0 MCP tools to maintain continuous project context and track all coding progress, solutions, and decisions across sessions
 alwaysApply: false
 ---
 
 # Mem0 MCP Project Memory System
 
 ## Core Purpose
-Use mem0 MCP tools to maintain continuous project context and track all coding progress, solutions, and decisions across sessions.
+Use mem0 MCP tools to maintain continuous project context and track all coding progress, solutions, and decisions across sessions. This follows the official mem0 MCP integration guidance for enhanced AI-driven workflows.
 
 ## MANDATORY WORKFLOW
 
@@ -16,75 +16,101 @@ Use mem0 MCP tools to maintain continuous project context and track all coding p
 - Never assume you remember context from previous messages
 
 ### 2. During Work Sessions
-Store these IMMEDIATELY after implementation:
+Store these IMMEDIATELY after implementation using `add_memories`:
 - **Code Solutions**: Working implementations, bug fixes, optimizations
 - **Project Progress**: Completed features, current tasks, next steps
 - **Technical Decisions**: Architecture choices, library selections, design patterns
 - **Issues & Blockers**: Errors encountered, workarounds applied, open problems
 - **Configuration**: Environment setup, dependencies, deployment details
+- **Coding Preferences**: Code style, patterns, and conventions used in this project
 
-### 3. Memory Storage Format
-```
-add_memories("Project: [project_name] - [category]: [specific detail]")
-```
-Categories: Solution, Progress, Decision, Issue, Config, Architecture
+### 3. Memory Storage Best Practices
+Based on official mem0 MCP documentation:
+- Use natural language descriptions for memory content
+- Include complete code snippets with dependencies
+- Store language/framework versions and documentation
+- Record best practices and example usage
+- Maintain consistency in coding practices
+
+## Available MCP Tools
+
+### Core Memory Operations
+- `add_memories`: Store new memory objects from conversations
+- `search_memory`: Retrieve relevant memories using semantic search
+- `list_memories`: View all stored memories
+- `delete_all_memories`: Clear memory storage (use sparingly)
+
+### Memory Content Categories
+- **Solutions**: Working code implementations and fixes
+- **Progress**: Feature completion status and next steps
+- **Decisions**: Architecture and technical choices with rationale
+- **Issues**: Problems encountered and their resolutions
+- **Config**: Environment setup and deployment details
+- **Preferences**: Coding style and project conventions
 
 ## Required Memory Points
 
 ### After Code Changes
-- Store the exact solution that worked
-- Include file paths and key code snippets
-- Note any dependencies or prerequisites
+- Store the exact solution that worked with file paths
+- Include key code snippets and dependencies
+- Note any prerequisites or setup requirements
 
 ### After Debugging
-- Store the error and its resolution
-- Include root cause analysis
-- Document prevention strategies
+- Store the error and its complete resolution
+- Include root cause analysis and prevention strategies
+- Document any patterns or recurring issues
 
 ### After Feature Completion
 - Store feature summary and implementation approach
-- List all affected files
-- Note any future improvements needed
+- List all affected files and components
+- Note any future improvements or technical debt
 
 ### Project Milestones
-- Major refactoring completed
-- New integrations added
-- Performance improvements achieved
-- Breaking changes introduced
+- Major refactoring or architectural changes
+- New integrations and third-party dependencies
+- Performance improvements and optimizations
+- Breaking changes and migration steps
 
 ## Examples
 
 ### Good: Solution Storage
 ```
 User: "Fixed the memory leak in the React component"
-Action: add_memories("Project: mem0-stack - Solution: Fixed memory leak in /ui/app/memories/components/MemoryList.tsx by properly cleaning up event listeners in useEffect cleanup function")
+Action: add_memories("Fixed memory leak in /ui/app/memories/components/MemoryList.tsx by properly cleaning up event listeners in useEffect cleanup function. Added dependency array and cleanup return function.")
 ```
 
 ### Good: Progress Tracking
 ```
 User: "Implemented the new API endpoint"
-Action: add_memories("Project: mem0-stack - Progress: Implemented POST /api/memories endpoint with validation, error handling, and PostgreSQL integration. Next: Add rate limiting")
+Action: add_memories("Implemented POST /api/memories endpoint with validation, error handling, and PostgreSQL integration. Uses express-validator for input validation. Next: Add rate limiting and authentication.")
 ```
 
-### Good: Issue Documentation
+### Good: Coding Preferences
 ```
-User: "Docker compose keeps failing"
-Action: add_memories("Project: mem0-stack - Issue: Docker compose fails with port 5432 conflict. Solution: Stop local postgres or change port mapping in docker-compose.yml to 5433:5432")
+User: "We prefer TypeScript with strict mode enabled"
+Action: add_memories("Project uses TypeScript with strict mode enabled. All new files should use TypeScript interfaces for type safety. Prefer arrow functions and async/await over callbacks.")
 ```
 
 ## Enforcement Rules
 
-1. **NO coding response without memory search first**
-2. **NO completed task without storing the solution**
+1. **NO coding response without `search_memory` first**
+2. **NO completed task without storing the solution via `add_memories`**
 3. **NO debugging session without documenting the fix**
 4. **NO architectural decision without recording rationale**
-5. **Always cite relevant memories when using them**: [[memory:ID]]
+5. **Always retrieve relevant memories to maintain project consistency**
 
 ## Memory Lifecycle
 
-- **Create**: When implementing new solutions
-- **Update**: When solutions evolve or improve
-- **Search**: BEFORE every response
-- **Delete**: Only outdated/incorrect information
+- **Create**: Use `add_memories` when implementing new solutions
+- **Search**: Use `search_memory` before every response
+- **Review**: Use `list_memories` to understand project scope
+- **Clean**: Use `delete_all_memories` only when starting fresh
 
-Remember: Your effectiveness depends on maintaining comprehensive project memory!
+## Benefits of MCP Integration
+
+- **Persistent Context Storage**: Retain and reuse coding insights across sessions
+- **Seamless Integration**: Native MCP tools work directly within Cursor
+- **Efficient Search**: Retrieve relevant coding insights using semantic search
+- **Cross-Session Coherence**: Maintain consistent understanding across interactions
+
+Remember: Your effectiveness depends on maintaining comprehensive project memory through the official mem0 MCP tools!

@@ -1,0 +1,126 @@
+{
+  "components": {
+    "schemas": {
+      "MemoryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "arguments": {
+            "additionalProperties": false,
+            "properties": {
+              "memory_id": {
+                "description": "Memory ID for get/update/delete operations",
+                "type": "string"
+              },
+              "metadata": {
+                "additionalProperties": true,
+                "description": "Additional metadata",
+                "type": "object"
+              },
+              "query": {
+                "description": "Search query for memories",
+                "type": "string"
+              },
+              "text": {
+                "description": "Text to store as memory",
+                "type": "string"
+              },
+              "user_id": {
+                "description": "User identifier",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "name": {
+            "description": "Memory operation to perform",
+            "enum": [
+              "add_memories",
+              "search_memory",
+              "list_memories",
+              "get_memory",
+              "update_memory",
+              "delete_memory"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "arguments"
+        ],
+        "type": "object"
+      },
+      "MemoryResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "result": {
+            "additionalProperties": true,
+            "description": "The result of the memory operation",
+            "type": "object"
+          },
+          "success": {
+            "description": "Whether the operation was successful",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "result"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "AI Memory Management System",
+    "title": "mem0 Memory API",
+    "version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/tools/call": {
+      "post": {
+        "operationId": "callMemoryTool",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryResponse"
+                }
+              }
+            },
+            "description": "Success"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Call Memory Tool"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://mem-mcp.onemainarmy.com"
+    }
+  ]
+}

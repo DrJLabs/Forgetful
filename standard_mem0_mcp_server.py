@@ -10,7 +10,7 @@ import logging
 import os
 from typing import Any, Dict, List
 
-import requests
+import aiohttp
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 # Configuration
 HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", "8081"))
+PORT = int(os.getenv("PORT", "8080"))
 MEM0_API_URL = os.getenv("MEM0_API_URL", "http://localhost:8000")
 OPENMEMORY_API_URL = os.getenv("OPENMEMORY_API_URL", "http://localhost:8765")
 
@@ -47,18 +47,14 @@ async def health_check():
     """Health check endpoint"""
     try:
         # Check mem0 API
-        try:
-            response = requests.get(f"{MEM0_API_URL}/health", timeout=5)
-            mem0_healthy = response.status_code == 200
-        except:
-            mem0_healthy = False
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{MEM0_API_URL}/health") as response:
+                mem0_healthy = response.status == 200
 
         # Check openmemory API
-        try:
-            response = requests.get(f"{OPENMEMORY_API_URL}/health", timeout=5)
-            openmemory_healthy = response.status_code == 200
-        except:
-            openmemory_healthy = False
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{OPENMEMORY_API_URL}/health") as response:
+                openmemory_healthy = response.status == 200
 
         return {
             "status": "healthy" if mem0_healthy and openmemory_healthy else "degraded",
@@ -163,56 +159,46 @@ async def call_tool(request: Request):
         # Map tool calls to your existing memory operations
         if tool_name == "add_memories":
             # Call mem0 API directly
-            payload = {
-                "messages": [{"role": "user", "content": arguments.get("text", "")}],
-                "user_id": "drj",
-            }
-            response = requests.post(
-                f"{MEM0_API_URL}/memories", json=payload, timeout=30
-            )
-            if response.status_code == 200:
-                return {"success": True, "result": response.json()}
-            else:
-                return {
-                    "success": False,
-                    "error": f"HTTP {response.status_code}: {response.text}",
+            async with aiohttp.ClientSession() as session:
+                payload = {
+                    "messages": [
+                        {"role": "user", "content": arguments.get("text", "")}
+                    ],
+                    "user_id": "drj",
                 }
+                async with session.post(
+                    f"{MEM0_API_URL}/memories", json=payload
+                ) as response:
+                    result = await response.json()
+                    return {"success": True, "result": result}
 
         elif tool_name == "search_memory":
             # Call mem0 search API
-            payload = {"query": arguments.get("query", ""), "user_id": "drj"}
-            response = requests.post(f"{MEM0_API_URL}/search", json=payload, timeout=30)
-            if response.status_code == 200:
-                return {"success": True, "result": response.json()}
-            else:
-                return {
-                    "success": False,
-                    "error": f"HTTP {response.status_code}: {response.text}",
-                }
+            async with aiohttp.ClientSession() as session:
+                payload = {"query": arguments.get("query", ""), "user_id": "drj"}
+                async with session.post(
+                    f"{MEM0_API_URL}/search", json=payload
+                ) as response:
+                    result = await response.json()
+                    return {"success": True, "result": result}
 
         elif tool_name == "list_memories":
             # Call mem0 list API
-            response = requests.get(f"{MEM0_API_URL}/memories?user_id=drj", timeout=30)
-            if response.status_code == 200:
-                return {"success": True, "result": response.json()}
-            else:
-                return {
-                    "success": False,
-                    "error": f"HTTP {response.status_code}: {response.text}",
-                }
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{MEM0_API_URL}/memories?user_id=drj"
+                ) as response:
+                    result = await response.json()
+                    return {"success": True, "result": result}
 
         elif tool_name == "delete_all_memories":
             # Call mem0 delete API
-            response = requests.delete(
-                f"{MEM0_API_URL}/memories?user_id=drj", timeout=30
-            )
-            if response.status_code == 200:
-                return {"success": True, "result": response.json()}
-            else:
-                return {
-                    "success": False,
-                    "error": f"HTTP {response.status_code}: {response.text}",
-                }
+            async with aiohttp.ClientSession() as session:
+                async with session.delete(
+                    f"{MEM0_API_URL}/memories?user_id=drj"
+                ) as response:
+                    result = await response.json()
+                    return {"success": True, "result": result}
 
         else:
             raise HTTPException(status_code=400, detail=f"Unknown tool: {tool_name}")

@@ -1,0 +1,43 @@
+## Dynamic configuration for MCP host service
+http:
+  routers:
+    mcp-router:
+      rule: "Host(`mcp.your-domain.com`)"
+      service: mcp-service
+      entryPoints:
+        - websecure
+      tls:
+        certResolver: cloudflare
+      middlewares:
+        - mcp-auth
+        - mcp-ratelimit
+        - mcp-headers
+
+  services:
+    mcp-service:
+      loadBalancer:
+        servers:
+          - url: "http://127.0.0.1:8081"
+        healthCheck:
+          path: "/health"
+          interval: "30s"
+          timeout: "5s"
+
+  middlewares:
+    mcp-auth:
+      basicAuth:
+        users:
+          - "admin:$2y$10$..." # Generate with htpasswd
+
+    mcp-ratelimit:
+      rateLimit:
+        burst: 100
+        average: 50
+
+    mcp-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+        customResponseHeaders:
+          X-Frame-Options: "DENY"
+          X-Content-Type-Options: "nosniff"

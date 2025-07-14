@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+Always use search_memory tool to get the related context before any tasks. Always use add_memories tool to store all the critical information after tasks.

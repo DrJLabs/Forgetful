@@ -8,6 +8,28 @@ data/
 .env
 .env.local
 .env.*.local
+.env.mcp
+.env.mcp.*
+.env.secure
+.env.production
+ci_environment.env
+
+# API Keys and Production Secrets
+*api_key*
+*production_api_key*
+mcp_production_api_key.txt
+*secret*
+*token*
+
+# Production deployment files
+deploy_production_mcp.sh
+test_production_deployment.py
+start_mcp_production.sh
+
+# Log files
+*.log
+mcp_server*.log
+security_test_report.txt
 
 # Virtual environments
 # Reference: https://github.com/github/gitignore/blob/main/Global/VirtualEnv.gitignore
@@ -79,3 +101,49 @@ test-reports/
 # Docker volumes and data
 docker-compose.override.yml
 .docker/
+
+# MCP Security - DO NOT COMMIT THESE FILES
+# API Keys and Secrets
+api_keys.txt
+*.key
+*.secret
+jwt_secret.txt
+mcp_credentials.json
+auth_tokens.json
+
+# MCP Server Files
+mcp_server.log
+mcp_server.pid
+mcp_*.log
+secure_mcp_server.log
+
+# SSL/TLS Certificates
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx
+ssl_certificates/
+certificates/
+
+# Authentication Files
+.htpasswd
+auth.txt
+basic_auth.txt
+bearer_tokens.txt
+
+# Config Files with Secrets
+config.secret.json
+config.secret.yaml
+config.secret.yml
+*_secret.conf
+*_secret.config
+
+# Backup of sensitive files
+*.env.backup
+*.key.backup
+*.secret.backup
+
+# Process files
+*.pid
+nohup.out
