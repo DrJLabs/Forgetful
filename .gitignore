@@ -29,6 +29,35 @@ virtualenv/
 # Archive directories
 archive/
 
+# Backup files
+*.backup
+*.bak
+*.sql.backup
+*_backup_*.sql
+backup_*.sql
+*.dump
+*.dmp
+
+# Temporary files
+*.tmp
+*.temp
+*~
+.DS_Store
+Thumbs.db
+
+# Lock files
+*.lock
+package-lock.json
+yarn.lock
+Pipfile.lock
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
 # Node modules
 node_modules/
 
@@ -46,3 +75,7 @@ coverage.xml
 *.log
 # CI test after formatting fixes - Sun Jul 13 04:21:25 AM EDT 2025
 test-reports/
+
+# Docker volumes and data
+docker-compose.override.yml
+.docker/
