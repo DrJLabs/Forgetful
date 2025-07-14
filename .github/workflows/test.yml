@@ -159,7 +159,7 @@ jobs:
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
-          
+
           until nc -z localhost 7687; do
             echo "Waiting for Neo4j..."
             sleep 2
@@ -240,7 +240,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: test_db
@@ -481,7 +481,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: test_db
@@ -575,7 +575,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: test_db
@@ -724,7 +724,7 @@ jobs:
         run: |
           echo "🚦 Evaluating all quality gates..."
           echo "================================================="
-          
+
           # CRITICAL: All quality gates must pass for merge approval
           # Check if all required tests passed
           if [ "${{ needs.unit-tests.result }}" == "success" ] && \

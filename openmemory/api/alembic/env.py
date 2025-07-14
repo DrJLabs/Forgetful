@@ -34,23 +34,31 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+
 def get_database_url_for_migration():
     """Get database URL for migrations with environment detection."""
     # Check if we're in CI environment
     is_ci = os.getenv("CI", "false").lower() == "true"
     is_testing = os.getenv("TESTING", "false").lower() == "true"
-    
+
     database_url = os.getenv("DATABASE_URL")
-    
+
     if database_url:
         return database_url
-    
-    if is_testing and is_ci:
-        # CI environment - use localhost for GitHub Actions services
-        return "postgresql://postgres:testpass@localhost:5432/test_db"
-    elif is_testing:
-        # Local testing - use test database
-        return "sqlite:///./test_openmemory.db"
+
+    if is_testing:
+        # Testing environment - use our test database configuration
+        if is_ci:
+            # CI environment - use GitHub Actions services
+            database_host = os.getenv("DATABASE_HOST", "localhost")
+            database_port = os.getenv("DATABASE_PORT", "5432")
+            database_name = os.getenv("DATABASE_NAME", "test_db")
+            database_user = os.getenv("DATABASE_USER", "postgres")
+            database_password = os.getenv("DATABASE_PASSWORD", "testpass")
+            return f"postgresql://{database_user}:{database_password}@{database_host}:{database_port}/{database_name}"
+        else:
+            # Local testing - use SQLite in-memory or file
+            return "sqlite:///:memory:"
     else:
         # Production/development - use docker-compose hostnames
         postgres_host = os.getenv("POSTGRES_HOST", "postgres-mem0")
@@ -58,8 +66,9 @@ def get_database_url_for_migration():
         postgres_db = os.getenv("POSTGRES_DB", "mem0")
         postgres_user = os.getenv("POSTGRES_USER", "postgres")
         postgres_password = os.getenv("POSTGRES_PASSWORD", "postgres")
-        
+
         return f"postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}"
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -98,7 +107,7 @@ def run_migrations_online() -> None:
     configuration = config.get_section(config.config_ini_section)
     database_url = get_database_url_for_migration()
     configuration["sqlalchemy.url"] = database_url
-    
+
     # Configure connection pooling for PostgreSQL
     if database_url.startswith("postgresql"):
         connectable = engine_from_config(
@@ -117,11 +126,13 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, 
+            connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
             compare_server_default=True,
-            render_as_batch=database_url.startswith("sqlite"),  # Enable batch mode for SQLite
+            render_as_batch=database_url.startswith(
+                "sqlite"
+            ),  # Enable batch mode for SQLite
         )
 
         with context.begin_transaction():
