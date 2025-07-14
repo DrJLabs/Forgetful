@@ -393,18 +393,18 @@ class TestUserPermissionValidation:
             assert result is False
 
     def test_user_permission_with_shared_access(self):
-        """Test user permission with shared access"""
+        """Test user permission blocks cross-user access (no shared access implemented)"""
         mock_db = Mock()
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
-        mock_memory.user_id = uuid4()
+        mock_memory.user_id = uuid4()  # Different user ID
         mock_memory.id = uuid4()
+        mock_memory.app_id = uuid4()
 
-        # Mock app with shared access
+        # Mock app with different owner (cross-user access attempt)
         mock_app = Mock()
         mock_app.is_active = True
-        mock_app.owner_id = uuid4()
-        mock_app.shared_access = True
+        mock_app.owner_id = uuid4()  # Different from memory.user_id
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         app_id = uuid4()
@@ -415,7 +415,8 @@ class TestUserPermissionValidation:
 
             result = check_memory_access_permissions(mock_db, mock_memory, app_id)
 
-            assert result is True
+            # Should return False due to cross-user access prevention
+            assert result is False
 
 
 @pytest.mark.unit
@@ -498,14 +499,19 @@ class TestSecurityEdgeCases:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        user_id = uuid4()
+        app_id = uuid4()
 
-        # Mock app with limited permissions
+        # Set up required fields for security check
+        mock_memory.user_id = user_id
+        mock_memory.app_id = app_id
+
+        # Mock app with proper security setup
         mock_app = Mock()
         mock_app.is_active = True
-        mock_app.permission_level = "read_only"
+        mock_app.owner_id = user_id  # Must match memory.user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
-        app_id = uuid4()
         with patch(
             "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
@@ -582,13 +588,19 @@ class TestPermissionCaching:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        user_id = uuid4()
+        app_id = uuid4()
+
+        # Set up required fields for security check
+        mock_memory.user_id = user_id
+        mock_memory.app_id = app_id
 
         # Mock app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = user_id  # Must match memory.user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
-        app_id = uuid4()
         with patch(
             "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
@@ -628,13 +640,19 @@ class TestPermissionCaching:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        user_id = uuid4()
+        app_id = uuid4()
+
+        # Set up required fields for security check
+        mock_memory.user_id = user_id
+        mock_memory.app_id = app_id
 
         # Mock app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = user_id  # Must match memory.user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
-        app_id = uuid4()
         with patch(
             "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
