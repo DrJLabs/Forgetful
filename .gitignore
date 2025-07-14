@@ -13,6 +13,7 @@ data/
 venv/
 env/
 ENV/
+test_env/
 
 # Archive directories
 archive/
@@ -24,4 +25,12 @@ node_modules/
 __pycache__/
 *.pyc
 *.pyo
+
+# Test artifacts
+test-results.xml
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.log
 # CI test after formatting fixes - Sun Jul 13 04:21:25 AM EDT 2025

@@ -21,6 +21,22 @@ from testcontainers.postgres import PostgresContainer
 # Set up test environment BEFORE any imports
 os.environ["TESTING"] = "true"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["OPENAI_API_KEY"] = "sk-test-key-for-testing"
+
+# Database configuration for tests
+os.environ["DATABASE_HOST"] = "localhost"
+os.environ["DATABASE_PORT"] = "5432"
+os.environ["DATABASE_NAME"] = "test_db"
+os.environ["DATABASE_USER"] = "test_user"
+os.environ["DATABASE_PASSWORD"] = "test_password"
+
+# Neo4j configuration for tests
+os.environ["NEO4J_HOST"] = "localhost"
+os.environ["NEO4J_PORT"] = "7687"
+os.environ["NEO4J_USERNAME"] = "neo4j"
+os.environ["NEO4J_PASSWORD"] = "test_password"
+os.environ["NEO4J_URI"] = "bolt://localhost:7687"
+os.environ["NEO4J_AUTH"] = "neo4j/test_password"
 
 from app.database import Base, get_db  # noqa: E402
 from app.models import App, Memory, MemoryState, User  # noqa: E402

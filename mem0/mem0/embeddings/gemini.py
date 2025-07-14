@@ -1,8 +1,8 @@
 import os
 from typing import Literal, Optional
 
-from google import genai
-from google.genai import types
+import google.generativeai as genai
+from google.generativeai import types
 
 from mem0.configs.embeddings.base import BaseEmbedderConfig
 from mem0.embeddings.base import EmbeddingBase

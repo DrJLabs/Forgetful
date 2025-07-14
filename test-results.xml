@@ -1,19 +1,55 @@
-<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="10" time="5.174" timestamp="2025-07-12T16:04:45.600576-04:00" hostname="djin-1"><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_timeout_handling" time="0.545" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_processor_performance" time="0.038" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_graph_query_batcher_performance" time="0.108" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_memory_write_batcher_performance" time="0.108" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batching_manager_performance" time="0.126"><failure message="AssertionError: Expected 24 results&#10;assert == failed. [pytest-clarity diff shown]&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32m16#x1B[0m&#10;  #x1B[0m#x1B[31m24#x1B[0m&#10;  #x1B[0m">tests/test_performance_batching.py:550: in test_batching_manager_performance
-    assert len(successful_results) == len(
-E   AssertionError: Expected 24 results
-E   assert == failed. [pytest-clarity diff shown]
-E     #x1B[0m
-E     #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below
-E     #x1B[0m
-E     #x1B[0m#x1B[32m16#x1B[0m
-E     #x1B[0m#x1B[31m24#x1B[0m
-E     #x1B[0m</failure></testcase><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_vector_search_batcher_performance" time="0.007"><failure message="AssertionError: Expected 20 results&#10;assert == failed. [pytest-clarity diff shown]&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below&#10;  #x1B[0m&#10;  #x1B[0m#x1B[32m0#x1B[0m&#10;  #x1B[0m#x1B[31m20#x1B[0m&#10;  #x1B[0m">tests/test_performance_batching.py:335: in test_vector_search_batcher_performance
-    assert len(successful_results) == len(
-E   AssertionError: Expected 20 results
-E   assert == failed. [pytest-clarity diff shown]
-E     #x1B[0m
-E     #x1B[0m#x1B[32mLHS#x1B[0m vs #x1B[31mRHS#x1B[0m shown below
-E     #x1B[0m
-E     #x1B[0m#x1B[32m0#x1B[0m
-E     #x1B[0m#x1B[31m20#x1B[0m
-E     #x1B[0m</failure></testcase><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_configuration_validation" time="0.001" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_metrics_performance" time="0.006" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_priority_batching_performance" time="0.038" /><testcase classname="tests.test_performance_batching.TestBatchingPerformance" name="test_batch_error_recovery" time="0.155" /></testsuite></testsuites>
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="5" failures="0" skipped="1" tests="6" time="13.684" timestamp="2025-07-13T22:22:09.040499-04:00" hostname="djin-1"><testcase classname="" name="tests.test_timezone_safety" time="0.000"><skipped message="collection skipped">('/home/drj/projects/mem0-stack/tests/test_timezone_safety.py', 37, "Skipped: Cannot import memory modules: No module named 'mem0.mem0'")</skipped></testcase><testcase classname="" name="mem0.tests.embeddings.test_vertexai_embeddings" time="0.000"><error message="collection failure">ImportError while importing test module '/home/drj/projects/mem0-stack/mem0/tests/embeddings/test_vertexai_embeddings.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mem0/tests/embeddings/test_vertexai_embeddings.py:5: in &lt;module&gt;
+    from mem0.embeddings.vertexai import VertexAIEmbedding
+mem0/mem0/embeddings/vertexai.py:4: in &lt;module&gt;
+    from vertexai.language_models import TextEmbeddingInput, TextEmbeddingModel
+E   ModuleNotFoundError: No module named 'vertexai'</error></testcase><testcase classname="" name="mem0.tests.llms.test_gemini" time="0.000"><error message="collection failure">ImportError while importing test module '/home/drj/projects/mem0-stack/mem0/tests/llms/test_gemini.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mem0/tests/llms/test_gemini.py:4: in &lt;module&gt;
+    from google.genai import types
+E   ModuleNotFoundError: No module named 'google.genai'</error></testcase><testcase classname="" name="mem0.tests.llms.test_together" time="0.000"><error message="collection failure">ImportError while importing test module '/home/drj/projects/mem0-stack/mem0/tests/llms/test_together.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+mem0/mem0/llms/together.py:6: in &lt;module&gt;
+    from together import Together
+E   ModuleNotFoundError: No module named 'together'
+
+During handling of the above exception, another exception occurred:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mem0/tests/llms/test_together.py:6: in &lt;module&gt;
+    from mem0.llms.together import TogetherLLM
+mem0/mem0/llms/together.py:8: in &lt;module&gt;
+    raise ImportError(
+E   ImportError: The 'together' library is required. Please install it using 'pip install together'.</error></testcase><testcase classname="" name="mem0.tests.memory.test_neptune_memory" time="0.000"><error message="collection failure">ImportError while importing test module '/home/drj/projects/mem0-stack/mem0/tests/memory/test_neptune_memory.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+mem0/mem0/graphs/neptune/main.py:6: in &lt;module&gt;
+    from langchain_aws import NeptuneAnalyticsGraph
+E   ModuleNotFoundError: No module named 'langchain_aws'
+
+During handling of the above exception, another exception occurred:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+mem0/tests/memory/test_neptune_memory.py:7: in &lt;module&gt;
+    from mem0.graphs.neptune.main import MemoryGraph
+mem0/mem0/graphs/neptune/main.py:8: in &lt;module&gt;
+    raise ImportError(
+E   ImportError: langchain_aws is not installed. Please install it using 'make install_all'.</error></testcase><testcase classname="" name="mem0.tests.test_main" time="0.000"><error message="collection failure">ImportError while importing test module '/home/drj/projects/mem0-stack/mem0/tests/test_main.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'tests.test_main'</error></testcase></testsuite></testsuites>
