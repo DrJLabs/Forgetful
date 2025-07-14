@@ -64,14 +64,20 @@ class TestMemoryAccessPermissions:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        user_id = uuid4()
+        app_id = uuid4()
+
+        # Set up required fields for security check
+        mock_memory.user_id = user_id
+        mock_memory.app_id = app_id
 
         # Mock app query
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = user_id  # Must match memory.user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         # Mock accessible memory IDs function
-        app_id = uuid4()
         with patch(
             "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
@@ -117,14 +123,20 @@ class TestMemoryAccessPermissions:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        user_id = uuid4()
+        app_id = uuid4()
+
+        # Set up required fields for security check
+        mock_memory.user_id = user_id
+        mock_memory.app_id = app_id
 
         # Mock active app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = user_id  # Must match memory.user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         # Mock unrestricted access (None means all memories accessible)
-        app_id = uuid4()
         with patch(
             "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
@@ -140,14 +152,20 @@ class TestMemoryAccessPermissions:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        user_id = uuid4()
+        app_id = uuid4()
+
+        # Set up required fields for security check
+        mock_memory.user_id = user_id
+        mock_memory.app_id = app_id
 
         # Mock active app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = user_id  # Must match memory.user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         # Mock restricted access with memory in allowed list
-        app_id = uuid4()
         with patch(
             "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
@@ -191,14 +209,20 @@ class TestAppPermissionValidation:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        user_id = uuid4()
+        app_id = uuid4()
+
+        # Set up required fields for security check
+        mock_memory.user_id = user_id
+        mock_memory.app_id = app_id
 
         # Mock active app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = user_id  # Must match memory.user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         # Use UUID app ID
-        app_id = uuid4()
         with patch(
             "app.routers.memories.get_accessible_memory_ids"
         ) as mock_get_accessible:
