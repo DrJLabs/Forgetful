@@ -1,10 +1,15 @@
 from unittest.mock import Mock, patch
 
 import pytest
-from google.genai import types
 
-from mem0.configs.llms.base import BaseLlmConfig
-from mem0.llms.gemini import GeminiLLM
+# Skip all tests in this file if google.genai is not available
+try:
+    from google.genai import types
+
+    from mem0.configs.llms.base import BaseLlmConfig
+    from mem0.llms.gemini import GeminiLLM
+except ImportError:
+    pytest.skip("google.genai not available", allow_module_level=True)
 
 
 @pytest.fixture

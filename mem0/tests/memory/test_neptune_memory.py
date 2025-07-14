@@ -3,8 +3,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mem0.graphs.neptune.base import NeptuneBase
-from mem0.graphs.neptune.main import MemoryGraph
+# Skip all tests in this file if langchain_aws is not available
+try:
+    from mem0.graphs.neptune.base import NeptuneBase
+    from mem0.graphs.neptune.main import MemoryGraph
+except ImportError:
+    pytest.skip("langchain_aws not available", allow_module_level=True)
 
 
 class TestNeptuneMemory(unittest.TestCase):

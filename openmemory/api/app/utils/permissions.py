@@ -39,14 +39,21 @@ def check_memory_access_permissions(
     if not app.is_active:
         return False
 
+    # SECURITY CHECK: Ensure the app belongs to the same user as the memory
+    # This prevents cross-user memory access
+    if app.owner_id != memory.user_id:
+        return False
+
     # Check app-specific access controls
     from app.routers.memories import get_accessible_memory_ids
 
     accessible_memory_ids = get_accessible_memory_ids(db, app_id)
 
-    # If accessible_memory_ids is None, all memories are accessible
+    # If accessible_memory_ids is None, no explicit ACL rules exist
+    # In this case, apply default app-level isolation:
+    # apps can only access memories they created
     if accessible_memory_ids is None:
-        return True
+        return memory.app_id == app_id
 
-    # Check if memory is in the accessible set
+    # Check if memory is in the accessible set (explicit ACL rules exist)
     return memory.id in accessible_memory_ids

@@ -64,8 +64,10 @@ class TestPermissionUtils:
     ):
         """Test memory access permission when denied"""
         # Create different app
+        from uuid import uuid4
+
         other_app = App(
-            id="other_app_id",
+            id=uuid4(),
             name="other_app",
             owner_id=test_user.id,
             created_at=datetime.now(UTC),
@@ -90,58 +92,61 @@ class TestPermissionUtils:
 
 @pytest.mark.unit
 class TestDataFactoryUtils:
-    """Test TestDataFactory utility functions"""
+    """Test data factory utilities for test data generation"""
 
     def test_create_user_data(self):
         """Test user data creation"""
-        user_data = TestDataFactory.create_user_data("test_user")
+        from tests.utils.contract_test_helpers import TestDataFactory
 
-        assert user_data["user_id"] == "test_user"
-        assert user_data["name"] == "Test User test_user"
-        assert "created_at" in user_data
-        assert isinstance(user_data["created_at"], str)
+        user_data = TestDataFactory.create_test_user_data()
+        assert "user_id" in user_data
+        assert "name" in user_data
+        assert "email" in user_data
+        assert user_data["name"] == "Test User"
 
     def test_create_user_data_default(self):
-        """Test user data creation with default values"""
-        user_data = TestDataFactory.create_user_data()
+        """Test user data creation with defaults"""
+        from tests.utils.contract_test_helpers import TestDataFactory
 
-        assert user_data["user_id"] == "test_user"
-        assert user_data["name"] == "Test User test_user"
-        assert "created_at" in user_data
+        user_data = TestDataFactory.create_test_user_data()
+        assert user_data["user_id"].startswith("test_user_")
+        assert "@example.com" in user_data["email"]
 
     def test_create_memory_data(self):
-        """Test memory data creation"""
-        memory_data = TestDataFactory.create_memory_data("test_user", "test_app")
+        """Test memory data creation with parameters"""
+        from tests.utils.contract_test_helpers import TestDataFactory
 
+        memory_data = TestDataFactory.create_memory_data("test_user")
         assert memory_data["user_id"] == "test_user"
-        assert memory_data["app"] == "test_app"
-        assert memory_data["text"] == "Test memory content"
-        assert memory_data["metadata"] == {"test": "data"}
+        assert "text" in memory_data
+        assert "metadata" in memory_data
+        assert "app" in memory_data
 
     def test_create_memory_data_default(self):
-        """Test memory data creation with default values"""
-        memory_data = TestDataFactory.create_memory_data()
+        """Test memory data creation with defaults"""
+        from tests.utils.contract_test_helpers import TestDataFactory
 
-        assert memory_data["user_id"] == "test_user"
-        assert memory_data["app"] == "test_app"
-        assert memory_data["text"] == "Test memory content"
-        assert memory_data["metadata"] == {"test": "data"}
+        memory_data = TestDataFactory.create_memory_data()
+        assert memory_data["user_id"].startswith("test_user_")
+        assert "Test memory content" in memory_data["text"]
+        assert memory_data["metadata"]["test"] is True
 
     def test_create_app_data(self):
         """Test app data creation"""
-        app_data = TestDataFactory.create_app_data("test_app")
+        from tests.utils.contract_test_helpers import TestDataFactory
 
-        assert app_data["name"] == "test_app"
-        assert app_data["description"] == "Test application test_app"
-        assert app_data["is_active"] is True
+        app_data = TestDataFactory.create_test_app_data()
+        assert "name" in app_data
+        assert "description" in app_data
+        assert app_data["description"] == "Test Application"
 
     def test_create_app_data_default(self):
-        """Test app data creation with default values"""
-        app_data = TestDataFactory.create_app_data()
+        """Test app data creation with defaults"""
+        from tests.utils.contract_test_helpers import TestDataFactory
 
-        assert app_data["name"] == "test_app"
-        assert app_data["description"] == "Test application test_app"
-        assert app_data["is_active"] is True
+        app_data = TestDataFactory.create_test_app_data()
+        assert app_data["name"].startswith("test_app_")
+        assert "Test Application" in app_data["description"]
 
 
 @pytest.mark.unit

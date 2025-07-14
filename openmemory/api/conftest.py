@@ -39,7 +39,7 @@ os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_AUTH"] = "neo4j/test_password"
 
 from app.database import Base, get_db  # noqa: E402
-from app.models import App, Memory, MemoryState, User  # noqa: E402
+from app.models import App, Memory, MemoryAccessLog, MemoryState, User  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 # Import app components after setting environment
@@ -60,7 +60,7 @@ def event_loop():
 def get_app():
     """Get app components for testing."""
     from app.database import Base, get_db
-    from app.models import App, Memory, MemoryState, User
+    from app.models import App, Memory, MemoryAccessLog, MemoryState, User
     from main import app
 
     return app, get_db, Base, User, App, Memory, MemoryState
@@ -131,13 +131,43 @@ def docker_postgres_engine(docker_postgres_url):
 @pytest.fixture(scope="function")
 def test_db_engine():
     """Create test database engine with in-memory SQLite for fast unit tests."""
+    # CRITICAL: Import all models BEFORE creating tables
+    # This ensures SQLAlchemy Base.metadata includes all model definitions
+    from app.models import (  # noqa: F401
+        AccessControl,
+        App,
+        ArchivePolicy,
+        Category,
+        Config,
+        Memory,
+        MemoryAccessLog,
+        MemoryState,
+        MemoryStatusHistory,
+        User,
+    )
+
+    # DEBUG: Check tables available before creation
+    print(
+        f"DEBUG: Tables in Base.metadata before create_all: {list(Base.metadata.tables.keys())}"
+    )
+
     engine = create_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
         echo=False,  # Set to True for SQL debugging
     )
+
+    # Create all tables
     Base.metadata.create_all(bind=engine)
+
+    # DEBUG: Verify tables were created
+    from sqlalchemy import inspect
+
+    inspector = inspect(engine)
+    actual_tables = inspector.get_table_names()
+    print(f"DEBUG: Tables actually created in database: {actual_tables}")
+
     yield engine
     Base.metadata.drop_all(bind=engine)
 

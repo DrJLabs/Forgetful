@@ -69,8 +69,11 @@ run_test_suite() {
 
     print_status "Running $test_name..."
 
+    # Split test_files into array for proper argument handling
+    IFS=' ' read -ra test_file_array <<< "$test_files"
+
     local pytest_args=(
-        "$test_files"
+        "${test_file_array[@]}"
         "-v"
         "--tb=short"
         "--strict-markers"
@@ -260,20 +263,26 @@ main() {
     # Test execution
     local exit_code=0
     local fast_markers=""
+    local openapi_markers="openapi"
+    local contract_markers="contract"
+    local validation_markers="validation"
 
     if [ "$FAST" = true ]; then
         fast_markers="not slow"
+        openapi_markers="not slow and openapi"
+        contract_markers="not slow and contract"
+        validation_markers="not slow and validation"
     fi
 
     case "$TEST_CATEGORY" in
         "openapi")
-            run_test_suite "OpenAPI Schema Validation Tests" "$fast_markers and openapi" "tests/test_openapi_schema_validation.py" "openapi" || exit_code=$?
+            run_test_suite "OpenAPI Schema Validation Tests" "$openapi_markers" "tests/test_api_contract_validation.py::TestOpenAPISchemaValidation" "openapi" || exit_code=$?
             ;;
         "contract")
-            run_test_suite "API Contract Tests" "$fast_markers and contract" "tests/test_api_contract_validation.py" "contract" || exit_code=$?
+            run_test_suite "API Contract Tests" "$contract_markers" "tests/test_api_contract_validation.py::TestMemoryEndpointContracts tests/test_api_contract_validation.py::TestAppsEndpointContracts tests/test_api_contract_validation.py::TestStatsEndpointContracts tests/test_api_contract_validation.py::TestConfigEndpointContracts" "contract" || exit_code=$?
             ;;
         "validation")
-            run_test_suite "Input Validation Tests" "$fast_markers and validation" "tests/test_api_contract_validation.py::TestInputValidationComprehensive" "validation" || exit_code=$?
+            run_test_suite "Input Validation Tests" "$validation_markers" "tests/test_api_contract_validation.py::TestInputValidationComprehensive" "validation" || exit_code=$?
             ;;
         "endpoints")
             run_test_suite "Endpoint Contract Tests" "$fast_markers" "tests/test_api_contract_validation.py::TestMemoryEndpointContracts tests/test_api_contract_validation.py::TestAppsEndpointContracts tests/test_api_contract_validation.py::TestStatsEndpointContracts tests/test_api_contract_validation.py::TestConfigEndpointContracts" "endpoints" || exit_code=$?
@@ -285,13 +294,13 @@ main() {
             print_status "Running comprehensive API contract test suite..."
 
             # Run OpenAPI schema validation tests
-            run_test_suite "OpenAPI Schema Validation" "$fast_markers and openapi" "tests/test_openapi_schema_validation.py" "openapi" || exit_code=$?
+            run_test_suite "OpenAPI Schema Validation" "$openapi_markers" "tests/test_api_contract_validation.py::TestOpenAPISchemaValidation" "openapi" || exit_code=$?
 
             # Run API contract tests
-            run_test_suite "API Contract Validation" "$fast_markers and contract" "tests/test_api_contract_validation.py" "contract" || exit_code=$?
+            run_test_suite "API Contract Validation" "$contract_markers" "tests/test_api_contract_validation.py::TestMemoryEndpointContracts tests/test_api_contract_validation.py::TestAppsEndpointContracts tests/test_api_contract_validation.py::TestStatsEndpointContracts tests/test_api_contract_validation.py::TestConfigEndpointContracts" "contract" || exit_code=$?
 
             # Run all contract tests together for comprehensive coverage
-            run_test_suite "Complete Contract Test Suite" "$fast_markers" "tests/test_api_contract_validation.py tests/test_openapi_schema_validation.py" "complete" || exit_code=$?
+            run_test_suite "Complete Contract Test Suite" "$fast_markers" "tests/test_api_contract_validation.py" "complete" || exit_code=$?
             ;;
         *)
             print_error "Invalid test category: $TEST_CATEGORY"

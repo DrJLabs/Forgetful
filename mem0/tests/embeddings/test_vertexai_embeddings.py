@@ -2,7 +2,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from mem0.embeddings.vertexai import VertexAIEmbedding
+# Skip all tests in this file if vertexai is not available
+try:
+    from mem0.embeddings.vertexai import VertexAIEmbedding
+except ImportError:
+    pytest.skip("vertexai not available", allow_module_level=True)
 
 
 @pytest.fixture

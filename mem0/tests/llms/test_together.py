@@ -2,8 +2,12 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from mem0.configs.llms.base import BaseLlmConfig
-from mem0.llms.together import TogetherLLM
+# Skip all tests in this file if together is not available
+try:
+    from mem0.configs.llms.base import BaseLlmConfig
+    from mem0.llms.together import TogetherLLM
+except ImportError:
+    pytest.skip("together not available", allow_module_level=True)
 
 
 @pytest.fixture

@@ -198,14 +198,21 @@ class MemoryAccessLog(Base):
     __tablename__ = "memory_access_logs"
     id = Column(UUID, primary_key=True, default=lambda: uuid.uuid4())
     memory_id = Column(UUID, ForeignKey("memories.id"), nullable=False, index=True)
+    user_id = Column(UUID, ForeignKey("users.id"), nullable=True, index=True)
     app_id = Column(UUID, ForeignKey("apps.id"), nullable=False, index=True)
     accessed_at = Column(DateTime, default=get_current_utc_time, index=True)
-    access_type = Column(String, nullable=False, index=True)
+    access_type = Column(String, nullable=False, index=True, default="read")
     metadata_ = Column("metadata", JSON, default=dict)
+
+    # Relationship definitions
+    memory = relationship("Memory")
+    user = relationship("User")
+    app = relationship("App")
 
     __table_args__ = (
         Index("idx_access_memory_time", "memory_id", "accessed_at"),
         Index("idx_access_app_time", "app_id", "accessed_at"),
+        Index("idx_access_user_time", "user_id", "accessed_at"),
     )
 
 

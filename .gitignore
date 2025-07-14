@@ -45,3 +45,4 @@ htmlcov/
 coverage.xml
 *.log
 # CI test after formatting fixes - Sun Jul 13 04:21:25 AM EDT 2025
+test-reports/
