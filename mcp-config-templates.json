@@ -1,0 +1,134 @@
+{
+  "enhanced_current_stdio": {
+    "configurations": {
+      "claude_desktop": {
+        "config": {
+          "mcpServers": {
+            "mem0": {
+              "command": "/home/drj/projects/mem0-stack/run_mcp_server.sh",
+              "env": {
+                "CLIENT_NAME": "claude",
+                "NEO4J_AUTH": "neo4j/data2f!re",
+                "OPENAI_API_KEY": "your-openai-key",
+                "POSTGRES_PASSWORD": "data2f!re",
+                "POSTGRES_USER": "drj",
+                "USER_ID": "drj"
+              }
+            }
+          }
+        },
+        "type": "stdio"
+      },
+      "cursor": {
+        "config": {
+          "mem0": {
+            "command": "/home/drj/projects/mem0-stack/run_mcp_server.sh",
+            "env": {
+              "CLIENT_NAME": "cursor",
+              "NEO4J_AUTH": "neo4j/data2f!re",
+              "OPENAI_API_KEY": "your-openai-key",
+              "POSTGRES_PASSWORD": "data2f!re",
+              "POSTGRES_USER": "drj",
+              "USER_ID": "drj"
+            }
+          }
+        },
+        "type": "stdio"
+      }
+    },
+    "description": "Enhanced version of your current stdio-based MCP server",
+    "port": 8765,
+    "startup_script": "./scripts/start_mem0_mcp_enhanced.sh stdio",
+    "transport": "stdio"
+  },
+  "hybrid_both_transports": {
+    "configurations": {
+      "claude_desktop": {
+        "config": {
+          "mcpServers": {
+            "mem0": {
+              "args": [
+                "mcp-remote",
+                "http://localhost:8080/sse"
+              ],
+              "command": "npx"
+            }
+          }
+        },
+        "type": "remote"
+      },
+      "cursor_sse": {
+        "config": {
+          "mem0": {
+            "type": "sse",
+            "url": "http://localhost:8080/sse"
+          }
+        },
+        "type": "sse"
+      },
+      "cursor_stdio": {
+        "config": {
+          "mem0": {
+            "command": "/home/drj/projects/mem0-stack/run_mcp_server.sh",
+            "env": {
+              "CLIENT_NAME": "cursor",
+              "NEO4J_AUTH": "neo4j/data2f!re",
+              "OPENAI_API_KEY": "your-openai-key",
+              "POSTGRES_PASSWORD": "data2f!re",
+              "POSTGRES_USER": "drj",
+              "USER_ID": "drj"
+            }
+          }
+        },
+        "type": "stdio"
+      }
+    },
+    "description": "Run both stdio and SSE transports simultaneously",
+    "ports": [
+      8765,
+      8080
+    ],
+    "startup_script": "./scripts/start_mem0_mcp_enhanced.sh both"
+  },
+  "standard_mem0_mcp_sse": {
+    "configurations": {
+      "claude_desktop": {
+        "config": {
+          "mcpServers": {
+            "mem0": {
+              "args": [
+                "mcp-remote",
+                "http://localhost:8080/sse"
+              ],
+              "command": "npx"
+            }
+          }
+        },
+        "type": "remote"
+      },
+      "cursor": {
+        "config": {
+          "mem0": {
+            "type": "sse",
+            "url": "http://localhost:8080/sse"
+          }
+        },
+        "type": "sse"
+      },
+      "windsurf": {
+        "config": {
+          "mcpServers": {
+            "mem0": {
+              "serverUrl": "http://localhost:8080/sse"
+            }
+          }
+        },
+        "type": "remote"
+      }
+    },
+    "description": "Standard mem0 MCP method using SSE transport",
+    "endpoint": "http://localhost:8080/sse",
+    "port": 8080,
+    "startup_script": "./scripts/start_mem0_mcp_standard.sh"
+  }
+}
