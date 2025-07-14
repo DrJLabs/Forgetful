@@ -240,10 +240,13 @@ class TestAppPermissionValidation:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        mock_memory.user_id = uuid4()
+        mock_memory.app_id = uuid4()
 
         # Mock active app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = mock_memory.user_id  # Match user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         # Use string app ID
@@ -282,11 +285,14 @@ class TestAppPermissionValidation:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        mock_memory.user_id = uuid4()
+        mock_memory.app_id = uuid4()
 
         # Mock app with complex permissions
         mock_app = Mock()
         mock_app.is_active = True
         mock_app.permission_level = "restricted"
+        mock_app.owner_id = mock_memory.user_id  # Match user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         app_id = uuid4()
@@ -306,10 +312,13 @@ class TestAppPermissionValidation:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        mock_memory.user_id = uuid4()
+        mock_memory.app_id = uuid4()
 
         # Mock app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = mock_memory.user_id  # Match user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         app_id = uuid4()
@@ -529,10 +538,13 @@ class TestSecurityEdgeCases:
         mock_memory = Mock()
         mock_memory.state = MemoryState.active
         mock_memory.id = uuid4()
+        mock_memory.user_id = uuid4()
+        mock_memory.app_id = uuid4()
 
         # Mock app
         mock_app = Mock()
         mock_app.is_active = True
+        mock_app.owner_id = mock_memory.user_id  # Match user_id for security check
         mock_db.query.return_value.filter.return_value.first.return_value = mock_app
 
         app_id = uuid4()

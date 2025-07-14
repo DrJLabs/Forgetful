@@ -87,7 +87,7 @@ class TestConnectionPoolPerformance:
                 return None
 
         # Configure pool methods
-        mock_pool.acquire.return_value = MockPostgresAcquireContextManager()
+        mock_pool.acquire = Mock(return_value=MockPostgresAcquireContextManager())
         mock_pool.get_size.return_value = pool_config.postgres_max_size
         mock_pool.get_idle_size.return_value = pool_config.postgres_max_size // 2
         mock_pool.close = AsyncMock()
