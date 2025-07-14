@@ -33,14 +33,71 @@ async def not_found_handler(request: Request, exc: NotFoundError):
 
 @app.exception_handler(ValidationError)
 async def validation_error_handler(request: Request, exc: ValidationError):
-    """Handle ValidationError by returning HTTP 422"""
-    return JSONResponse(status_code=422, content={"detail": str(exc)})
+    """Handle ValidationError by returning HTTP 400"""
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
 @app.exception_handler(ExternalServiceError)
 async def external_service_error_handler(request: Request, exc: ExternalServiceError):
     """Handle ExternalServiceError by returning HTTP 503"""
     return JSONResponse(status_code=503, content={"detail": str(exc)})
+
+
+# Health endpoint for monitoring and troubleshooting
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint that validates system components
+    """
+    try:
+        # Test database connection
+        db = SessionLocal()
+        try:
+            from sqlalchemy import text
+
+            db.execute(text("SELECT 1"))
+            db_status = "healthy"
+            db.close()
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)}"
+
+        # Test memory client
+        try:
+            from app.utils.memory import get_memory_client
+
+            memory_client = get_memory_client()
+            mem0_status = (
+                "healthy" if memory_client else "unhealthy: client not initialized"
+            )
+        except Exception as e:
+            mem0_status = f"unhealthy: {str(e)}"
+
+        # Overall status
+        overall_status = (
+            "healthy"
+            if db_status == "healthy" and "healthy" in mem0_status
+            else "degraded"
+        )
+
+        return {
+            "status": overall_status,
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+            "services": {
+                "database": db_status,
+                "mem0_client": mem0_status,
+                "api": "healthy",
+            },
+            "version": "1.0.0",
+        }
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "error",
+                "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+                "error": str(e),
+            },
+        )
 
 
 app.add_middleware(
