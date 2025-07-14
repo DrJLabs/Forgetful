@@ -10,11 +10,21 @@ data/
 .env.*.local
 
 # Virtual environments
+# Reference: https://github.com/github/gitignore/blob/main/Global/VirtualEnv.gitignore
 venv/
+.venv/
 env/
+.env/
 ENV/
+.ENV/
+env.bak/
+venv.bak/
 test_env/
-test_validation/
+test_validation_env/
+*_env/
+*-env/
+virtualenv/
+.virtualenv/
 
 # Archive directories
 archive/
