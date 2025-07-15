@@ -148,7 +148,7 @@ class MemoryGraph:
                 - 'entities': A list of strings representing the nodes and relationships
         """
         params = {"user_id": filters["user_id"], "limit": limit}
-        
+
         # Build node properties based on filters
         node_props = ["user_id: $user_id"]
         if filters.get("agent_id"):
@@ -253,7 +253,7 @@ class MemoryGraph:
     def _search_graph_db(self, node_list, filters, limit=100):
         """Search similar nodes among and their respective incoming and outgoing relations."""
         result_relations = []
-        
+
         # Build node properties for filtering
         node_props = ["user_id: $user_id"]
         if filters.get("agent_id"):
@@ -273,7 +273,7 @@ class MemoryGraph:
                 MATCH (n)-[r]->(m {self.node_label} {{{node_props_str}}})
                 RETURN n.name AS source, elementId(n) AS source_id, type(r) AS relationship, elementId(r) AS relation_id, m.name AS destination, elementId(m) AS destination_id
                 UNION
-                WITH n  
+                WITH n
                 MATCH (n)<-[r]-(m {self.node_label} {{{node_props_str}}})
                 RETURN m.name AS source, elementId(m) AS source_id, type(r) AS relationship, elementId(r) AS relation_id, n.name AS destination, elementId(n) AS destination_id
             }}
@@ -351,7 +351,7 @@ class MemoryGraph:
             }
 
             if agent_id:
-    
+
                 params["agent_id"] = agent_id
 
             # Delete the specific relationship between nodes
@@ -359,9 +359,9 @@ class MemoryGraph:
             MATCH (n {self.node_label} {{name: $source_name, user_id: $user_id}})
             -[r:{relationship}]->
             (m {self.node_label} {{name: $dest_name, user_id: $user_id}})
-            
+
             DELETE r
-            RETURN 
+            RETURN
                 n.name AS source,
                 m.name AS target,
                 type(r) AS relationship
@@ -423,7 +423,7 @@ class MemoryGraph:
                 CALL db.create.setNodeVectorProperty(destination, 'embedding', $destination_embedding)
                 WITH source, destination
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET 
+                ON CREATE SET
                     r.created = timestamp(),
                     r.mentions = 1
                 ON MATCH SET
@@ -463,7 +463,7 @@ class MemoryGraph:
                 CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
                 WITH source, destination
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET 
+                ON CREATE SET
                     r.created = timestamp(),
                     r.mentions = 1
                 ON MATCH SET
@@ -490,7 +490,7 @@ class MemoryGraph:
                 WHERE elementId(destination) = $destination_id
                 SET destination.mentions = coalesce(destination.mentions, 0) + 1
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET 
+                ON CREATE SET
                     r.created_at = timestamp(),
                     r.updated_at = timestamp(),
                     r.mentions = 1
@@ -563,9 +563,9 @@ class MemoryGraph:
 
         cypher = f"""
             MATCH (source_candidate {self.node_label})
-            WHERE source_candidate.embedding IS NOT NULL 
+            WHERE source_candidate.embedding IS NOT NULL
             AND source_candidate.user_id = $user_id
-            
+
 
             WITH source_candidate,
             round(2 * vector.similarity.cosine(source_candidate.embedding, $source_embedding) - 1, 4) AS source_similarity // denormalize for backward compatibility
@@ -593,9 +593,9 @@ class MemoryGraph:
 
         cypher = f"""
             MATCH (destination_candidate {self.node_label})
-            WHERE destination_candidate.embedding IS NOT NULL 
+            WHERE destination_candidate.embedding IS NOT NULL
             AND destination_candidate.user_id = $user_id
-            
+
 
             WITH destination_candidate,
             round(2 * vector.similarity.cosine(destination_candidate.embedding, $destination_embedding) - 1, 4) AS destination_similarity // denormalize for backward compatibility

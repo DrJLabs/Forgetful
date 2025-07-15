@@ -52,7 +52,7 @@ class MemoryGraph(NeptuneBase):
             -[r:{relationship}]->
             (m {self.node_label} {{name: $dest_name, user_id: $user_id}})
             DELETE r
-            RETURN 
+            RETURN
                 n.name AS source,
                 m.name AS target,
                 type(r) AS relationship
@@ -117,7 +117,7 @@ class MemoryGraph(NeptuneBase):
                     CALL neptune.algo.vectors.upsert(destination, dest_embedding)
                     WITH source, destination
                     MERGE (source)-[r:{relationship}]->(destination)
-                    ON CREATE SET 
+                    ON CREATE SET
                         r.created = timestamp(),
                         r.mentions = 1
                     ON MATCH SET
@@ -148,7 +148,7 @@ class MemoryGraph(NeptuneBase):
                     CALL neptune.algo.vectors.upsert(source, source_embedding)
                     WITH source, destination
                     MERGE (source)-[r:{relationship}]->(destination)
-                    ON CREATE SET 
+                    ON CREATE SET
                         r.created = timestamp(),
                         r.mentions = 1
                     ON MATCH SET
@@ -172,7 +172,7 @@ class MemoryGraph(NeptuneBase):
                     WHERE id(destination) = $destination_id
                     SET destination.mentions = coalesce(destination.mentions) + 1
                     MERGE (source)-[r:{relationship}]->(destination)
-                    ON CREATE SET 
+                    ON CREATE SET
                         r.created_at = timestamp(),
                         r.updated_at = timestamp(),
                         r.mentions = 1
@@ -230,7 +230,7 @@ class MemoryGraph(NeptuneBase):
         """
         cypher = f"""
             MATCH (source_candidate {self.node_label})
-            WHERE source_candidate.user_id = $user_id 
+            WHERE source_candidate.user_id = $user_id
 
             WITH source_candidate, $source_embedding as v_embedding
             CALL neptune.algo.vectors.distanceByEmbedding(
@@ -268,11 +268,11 @@ class MemoryGraph(NeptuneBase):
         cypher = f"""
                 MATCH (destination_candidate {self.node_label})
                 WHERE destination_candidate.user_id = $user_id
-                
+
                 WITH destination_candidate, $destination_embedding as v_embedding
                 CALL neptune.algo.vectors.distanceByEmbedding(
                     v_embedding,
-                    destination_candidate, 
+                    destination_candidate,
                     {{metric:"CosineSimilarity"}}
                 ) YIELD distance
                 WITH destination_candidate, distance AS cosine_similarity
@@ -281,7 +281,7 @@ class MemoryGraph(NeptuneBase):
                 WITH destination_candidate, cosine_similarity
                 ORDER BY cosine_similarity DESC
                 LIMIT 1
-    
+
                 RETURN id(destination_candidate), cosine_similarity
                 """
         params = {
@@ -349,11 +349,11 @@ class MemoryGraph(NeptuneBase):
             WHERE similarity >= $threshold
             CALL {{
                 WITH n
-                MATCH (n)-[r]->(m) 
+                MATCH (n)-[r]->(m)
                 RETURN n.name AS source, id(n) AS source_id, type(r) AS relationship, id(r) AS relation_id, m.name AS destination, id(m) AS destination_id
                 UNION ALL
                 WITH n
-                MATCH (m)-[r]->(n) 
+                MATCH (m)-[r]->(n)
                 RETURN m.name AS source, id(m) AS source_id, type(r) AS relationship, id(r) AS relation_id, n.name AS destination, id(n) AS destination_id
             }}
             WITH distinct source, source_id, relationship, relation_id, destination, destination_id, similarity

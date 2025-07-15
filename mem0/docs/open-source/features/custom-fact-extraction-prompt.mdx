@@ -9,7 +9,7 @@ iconType: "solid"
 
 ## Introduction to Custom Fact Extraction Prompt
 
-Custom fact extraction prompt allow you to tailor the behavior of your Mem0 instance to specific use cases or domains. 
+Custom fact extraction prompt allow you to tailor the behavior of your Mem0 instance to specific use cases or domains.
 By defining it, you can control how information is extracted from the user's message.
 
 To create an effective custom fact extraction prompt:
@@ -22,7 +22,7 @@ Example of a custom fact extraction prompt:
 <CodeGroup>
 ```python Python
 custom_fact_extraction_prompt = """
-Please only extract entities containing customer support information, order details, and user information. 
+Please only extract entities containing customer support information, order details, and user information.
 Here are some few shot examples:
 
 Input: Hi.
@@ -46,7 +46,7 @@ Return the facts and customer information in a json format as shown above.
 
 ```typescript TypeScript
 const customPrompt = `
-Please only extract entities containing customer support information, order details, and user information. 
+Please only extract entities containing customer support information, order details, and user information.
 Here are some few shot examples:
 
 Input: Hi.
@@ -148,7 +148,7 @@ await memory.add('Yesterday, I ordered a laptop, the order id is 12345', { userI
 
 ### Example 2
 
-In this example, we are adding a memory of a user liking to go on hikes. This add message is not specific to the use-case mentioned in the custom prompt. 
+In this example, we are adding a memory of a user liking to go on hikes. This add message is not specific to the use-case mentioned in the custom prompt.
 Hence, the memory is not added.
 
 <CodeGroup>

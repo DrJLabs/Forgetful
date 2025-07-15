@@ -98,8 +98,8 @@ There are specific guidelines to select which operation to perform:
 
         }
 
-2. **Update**: If the retrieved facts contain information that is already present in the memory but the information is totally different, then you have to update it. 
-If the retrieved fact contains information that conveys the same thing as the elements present in the memory, then you have to keep the fact which has the most information. 
+2. **Update**: If the retrieved facts contain information that is already present in the memory but the information is totally different, then you have to update it.
+If the retrieved fact contains information that conveys the same thing as the elements present in the memory, then you have to keep the fact which has the most information.
 Example (a) -- if the memory contains "User likes to play cricket" and the retrieved fact is "Loves to play cricket with friends", then update the memory with the retrieved facts.
 Example (b) -- if the memory contains "Likes cheese pizza" and the retrieved fact is "Loves cheese pizza", then you do not need to update it because they convey the same information.
 If the direction is to update the memory, then you have to update it.
@@ -251,36 +251,36 @@ You are a memory summarization system that records and preserves the complete in
 **Task Objective**: Scrape blog post titles and full content from the OpenAI blog.
 **Progress Status**: 10% complete — 5 out of 50 blog posts processed.
 
-1. **Agent Action**: Opened URL "https://openai.com"  
-   **Action Result**:  
-      "HTML Content of the homepage including navigation bar with links: 'Blog', 'API', 'ChatGPT', etc."  
-   **Key Findings**: Navigation bar loaded correctly.  
-   **Navigation History**: Visited homepage: "https://openai.com"  
+1. **Agent Action**: Opened URL "https://openai.com"
+   **Action Result**:
+      "HTML Content of the homepage including navigation bar with links: 'Blog', 'API', 'ChatGPT', etc."
+   **Key Findings**: Navigation bar loaded correctly.
+   **Navigation History**: Visited homepage: "https://openai.com"
    **Current Context**: Homepage loaded; ready to click on the 'Blog' link.
 
-2. **Agent Action**: Clicked on the "Blog" link in the navigation bar.  
-   **Action Result**:  
-      "Navigated to 'https://openai.com/blog/' with the blog listing fully rendered."  
-   **Key Findings**: Blog listing shows 10 blog previews.  
-   **Navigation History**: Transitioned from homepage to blog listing page.  
+2. **Agent Action**: Clicked on the "Blog" link in the navigation bar.
+   **Action Result**:
+      "Navigated to 'https://openai.com/blog/' with the blog listing fully rendered."
+   **Key Findings**: Blog listing shows 10 blog previews.
+   **Navigation History**: Transitioned from homepage to blog listing page.
    **Current Context**: Blog listing page displayed.
 
-3. **Agent Action**: Extracted the first 5 blog post links from the blog listing page.  
-   **Action Result**:  
-      "[ '/blog/chatgpt-updates', '/blog/ai-and-education', '/blog/openai-api-announcement', '/blog/gpt-4-release', '/blog/safety-and-alignment' ]"  
-   **Key Findings**: Identified 5 valid blog post URLs.  
+3. **Agent Action**: Extracted the first 5 blog post links from the blog listing page.
+   **Action Result**:
+      "[ '/blog/chatgpt-updates', '/blog/ai-and-education', '/blog/openai-api-announcement', '/blog/gpt-4-release', '/blog/safety-and-alignment' ]"
+   **Key Findings**: Identified 5 valid blog post URLs.
    **Current Context**: URLs stored in memory for further processing.
 
-4. **Agent Action**: Visited URL "https://openai.com/blog/chatgpt-updates"  
-   **Action Result**:  
-      "HTML content loaded for the blog post including full article text."  
-   **Key Findings**: Extracted blog title "ChatGPT Updates – March 2025" and article content excerpt.  
+4. **Agent Action**: Visited URL "https://openai.com/blog/chatgpt-updates"
+   **Action Result**:
+      "HTML content loaded for the blog post including full article text."
+   **Key Findings**: Extracted blog title "ChatGPT Updates – March 2025" and article content excerpt.
    **Current Context**: Blog post content extracted and stored.
 
-5. **Agent Action**: Extracted blog title and full article content from "https://openai.com/blog/chatgpt-updates"  
-   **Action Result**:  
-      "{ 'title': 'ChatGPT Updates – March 2025', 'content': 'We\'re introducing new updates to ChatGPT, including improved browsing capabilities and memory recall... (full content)' }"  
-   **Key Findings**: Full content captured for later summarization.  
+5. **Agent Action**: Extracted blog title and full article content from "https://openai.com/blog/chatgpt-updates"
+   **Action Result**:
+      "{ 'title': 'ChatGPT Updates – March 2025', 'content': 'We\'re introducing new updates to ChatGPT, including improved browsing capabilities and memory recall... (full content)' }"
+   **Key Findings**: Full content captured for later summarization.
    **Current Context**: Data stored; ready to proceed to next blog post.
 
 ... (Additional numbered steps for subsequent actions)

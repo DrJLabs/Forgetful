@@ -48,8 +48,8 @@ Set up the conversation prompt template:
 
 ```python
 prompt = ChatPromptTemplate.from_messages([
-    SystemMessage(content="""You are a helpful travel agent AI. Use the provided context to personalize your responses and remember user preferences and past interactions. 
-    Provide travel recommendations, itinerary suggestions, and answer questions about destinations. 
+    SystemMessage(content="""You are a helpful travel agent AI. Use the provided context to personalize your responses and remember user preferences and past interactions.
+    Provide travel recommendations, itinerary suggestions, and answer questions about destinations.
     If you don't have specific information, you can make general suggestions based on common travel knowledge."""),
     MessagesPlaceholder(variable_name="context"),
     HumanMessage(content="{input}")
@@ -67,7 +67,7 @@ def retrieve_context(query: str, user_id: str) -> List[Dict]:
     serialized_memories = ' '.join([mem["memory"] for mem in memories])
     context = [
         {
-            "role": "system", 
+            "role": "system",
             "content": f"Relevant information: {serialized_memories}"
         },
         {
@@ -109,13 +109,13 @@ Implement the main function to manage a single turn of conversation:
 def chat_turn(user_input: str, user_id: str) -> str:
     # Retrieve context
     context = retrieve_context(user_input, user_id)
-    
+
     # Generate response
     response = generate_response(user_input, context)
-    
+
     # Save interaction
     save_interaction(user_id, user_input, response)
-    
+
     return response
 ```
 
@@ -127,13 +127,13 @@ Set up the main program loop for user interaction:
 if __name__ == "__main__":
     print("Welcome to your personal Travel Agent Planner! How can I assist you with your travel plans today?")
     user_id = "john"
-    
+
     while True:
         user_input = input("You: ")
         if user_input.lower() in ['quit', 'exit', 'bye']:
             print("Travel Agent: Thank you for using our travel planning service. Have a great trip!")
             break
-        
+
         response = chat_turn(user_input, user_id)
         print(f"Travel Agent: {response}")
 ```

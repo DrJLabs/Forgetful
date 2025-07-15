@@ -8,7 +8,7 @@ import { testConfig } from "../../config/test-config";
 describe("GOOGLE MEM0 Tests", () => {
   const { userId } = testConfig;
   jest.setTimeout(50000);
-  
+
   let mem0: any;
 
   beforeEach(() => {
@@ -55,4 +55,4 @@ describe("GOOGLE MEM0 Tests", () => {
     expect(typeof text).toBe('string');
     expect(text.length).toBeGreaterThan(0);
   });
-}); 
+});

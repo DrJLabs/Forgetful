@@ -233,11 +233,11 @@ class PGVector(VectorStoreBase):
         """
         self.cur.execute(
             f"""
-            SELECT 
-                table_name, 
+            SELECT
+                table_name,
                 (SELECT COUNT(*) FROM {self.collection_name}) as row_count,
                 (SELECT pg_size_pretty(pg_total_relation_size('{self.collection_name}'))) as total_size
-            FROM information_schema.tables 
+            FROM information_schema.tables
             WHERE table_schema = 'public' AND table_name = %s
         """,
             (self.collection_name,),

@@ -67,7 +67,7 @@ class Mem0AITextGenerator implements LanguageModelV1 {
                 throw new Error("Invalid provider");
         }
     }
-    
+
     async doGenerate(options: LanguageModelV1CallOptions): Promise<Awaited<ReturnType<LanguageModelV1['doGenerate']>>> {
         const result = await this.languageModel.doGenerate(options);
         return result as Awaited<ReturnType<LanguageModelV1['doGenerate']>>;

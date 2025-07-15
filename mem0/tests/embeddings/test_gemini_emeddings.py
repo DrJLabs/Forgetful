@@ -38,7 +38,7 @@ def test_embed_returns_empty_list_if_none(mock_genai, config):
     mock_genai.return_value = type('Response', (), {'embeddings': [type('Embedding', (), {'values': []})]})()
 
     embedder = GoogleGenAIEmbedding(config)
-    
+
     with pytest.raises(IndexError):  # This will raise IndexError when trying to access [0]
         embedder.embed("test")
 

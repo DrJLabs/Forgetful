@@ -101,14 +101,14 @@ def get_travel_info(question, use_memory=True):
         if previous_memories:
             print("Using previous memories to enhance the search...")
             relevant_memories_text = '\n'.join(mem["memory"] for mem in previous_memories)
-        
+
         command = "Find travel information based on my interests:"
         prompt = f"{command}\n Question: {question} \n My preferences: {relevant_memories_text}"
     else:
         command = "Find travel information based on my interests:"
         prompt = f"{command}\n Question: {question}"
-    
-    print("Searching for travel information...")    
+
+    print("Searching for travel information...")
     browse_result = multion.browse(cmd=prompt)
     return browse_result.message
 
