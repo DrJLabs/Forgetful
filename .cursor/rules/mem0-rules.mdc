@@ -1,5 +1,8 @@
 ---
+description:
 alwaysApply: true
 ---
 
 Always use search_memory tool to get the related context before any tasks. Always use add_memories tool to store all the critical information after tasks.
+You may also list_memories if needed.
+Use these tools any time you need to check for progress or past knowledge on a task, even in the middle of a task.

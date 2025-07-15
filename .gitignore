@@ -179,3 +179,7 @@ config.secret.yml
 # Process files
 *.pid
 nohup.out
+
+# Security reports with sensitive data
+MCP_SECURITY_COMPLIANCE_REPORT.md
+MEM0_PROJECT_CONTEXT_IMPLEMENTATION_REPORT.md

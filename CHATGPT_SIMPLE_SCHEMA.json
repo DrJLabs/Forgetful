@@ -1,97 +1,55 @@
 {
-  "components": {
-    "schemas": {
-      "MemoryRequest": {
-        "additionalProperties": false,
-        "properties": {
-          "arguments": {
-            "additionalProperties": false,
-            "properties": {
-              "memory_id": {
-                "description": "Memory ID for get/update/delete operations",
-                "type": "string"
-              },
-              "metadata": {
-                "additionalProperties": true,
-                "description": "Additional metadata",
-                "type": "object"
-              },
-              "query": {
-                "description": "Search query for memories",
-                "type": "string"
-              },
-              "text": {
-                "description": "Text to store as memory",
-                "type": "string"
-              },
-              "user_id": {
-                "description": "User identifier",
-                "type": "string"
-              }
-            },
-            "type": "object"
-          },
-          "name": {
-            "description": "Memory operation to perform",
-            "enum": [
-              "add_memories",
-              "search_memory",
-              "list_memories",
-              "get_memory",
-              "update_memory",
-              "delete_memory"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "name",
-          "arguments"
-        ],
-        "type": "object"
-      },
-      "MemoryResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "result": {
-            "additionalProperties": true,
-            "description": "The result of the memory operation",
-            "type": "object"
-          },
-          "success": {
-            "description": "Whether the operation was successful",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "success",
-          "result"
-        ],
-        "type": "object"
-      }
-    },
-    "securitySchemes": {
-      "bearerAuth": {
-        "scheme": "bearer",
-        "type": "http"
-      }
-    }
-  },
   "info": {
-    "description": "AI Memory Management System",
-    "title": "mem0 Memory API",
+    "description": "Simple memory operations for ChatGPT",
+    "title": "Memory API",
     "version": "1.0.0"
   },
   "openapi": "3.1.0",
   "paths": {
-    "/tools/call": {
+    "/": {
       "post": {
-        "operationId": "callMemoryTool",
+        "description": "Perform memory operations: store, search, or list memories",
+        "operationId": "memory_operation",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/MemoryRequest"
+                "examples": [
+                  {
+                    "operation": "store",
+                    "text": "My favorite fruit is mango"
+                  },
+                  {
+                    "operation": "search",
+                    "query": "favorite fruit"
+                  },
+                  {
+                    "operation": "list"
+                  }
+                ],
+                "properties": {
+                  "operation": {
+                    "description": "Operation to perform: 'store' to save new information, 'search' to find existing memories, 'list' to show all memories",
+                    "enum": [
+                      "store",
+                      "search",
+                      "list"
+                    ],
+                    "type": "string"
+                  },
+                  "query": {
+                    "description": "Search query (required for 'search' operation)",
+                    "type": "string"
+                  },
+                  "text": {
+                    "description": "Text to store (required for 'store' operation)",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "operation"
+                ],
+                "type": "object"
               }
             }
           },
@@ -102,19 +60,44 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MemoryResponse"
+                  "properties": {
+                    "result": {
+                      "properties": {
+                        "memories": {
+                          "items": {
+                            "properties": {
+                              "content": {
+                                "type": "string"
+                              },
+                              "created_at": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "success": {
+                          "type": "boolean"
+                        }
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "type": "object"
                 }
               }
             },
             "description": "Success"
           }
         },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "summary": "Call Memory Tool"
+        "summary": "Memory Operations"
       }
     }
   },

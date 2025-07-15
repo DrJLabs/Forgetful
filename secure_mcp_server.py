@@ -141,13 +141,13 @@ async def health_check(request: Request):
 
 @app.get("/sse")
 @limiter.limit("5/minute")
-async def sse_endpoint(request: Request, auth: dict = Depends(verify_auth)):
-    """Authenticated SSE endpoint"""
+async def sse_endpoint(request: Request):
+    """Public SSE endpoint for tool discovery"""
 
     async def event_stream():
         try:
             # Send initial connection message
-            yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'server': 'secure-mem0-mcp', 'user': auth})}\n\n"
+            yield f"data: {json.dumps({'type': 'connection', 'status': 'connected', 'server': 'secure-mem0-mcp'})}\n\n"
 
             # Send available tools
             tools_info = {
