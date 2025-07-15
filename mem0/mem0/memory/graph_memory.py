@@ -168,15 +168,18 @@ class MemoryGraph:
                 - 'contexts': The base data store response for each memory.
                 - 'entities': A list of strings representing the nodes and relationships
         """
-        agent_filter = ""
         params = {"user_id": filters["user_id"], "limit": limit}
+
+        # Build node properties based on filters
+        node_props = ["user_id: $user_id"]
         if filters.get("agent_id"):
-            agent_filter = "AND n.agent_id = $agent_id AND m.agent_id = $agent_id"
+            node_props.append("agent_id: $agent_id")
             params["agent_id"] = filters["agent_id"]
 
+        node_props_str = ", ".join(node_props)
+
         query = f"""
-        MATCH (n {self.node_label} {{user_id: $user_id}})-[r]->(m {self.node_label} {{user_id: $user_id}})
-        WHERE 1=1 {agent_filter}
+        MATCH (n {self.node_label} {{{node_props_str}}})-[r]->(m {self.node_label} {{{node_props_str}}})
         RETURN n.name AS source, type(r) AS relationship, m.name AS target
         LIMIT $limit
         """
@@ -286,26 +289,26 @@ class MemoryGraph:
     def _search_graph_db(self, node_list, filters, limit=100):
         """Search similar nodes among and their respective incoming and outgoing relations."""
         result_relations = []
-        agent_filter = ""
+
+        # Build node properties for initial MATCH
+        node_props = ["user_id: $user_id"]
         if filters.get("agent_id"):
-            agent_filter = "AND n.agent_id = $agent_id AND m.agent_id = $agent_id"
+            node_props.append("agent_id: $agent_id")
+        node_props_str = ", ".join(node_props)
 
         for node in node_list:
             n_embedding = self.embedding_model.embed(node)
 
             cypher_query = f"""
-            MATCH (n {self.node_label})
-            WHERE n.embedding IS NOT NULL AND n.user_id = $user_id
-            {agent_filter}
+            MATCH (n {self.node_label} {{{node_props_str}}})
+            WHERE n.embedding IS NOT NULL
             WITH n, round(2 * vector.similarity.cosine(n.embedding, $n_embedding) - 1, 4) AS similarity // denormalize for backward compatibility
             WHERE similarity >= $threshold
             CALL {{
-                MATCH (n)-[r]->(m)
-                WHERE m.user_id = $user_id {agent_filter.replace("n.", "m.")}
+                MATCH (n)-[r]->(m {self.node_label} {{{node_props_str}}})
                 RETURN n.name AS source, elementId(n) AS source_id, type(r) AS relationship, elementId(r) AS relation_id, m.name AS destination, elementId(m) AS destination_id
                 UNION
-                MATCH (m)-[r]->(n)
-                WHERE m.user_id = $user_id {agent_filter.replace("n.", "m.")}
+                MATCH (m {self.node_label} {{{node_props_str}}})-[r]->(n)
                 RETURN m.name AS source, elementId(m) AS source_id, type(r) AS relationship, elementId(r) AS relation_id, n.name AS destination, elementId(n) AS destination_id
             }}
             WITH distinct source, source_id, relationship, relation_id, destination, destination_id, similarity
@@ -375,8 +378,9 @@ class MemoryGraph:
             destination = item["destination"]
             relationship = item["relationship"]
 
-            # Build the agent filter for the query
-            agent_filter = ""
+            # Build node properties for MATCH clause
+            node_props = ["name: $source_name", "user_id: $user_id"]
+            dest_props = ["name: $dest_name", "user_id: $user_id"]
             params = {
                 "source_name": source,
                 "dest_name": destination,
@@ -384,15 +388,18 @@ class MemoryGraph:
             }
 
             if agent_id:
-                agent_filter = "AND n.agent_id = $agent_id AND m.agent_id = $agent_id"
+                node_props.append("agent_id: $agent_id")
+                dest_props.append("agent_id: $agent_id")
                 params["agent_id"] = agent_id
+
+            source_props_str = ", ".join(node_props)
+            dest_props_str = ", ".join(dest_props)
 
             # Delete the specific relationship between nodes
             cypher = f"""
-            MATCH (n {self.node_label} {{name: $source_name, user_id: $user_id}})
+            MATCH (n {self.node_label} {{{source_props_str}}})
             -[r:{relationship}]->
-            (m {self.node_label} {{name: $dest_name, user_id: $user_id}})
-            WHERE 1=1 {agent_filter}
+            (m {self.node_label} {{{dest_props_str}}})
             DELETE r
             RETURN
                 n.name AS source,

@@ -20,6 +20,38 @@ ci_environment.env
 mcp_production_api_key.txt
 *secret*
 *token*
+*_config.json
+*config*.json
+cursor_mcp_config.json
+
+# Debug and Test Scripts (often contain secrets)
+debug_*.py
+debug_*.sh
+test_*.py
+test_*.sh
+simple_*.py
+simple_*.sh
+migrate_*.py
+migrate_*.sh
+*_test.py
+*_debug.py
+
+# Setup and deployment scripts (often contain credentials)
+setup_*.sh
+setup_*.py
+start_*.sh
+start_*.py
+deploy_*.sh
+deploy_*.py
+update_*.sh
+update_*.py
+
+# MCP specific files that might contain secrets
+mcp_*.py
+mcp_*.sh
+mcp_*.json
+*mcp_server*.py
+*mcp_client*.py
 
 # Production deployment files
 deploy_production_mcp.sh
