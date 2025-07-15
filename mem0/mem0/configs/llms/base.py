@@ -114,9 +114,7 @@ class BaseLlmConfig(ABC):
         self.vision_details = vision_details
 
         # AzureOpenAI specific
-        self.http_client = (
-            httpx.Client(proxies=http_client_proxies) if http_client_proxies else None
-        )
+        self.http_client = httpx.Client(proxies=http_client_proxies) if http_client_proxies else None
 
         # Openrouter specific
         self.models = models

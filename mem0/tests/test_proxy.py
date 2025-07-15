@@ -35,9 +35,7 @@ def mock_litellm():
         yield mock
 
 
-def test_mem0_initialization_with_api_key(
-    mock_openai_embedding_client, mock_openai_llm_client
-):
+def test_mem0_initialization_with_api_key(mock_openai_embedding_client, mock_openai_llm_client):
     mem0 = Mem0()
     assert isinstance(mem0.mem0_client, Memory)
     assert isinstance(mem0.chat, Chat)
@@ -51,9 +49,7 @@ def test_mem0_initialization_with_config():
         assert isinstance(mem0.chat, Chat)
 
 
-def test_mem0_initialization_without_params(
-    mock_openai_embedding_client, mock_openai_llm_client
-):
+def test_mem0_initialization_without_params(mock_openai_embedding_client, mock_openai_llm_client):
     mem0 = Mem0()
     assert isinstance(mem0.mem0_client, Memory)
     assert isinstance(mem0.chat, Chat)
@@ -69,14 +65,10 @@ def test_completions_create(mock_memory_client, mock_litellm):
 
     messages = [{"role": "user", "content": "Hello, how are you?"}]
     mock_memory_client.search.return_value = [{"memory": "Some relevant memory"}]
-    mock_litellm.completion.return_value = {
-        "choices": [{"message": {"content": "I'm doing well, thank you!"}}]
-    }
+    mock_litellm.completion.return_value = {"choices": [{"message": {"content": "I'm doing well, thank you!"}}]}
     mock_litellm.supports_function_calling.return_value = True
 
-    response = completions.create(
-        model="gpt-4o-mini", messages=messages, user_id="test_user", temperature=0.7
-    )
+    response = completions.create(model="gpt-4o-mini", messages=messages, user_id="test_user", temperature=0.7)
 
     mock_memory_client.add.assert_called_once()
     mock_memory_client.search.assert_called_once()
@@ -87,9 +79,7 @@ def test_completions_create(mock_memory_client, mock_litellm):
     assert len(call_args["messages"]) == 2
     assert call_args["temperature"] == 0.7
 
-    assert response == {
-        "choices": [{"message": {"content": "I'm doing well, thank you!"}}]
-    }
+    assert response == {"choices": [{"message": {"content": "I'm doing well, thank you!"}}]}
 
 
 def test_completions_create_with_system_message(mock_memory_client, mock_litellm):
@@ -100,9 +90,7 @@ def test_completions_create_with_system_message(mock_memory_client, mock_litellm
         {"role": "user", "content": "Hello, how are you?"},
     ]
     mock_memory_client.search.return_value = [{"memory": "Some relevant memory"}]
-    mock_litellm.completion.return_value = {
-        "choices": [{"message": {"content": "I'm doing well, thank you!"}}]
-    }
+    mock_litellm.completion.return_value = {"choices": [{"message": {"content": "I'm doing well, thank you!"}}]}
     mock_litellm.supports_function_calling.return_value = True
 
     completions.create(model="gpt-4o-mini", messages=messages, user_id="test_user")

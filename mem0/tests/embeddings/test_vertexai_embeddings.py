@@ -2,11 +2,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-# Skip all tests in this file if vertexai is not available
-try:
-    from mem0.embeddings.vertexai import VertexAIEmbedding
-except ImportError:
-    pytest.skip("vertexai not available", allow_module_level=True)
+from mem0.embeddings.vertexai import VertexAIEmbedding
 
 
 @pytest.fixture
@@ -51,9 +47,7 @@ def mock_text_embedding_input():
 
 
 @patch("mem0.embeddings.vertexai.TextEmbeddingModel")
-def test_embed_default_model(
-    mock_text_embedding_model, mock_os_environ, mock_config, mock_text_embedding_input
-):
+def test_embed_default_model(mock_text_embedding_model, mock_os_environ, mock_config, mock_text_embedding_input):
     mock_config.return_value.model = "text-embedding-004"
     mock_config.return_value.embedding_dims = 256
 
@@ -61,17 +55,11 @@ def test_embed_default_model(
     embedder = VertexAIEmbedding(config)
 
     mock_embedding = Mock(values=[0.1, 0.2, 0.3])
-    mock_text_embedding_model.from_pretrained.return_value.get_embeddings.return_value = [
-        mock_embedding
-    ]
+    mock_text_embedding_model.from_pretrained.return_value.get_embeddings.return_value = [mock_embedding]
 
     embedder.embed("Hello world")
-    mock_text_embedding_input.assert_called_once_with(
-        text="Hello world", task_type="SEMANTIC_SIMILARITY"
-    )
-    mock_text_embedding_model.from_pretrained.assert_called_once_with(
-        "text-embedding-004"
-    )
+    mock_text_embedding_input.assert_called_once_with(text="Hello world", task_type="SEMANTIC_SIMILARITY")
+    mock_text_embedding_model.from_pretrained.assert_called_once_with("text-embedding-004")
 
     mock_text_embedding_model.from_pretrained.return_value.get_embeddings.assert_called_once_with(
         texts=[mock_text_embedding_input("Hello world")], output_dimensionality=256
@@ -79,9 +67,7 @@ def test_embed_default_model(
 
 
 @patch("mem0.embeddings.vertexai.TextEmbeddingModel")
-def test_embed_custom_model(
-    mock_text_embedding_model, mock_os_environ, mock_config, mock_text_embedding_input
-):
+def test_embed_custom_model(mock_text_embedding_model, mock_os_environ, mock_config, mock_text_embedding_input):
     mock_config.return_value.model = "custom-embedding-model"
     mock_config.return_value.embedding_dims = 512
 
@@ -90,17 +76,11 @@ def test_embed_custom_model(
     embedder = VertexAIEmbedding(config)
 
     mock_embedding = Mock(values=[0.4, 0.5, 0.6])
-    mock_text_embedding_model.from_pretrained.return_value.get_embeddings.return_value = [
-        mock_embedding
-    ]
+    mock_text_embedding_model.from_pretrained.return_value.get_embeddings.return_value = [mock_embedding]
 
     result = embedder.embed("Test embedding")
-    mock_text_embedding_input.assert_called_once_with(
-        text="Test embedding", task_type="SEMANTIC_SIMILARITY"
-    )
-    mock_text_embedding_model.from_pretrained.assert_called_with(
-        "custom-embedding-model"
-    )
+    mock_text_embedding_input.assert_called_once_with(text="Test embedding", task_type="SEMANTIC_SIMILARITY")
+    mock_text_embedding_model.from_pretrained.assert_called_with("custom-embedding-model")
     mock_text_embedding_model.from_pretrained.return_value.get_embeddings.assert_called_once_with(
         texts=[mock_text_embedding_input("Test embedding")], output_dimensionality=512
     )
@@ -110,11 +90,7 @@ def test_embed_custom_model(
 
 @patch("mem0.embeddings.vertexai.TextEmbeddingModel")
 def test_embed_with_memory_action(
-    mock_text_embedding_model,
-    mock_os_environ,
-    mock_config,
-    mock_embedding_types,
-    mock_text_embedding_input,
+    mock_text_embedding_model, mock_os_environ, mock_config, mock_embedding_types, mock_text_embedding_input
 ):
     mock_config.return_value.model = "text-embedding-004"
     mock_config.return_value.embedding_dims = 256
@@ -127,19 +103,14 @@ def test_embed_with_memory_action(
         config = mock_config()
         embedder = VertexAIEmbedding(config)
 
-        mock_text_embedding_model.from_pretrained.assert_called_with(
-            "text-embedding-004"
-        )
+        mock_text_embedding_model.from_pretrained.assert_called_with("text-embedding-004")
 
         for memory_action in ["add", "update", "search"]:
             embedder.embed("Hello world", memory_action=memory_action)
 
-            mock_text_embedding_input.assert_called_with(
-                text="Hello world", task_type=embedding_type
-            )
+            mock_text_embedding_input.assert_called_with(text="Hello world", task_type=embedding_type)
             mock_text_embedding_model.from_pretrained.return_value.get_embeddings.assert_called_with(
-                texts=[mock_text_embedding_input("Hello world", embedding_type)],
-                output_dimensionality=256,
+                texts=[mock_text_embedding_input("Hello world", embedding_type)], output_dimensionality=256
             )
 
 
@@ -159,25 +130,19 @@ def test_missing_credentials(mock_os, mock_text_embedding_model, mock_config):
 
     config = mock_config()
 
-    with pytest.raises(
-        ValueError, match="Google application credentials JSON is not provided"
-    ):
+    with pytest.raises(ValueError, match="Google application credentials JSON is not provided"):
         VertexAIEmbedding(config)
 
 
 @patch("mem0.embeddings.vertexai.TextEmbeddingModel")
-def test_embed_with_different_dimensions(
-    mock_text_embedding_model, mock_os_environ, mock_config
-):
+def test_embed_with_different_dimensions(mock_text_embedding_model, mock_os_environ, mock_config):
     mock_config.return_value.embedding_dims = 1024
 
     config = mock_config()
     embedder = VertexAIEmbedding(config)
 
     mock_embedding = Mock(values=[0.1] * 1024)
-    mock_text_embedding_model.from_pretrained.return_value.get_embeddings.return_value = [
-        mock_embedding
-    ]
+    mock_text_embedding_model.from_pretrained.return_value.get_embeddings.return_value = [mock_embedding]
 
     result = embedder.embed("Large embedding test")
 

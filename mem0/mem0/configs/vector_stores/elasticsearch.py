@@ -12,19 +12,12 @@ class ElasticsearchConfig(BaseModel):
     password: Optional[str] = Field(None, description="Password for authentication")
     cloud_id: Optional[str] = Field(None, description="Cloud ID for Elastic Cloud")
     api_key: Optional[str] = Field(None, description="API key for authentication")
-    embedding_model_dims: int = Field(
-        1536, description="Dimension of the embedding vector"
-    )
+    embedding_model_dims: int = Field(1536, description="Dimension of the embedding vector")
     verify_certs: bool = Field(True, description="Verify SSL certificates")
     use_ssl: bool = Field(True, description="Use SSL for connection")
-    auto_create_index: bool = Field(
-        True, description="Automatically create index during initialization"
-    )
-    custom_search_query: Optional[
-        Callable[[List[float], int, Optional[Dict]], Dict]
-    ] = Field(
-        None,
-        description="Custom search query function. Parameters: (query, limit, filters) -> Dict",
+    auto_create_index: bool = Field(True, description="Automatically create index during initialization")
+    custom_search_query: Optional[Callable[[List[float], int, Optional[Dict]], Dict]] = Field(
+        None, description="Custom search query function. Parameters: (query, limit, filters) -> Dict"
     )
 
     @model_validator(mode="before")
@@ -35,9 +28,7 @@ class ElasticsearchConfig(BaseModel):
             raise ValueError("Either cloud_id or host must be provided")
 
         # Check if authentication is provided
-        if not any(
-            [values.get("api_key"), (values.get("user") and values.get("password"))]
-        ):
+        if not any([values.get("api_key"), (values.get("user") and values.get("password"))]):
             raise ValueError("Either api_key or user/password must be provided")
 
         return values

@@ -61,14 +61,10 @@ def memory_custom_instance():
 def test_add(memory_instance, version, enable_graph):
     memory_instance.config.version = version
     memory_instance.enable_graph = enable_graph
-    memory_instance._add_to_vector_store = Mock(
-        return_value=[{"memory": "Test memory", "event": "ADD"}]
-    )
+    memory_instance._add_to_vector_store = Mock(return_value=[{"memory": "Test memory", "event": "ADD"}])
     memory_instance._add_to_graph = Mock(return_value=[])
 
-    result = memory_instance.add(
-        messages=[{"role": "user", "content": "Test message"}], user_id="test_user"
-    )
+    result = memory_instance.add(messages=[{"role": "user", "content": "Test message"}], user_id="test_user")
 
     if enable_graph:
         assert "results" in result
@@ -80,10 +76,7 @@ def test_add(memory_instance, version, enable_graph):
         assert result["results"] == [{"memory": "Test memory", "event": "ADD"}]
 
     memory_instance._add_to_vector_store.assert_called_once_with(
-        [{"role": "user", "content": "Test message"}],
-        {"user_id": "test_user"},
-        {"user_id": "test_user"},
-        True,
+        [{"role": "user", "content": "Test message"}], {"user_id": "test_user"}, {"user_id": "test_user"}, True
     )
 
     # Remove the conditional assertion for _add_to_graph
@@ -153,19 +146,12 @@ def test_search(memory_instance, version, enable_graph):
         assert result["results"][0]["score"] == 0.9
 
     memory_instance.vector_store.search.assert_called_once_with(
-        query="test query",
-        vectors=[0.1, 0.2, 0.3],
-        limit=100,
-        filters={"user_id": "test_user"},
+        query="test query", vectors=[0.1, 0.2, 0.3], limit=100, filters={"user_id": "test_user"}
     )
-    memory_instance.embedding_model.embed.assert_called_once_with(
-        "test query", "search"
-    )
+    memory_instance.embedding_model.embed.assert_called_once_with("test query", "search")
 
     if enable_graph:
-        memory_instance.graph.search.assert_called_once_with(
-            "test query", {"user_id": "test_user"}, 100
-        )
+        memory_instance.graph.search.assert_called_once_with("test query", {"user_id": "test_user"}, 100)
     else:
         memory_instance.graph.search.assert_not_called()
 
@@ -208,9 +194,7 @@ def test_delete_all(memory_instance, version, enable_graph):
     assert memory_instance._delete_memory.call_count == 2
 
     if enable_graph:
-        memory_instance.graph.delete_all.assert_called_once_with(
-            {"user_id": "test_user"}
-        )
+        memory_instance.graph.delete_all.assert_called_once_with({"user_id": "test_user"})
     else:
         memory_instance.graph.delete_all.assert_not_called()
 
@@ -220,24 +204,14 @@ def test_delete_all(memory_instance, version, enable_graph):
 @pytest.mark.parametrize(
     "version, enable_graph, expected_result",
     [
-        (
-            "v1.0",
-            False,
-            {"results": [{"id": "1", "memory": "Memory 1", "user_id": "test_user"}]},
-        ),
-        (
-            "v1.1",
-            False,
-            {"results": [{"id": "1", "memory": "Memory 1", "user_id": "test_user"}]},
-        ),
+        ("v1.0", False, {"results": [{"id": "1", "memory": "Memory 1", "user_id": "test_user"}]}),
+        ("v1.1", False, {"results": [{"id": "1", "memory": "Memory 1", "user_id": "test_user"}]}),
         (
             "v1.1",
             True,
             {
                 "results": [{"id": "1", "memory": "Memory 1", "user_id": "test_user"}],
-                "relations": [
-                    {"source": "entity1", "relationship": "rel", "target": "entity2"}
-                ],
+                "relations": [{"source": "entity1", "relationship": "rel", "target": "entity2"}],
             },
         ),
     ],
@@ -256,9 +230,7 @@ def test_get_all(memory_instance, version, enable_graph, expected_result):
     assert isinstance(result, dict)
     assert "results" in result
     assert len(result["results"]) == len(expected_result["results"])
-    for expected_item, result_item in zip(
-        expected_result["results"], result["results"]
-    ):
+    for expected_item, result_item in zip(expected_result["results"], result["results"]):
         assert all(key in result_item for key in expected_item)
         assert result_item["id"] == expected_item["id"]
         assert result_item["memory"] == expected_item["memory"]
@@ -270,14 +242,10 @@ def test_get_all(memory_instance, version, enable_graph, expected_result):
     else:
         assert "relations" not in result
 
-    memory_instance.vector_store.list.assert_called_once_with(
-        filters={"user_id": "test_user"}, limit=100
-    )
+    memory_instance.vector_store.list.assert_called_once_with(filters={"user_id": "test_user"}, limit=100)
 
     if enable_graph:
-        memory_instance.graph.get_all.assert_called_once_with(
-            {"user_id": "test_user"}, 100
-        )
+        memory_instance.graph.get_all.assert_called_once_with({"user_id": "test_user"}, 100)
     else:
         memory_instance.graph.get_all.assert_not_called()
 
@@ -287,17 +255,12 @@ def test_custom_prompts(memory_custom_instance):
     from mem0.embeddings.mock import MockEmbeddings
 
     memory_custom_instance.llm.generate_response = Mock()
-    memory_custom_instance.llm.generate_response.return_value = (
-        '{"facts": ["fact1", "fact2"]}'
-    )
+    memory_custom_instance.llm.generate_response.return_value = '{"facts": ["fact1", "fact2"]}'
     memory_custom_instance.embedding_model = MockEmbeddings()
 
-    with patch(
-        "mem0.memory.main.parse_messages", return_value="Test message"
-    ) as mock_parse_messages:
+    with patch("mem0.memory.main.parse_messages", return_value="Test message") as mock_parse_messages:
         with patch(
-            "mem0.memory.main.get_update_memory_messages",
-            return_value="custom update memory prompt",
+            "mem0.memory.main.get_update_memory_messages", return_value="custom update memory prompt"
         ) as mock_get_update_memory_messages:
             memory_custom_instance.add(messages=messages, user_id="test_user")
 
@@ -307,14 +270,8 @@ def test_custom_prompts(memory_custom_instance):
 
             memory_custom_instance.llm.generate_response.assert_any_call(
                 messages=[
-                    {
-                        "role": "system",
-                        "content": memory_custom_instance.config.custom_fact_extraction_prompt,
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Input:\n{mock_parse_messages.return_value}",
-                    },
+                    {"role": "system", "content": memory_custom_instance.config.custom_fact_extraction_prompt},
+                    {"role": "user", "content": f"Input:\n{mock_parse_messages.return_value}"},
                 ],
                 response_format={"type": "json_object"},
             )
@@ -322,17 +279,10 @@ def test_custom_prompts(memory_custom_instance):
             ## custom update memory prompt
             ##
             mock_get_update_memory_messages.assert_called_once_with(
-                [],
-                ["fact1", "fact2"],
-                memory_custom_instance.config.custom_update_memory_prompt,
+                [], ["fact1", "fact2"], memory_custom_instance.config.custom_update_memory_prompt
             )
 
             memory_custom_instance.llm.generate_response.assert_any_call(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": mock_get_update_memory_messages.return_value,
-                    }
-                ],
+                messages=[{"role": "user", "content": mock_get_update_memory_messages.return_value}],
                 response_format={"type": "json_object"},
             )

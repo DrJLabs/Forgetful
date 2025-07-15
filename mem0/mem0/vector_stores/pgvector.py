@@ -8,9 +8,7 @@ try:
     import psycopg2
     from psycopg2.extras import execute_values
 except ImportError:
-    raise ImportError(
-        "The 'psycopg2' library is required. Please install it using 'pip install psycopg2'."
-    )
+    raise ImportError("The 'psycopg2' library is required. Please install it using 'pip install psycopg2'.")
 
 from mem0.vector_stores.base import VectorStoreBase
 
@@ -55,9 +53,7 @@ class PGVector(VectorStoreBase):
         self.use_hnsw = hnsw
         self.embedding_model_dims = embedding_model_dims
 
-        self.conn = psycopg2.connect(
-            dbname=dbname, user=user, password=password, host=host, port=port
-        )
+        self.conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
         self.cur = self.conn.cursor()
 
         collections = self.list_cols()
@@ -115,15 +111,10 @@ class PGVector(VectorStoreBase):
             payloads (List[Dict], optional): List of payloads corresponding to vectors.
             ids (List[str], optional): List of IDs corresponding to vectors.
         """
-        logger.info(
-            f"Inserting {len(vectors)} vectors into collection {self.collection_name}"
-        )
+        logger.info(f"Inserting {len(vectors)} vectors into collection {self.collection_name}")
         json_payloads = [json.dumps(payload) for payload in payloads]
 
-        data = [
-            (id, vector, payload)
-            for id, vector, payload in zip(ids, vectors, json_payloads)
-        ]
+        data = [(id, vector, payload) for id, vector, payload in zip(ids, vectors, json_payloads)]
         execute_values(
             self.cur,
             f"INSERT INTO {self.collection_name} (id, vector, payload) VALUES %s",
@@ -152,9 +143,7 @@ class PGVector(VectorStoreBase):
                 filter_conditions.append("payload->>%s = %s")
                 filter_params.extend([k, str(v)])
 
-        filter_clause = (
-            "WHERE " + " AND ".join(filter_conditions) if filter_conditions else ""
-        )
+        filter_clause = "WHERE " + " AND ".join(filter_conditions) if filter_conditions else ""
 
         self.cur.execute(
             f"""
@@ -168,14 +157,7 @@ class PGVector(VectorStoreBase):
         )
 
         results = self.cur.fetchall()
-        return [
-            OutputData(
-                id=str(r[0]),
-                score=float(r[1]) if r[1] is not None else 0.0,
-                payload=r[2],
-            )
-            for r in results
-        ]
+        return [OutputData(id=str(r[0]), score=float(r[1]), payload=r[2]) for r in results]
 
     def delete(self, vector_id):
         """
@@ -184,9 +166,7 @@ class PGVector(VectorStoreBase):
         Args:
             vector_id (str): ID of the vector to delete.
         """
-        self.cur.execute(
-            f"DELETE FROM {self.collection_name} WHERE id = %s", (vector_id,)
-        )
+        self.cur.execute(f"DELETE FROM {self.collection_name} WHERE id = %s", (vector_id,))
         self.conn.commit()
 
     def update(self, vector_id, vector=None, payload=None):
@@ -236,9 +216,7 @@ class PGVector(VectorStoreBase):
         Returns:
             List[str]: List of collection names.
         """
-        self.cur.execute(
-            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
-        )
+        self.cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
         return [row[0] for row in self.cur.fetchall()]
 
     def delete_col(self):
@@ -255,11 +233,11 @@ class PGVector(VectorStoreBase):
         """
         self.cur.execute(
             f"""
-            SELECT
-                table_name,
+            SELECT 
+                table_name, 
                 (SELECT COUNT(*) FROM {self.collection_name}) as row_count,
                 (SELECT pg_size_pretty(pg_total_relation_size('{self.collection_name}'))) as total_size
-            FROM information_schema.tables
+            FROM information_schema.tables 
             WHERE table_schema = 'public' AND table_name = %s
         """,
             (self.collection_name,),
@@ -286,9 +264,7 @@ class PGVector(VectorStoreBase):
                 filter_conditions.append("payload->>%s = %s")
                 filter_params.extend([k, str(v)])
 
-        filter_clause = (
-            "WHERE " + " AND ".join(filter_conditions) if filter_conditions else ""
-        )
+        filter_clause = "WHERE " + " AND ".join(filter_conditions) if filter_conditions else ""
 
         query = f"""
             SELECT id, vector, payload

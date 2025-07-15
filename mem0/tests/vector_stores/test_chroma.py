@@ -14,13 +14,9 @@ def mock_chromadb_client():
 @pytest.fixture
 def chromadb_instance(mock_chromadb_client):
     mock_collection = Mock()
-    mock_chromadb_client.return_value.get_or_create_collection.return_value = (
-        mock_collection
-    )
+    mock_chromadb_client.return_value.get_or_create_collection.return_value = mock_collection
 
-    return ChromaDB(
-        collection_name="test_collection", client=mock_chromadb_client.return_value
-    )
+    return ChromaDB(collection_name="test_collection", client=mock_chromadb_client.return_value)
 
 
 def test_insert_vectors(chromadb_instance, mock_chromadb_client):
@@ -30,9 +26,7 @@ def test_insert_vectors(chromadb_instance, mock_chromadb_client):
 
     chromadb_instance.insert(vectors=vectors, payloads=payloads, ids=ids)
 
-    chromadb_instance.collection.add.assert_called_once_with(
-        ids=ids, embeddings=vectors, metadatas=payloads
-    )
+    chromadb_instance.collection.add.assert_called_once_with(ids=ids, embeddings=vectors, metadatas=payloads)
 
 
 def test_search_vectors(chromadb_instance, mock_chromadb_client):
@@ -46,9 +40,7 @@ def test_search_vectors(chromadb_instance, mock_chromadb_client):
     vectors = [[0.1, 0.2, 0.3]]
     results = chromadb_instance.search(query="", vectors=vectors, limit=2)
 
-    chromadb_instance.collection.query.assert_called_once_with(
-        query_embeddings=vectors, where=None, n_results=2
-    )
+    chromadb_instance.collection.query.assert_called_once_with(query_embeddings=vectors, where=None, n_results=2)
 
     assert len(results) == 2
     assert results[0].id == "id1"
@@ -69,9 +61,7 @@ def test_update_vector(chromadb_instance):
     new_vector = [0.7, 0.8, 0.9]
     new_payload = {"name": "updated_vector"}
 
-    chromadb_instance.update(
-        vector_id=vector_id, vector=new_vector, payload=new_payload
-    )
+    chromadb_instance.update(vector_id=vector_id, vector=new_vector, payload=new_payload)
 
     chromadb_instance.collection.update.assert_called_once_with(
         ids=vector_id, embeddings=new_vector, metadatas=new_payload

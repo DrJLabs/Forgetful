@@ -2,12 +2,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-# Skip all tests in this file if together is not available
-try:
-    from mem0.configs.llms.base import BaseLlmConfig
-    from mem0.llms.together import TogetherLLM
-except ImportError:
-    pytest.skip("together not available", allow_module_level=True)
+from mem0.configs.llms.base import BaseLlmConfig
+from mem0.llms.together import TogetherLLM
 
 
 @pytest.fixture
@@ -19,12 +15,7 @@ def mock_together_client():
 
 
 def test_generate_response_without_tools(mock_together_client):
-    config = BaseLlmConfig(
-        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        temperature=0.7,
-        max_tokens=100,
-        top_p=1.0,
-    )
+    config = BaseLlmConfig(model="mistralai/Mixtral-8x7B-Instruct-v0.1", temperature=0.7, max_tokens=100, top_p=1.0)
     llm = TogetherLLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -32,30 +23,19 @@ def test_generate_response_without_tools(mock_together_client):
     ]
 
     mock_response = Mock()
-    mock_response.choices = [
-        Mock(message=Mock(content="I'm doing well, thank you for asking!"))
-    ]
+    mock_response.choices = [Mock(message=Mock(content="I'm doing well, thank you for asking!"))]
     mock_together_client.chat.completions.create.return_value = mock_response
 
     response = llm.generate_response(messages)
 
     mock_together_client.chat.completions.create.assert_called_once_with(
-        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        messages=messages,
-        temperature=0.7,
-        max_tokens=100,
-        top_p=1.0,
+        model="mistralai/Mixtral-8x7B-Instruct-v0.1", messages=messages, temperature=0.7, max_tokens=100, top_p=1.0
     )
     assert response == "I'm doing well, thank you for asking!"
 
 
 def test_generate_response_with_tools(mock_together_client):
-    config = BaseLlmConfig(
-        model="mistralai/Mixtral-8x7B-Instruct-v0.1",
-        temperature=0.7,
-        max_tokens=100,
-        top_p=1.0,
-    )
+    config = BaseLlmConfig(model="mistralai/Mixtral-8x7B-Instruct-v0.1", temperature=0.7, max_tokens=100, top_p=1.0)
     llm = TogetherLLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -69,12 +49,7 @@ def test_generate_response_with_tools(mock_together_client):
                 "description": "Add a memory",
                 "parameters": {
                     "type": "object",
-                    "properties": {
-                        "data": {
-                            "type": "string",
-                            "description": "Data to add to memory",
-                        }
-                    },
+                    "properties": {"data": {"type": "string", "description": "Data to add to memory"}},
                     "required": ["data"],
                 },
             },

@@ -76,9 +76,9 @@ Guidelines:
 6. Temporal Awareness: Prioritize recency when timestamps are available.
 7. Necessity Principle: Only DELETE relationships that must be deleted and are contradictory/outdated to the new information to maintain an accurate and coherent memory graph.
 
-Note: DO NOT DELETE if their is a possibility of same type of relationship but different destination nodes.
+Note: DO NOT DELETE if their is a possibility of same type of relationship but different destination nodes. 
 
-For example:
+For example: 
 Existing Memory: alice -- loves_to_eat -- pizza
 New Information: Alice also loves to eat burger.
 
@@ -92,7 +92,6 @@ Provide a list of deletion instructions, each specifying the relationship to be 
 
 
 def get_delete_messages(existing_memories_string, data, user_id):
-    return (
-        DELETE_RELATIONS_SYSTEM_PROMPT.replace("USER_ID", user_id),
-        f"Here are the existing memories: {existing_memories_string} \n\n New Information: {data}",
-    )
+    return DELETE_RELATIONS_SYSTEM_PROMPT.replace(
+        "USER_ID", user_id
+    ), f"Here are the existing memories: {existing_memories_string} \n\n New Information: {data}"

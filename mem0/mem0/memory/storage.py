@@ -27,9 +27,7 @@ class SQLiteManager:
                 self.connection.execute("BEGIN")
                 cur = self.connection.cursor()
 
-                cur.execute(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='history'"
-                )
+                cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='history'")
                 if cur.fetchone() is None:
                     self.connection.execute("COMMIT")
                     return  # nothing to migrate
@@ -84,9 +82,7 @@ class SQLiteManager:
                 intersecting = list(expected_cols & old_cols)
                 if intersecting:
                     cols_csv = ", ".join(intersecting)
-                    cur.execute(
-                        f"INSERT INTO history ({cols_csv}) SELECT {cols_csv} FROM history_old"
-                    )
+                    cur.execute(f"INSERT INTO history ({cols_csv}) SELECT {cols_csv} FROM history_old")
 
                 # Drop the old table
                 cur.execute("DROP TABLE history_old")

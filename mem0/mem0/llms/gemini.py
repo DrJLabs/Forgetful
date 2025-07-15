@@ -5,9 +5,7 @@ try:
     from google import genai
     from google.genai import types
 except ImportError:
-    raise ImportError(
-        "The 'google-genai' library is required. Please install it using 'pip install google-genai'."
-    )
+    raise ImportError("The 'google-genai' library is required. Please install it using 'pip install google-genai'.")
 
 from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase
@@ -188,9 +186,7 @@ class GeminiLLM(LLMBase):
                     function_calling_config=types.FunctionCallingConfig(
                         mode=mode,
                         allowed_function_names=(
-                            [tool["function"]["name"] for tool in tools]
-                            if tool_choice == "any"
-                            else None
+                            [tool["function"]["name"] for tool in tools] if tool_choice == "any" else None
                         ),
                     )
                 )

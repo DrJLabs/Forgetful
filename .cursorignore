@@ -41,8 +41,8 @@ test-results/
 .tox/
 
 # Large External Projects (if these are git submodules or external deps)
-mem0/
-openmemory/
+# mem0/ - Now included for analysis
+# openmemory/ - Now included for analysis
 
 # IDE & System Files
 .DS_Store

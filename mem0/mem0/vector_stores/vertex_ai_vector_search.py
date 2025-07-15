@@ -36,23 +36,15 @@ class GoogleMatchingEngine(VectorStoreBase):
         # If collection_name is passed, use it as deployment_index_id if deployment_index_id is not provided
         if "collection_name" in kwargs and "deployment_index_id" not in kwargs:
             kwargs["deployment_index_id"] = kwargs["collection_name"]
-            logger.debug(
-                "Using collection_name as deployment_index_id: %s",
-                kwargs["deployment_index_id"],
-            )
+            logger.debug("Using collection_name as deployment_index_id: %s", kwargs["deployment_index_id"])
         elif "deployment_index_id" in kwargs and "collection_name" not in kwargs:
             kwargs["collection_name"] = kwargs["deployment_index_id"]
-            logger.debug(
-                "Using deployment_index_id as collection_name: %s",
-                kwargs["collection_name"],
-            )
+            logger.debug("Using deployment_index_id as collection_name: %s", kwargs["collection_name"])
 
         try:
             config = GoogleMatchingEngineConfig(**kwargs)
             logger.debug("Config created: %s", config.model_dump())
-            logger.debug(
-                "Config collection_name: %s", getattr(config, "collection_name", None)
-            )
+            logger.debug("Config collection_name: %s", getattr(config, "collection_name", None))
         except Exception as e:
             logger.error("Failed to validate config: %s", str(e))
             raise
@@ -62,9 +54,7 @@ class GoogleMatchingEngine(VectorStoreBase):
         self.region = config.region
         self.endpoint_id = config.endpoint_id
         self.index_id = config.index_id  # The actual index ID
-        self.deployment_index_id = (
-            config.deployment_index_id
-        )  # The deployment-specific ID
+        self.deployment_index_id = config.deployment_index_id  # The deployment-specific ID
         self.collection_name = config.collection_name
         self.vector_search_api_endpoint = config.vector_search_api_endpoint
 
@@ -77,9 +67,7 @@ class GoogleMatchingEngine(VectorStoreBase):
         }
         if hasattr(config, "credentials_path") and config.credentials_path:
             logger.debug("Using credentials from: %s", config.credentials_path)
-            credentials = service_account.Credentials.from_service_account_file(
-                config.credentials_path
-            )
+            credentials = service_account.Credentials.from_service_account_file(config.credentials_path)
             init_args["credentials"] = credentials
 
         try:
@@ -99,9 +87,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             # Format the endpoint name properly
             endpoint_name = self.endpoint_id
             logger.debug("Initializing endpoint with name: %s", endpoint_name)
-            self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint(
-                index_endpoint_name=endpoint_name
-            )
+            self.index_endpoint = aiplatform.MatchingEngineIndexEndpoint(index_endpoint_name=endpoint_name)
             logger.debug("Endpoint initialized successfully")
         except Exception as e:
             logger.error("Failed to initialize Matching Engine components: %s", str(e))
@@ -127,9 +113,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             )
         return output_data
 
-    def _create_restriction(
-        self, key: str, value: Any
-    ) -> aiplatform_v1.types.index.IndexDatapoint.Restriction:
+    def _create_restriction(self, key: str, value: Any) -> aiplatform_v1.types.index.IndexDatapoint.Restriction:
         """Create a restriction object for the Matching Engine index.
 
         Args:
@@ -140,9 +124,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             Restriction object for the index
         """
         str_value = str(value) if value is not None else ""
-        return aiplatform_v1.types.index.IndexDatapoint.Restriction(
-            namespace=key, allow_list=[str_value]
-        )
+        return aiplatform_v1.types.index.IndexDatapoint.Restriction(namespace=key, allow_list=[str_value])
 
     def _create_datapoint(
         self, vector_id: str, vector: List[float], payload: Optional[Dict] = None
@@ -159,9 +141,7 @@ class GoogleMatchingEngine(VectorStoreBase):
         """
         restrictions = []
         if payload:
-            restrictions = [
-                self._create_restriction(key, value) for key, value in payload.items()
-            ]
+            restrictions = [self._create_restriction(key, value) for key, value in payload.items()]
 
         return aiplatform_v1.types.index.IndexDatapoint(
             datapoint_id=vector_id, feature_vector=vector, restricts=restrictions
@@ -188,14 +168,10 @@ class GoogleMatchingEngine(VectorStoreBase):
             raise ValueError("No vectors provided for insertion")
 
         if payloads and len(payloads) != len(vectors):
-            raise ValueError(
-                f"Number of payloads ({len(payloads)}) does not match number of vectors ({len(vectors)})"
-            )
+            raise ValueError(f"Number of payloads ({len(payloads)}) does not match number of vectors ({len(vectors)})")
 
         if ids and len(ids) != len(vectors):
-            raise ValueError(
-                f"Number of ids ({len(ids)}) does not match number of vectors ({len(vectors)})"
-            )
+            raise ValueError(f"Number of ids ({len(ids)}) does not match number of vectors ({len(vectors)})")
 
         logger.debug("Starting insert of %d vectors", len(vectors))
 
@@ -222,11 +198,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             raise
 
     def search(
-        self,
-        query: str,
-        vectors: List[float],
-        limit: int = 5,
-        filters: Optional[Dict] = None,
+        self, query: str, vectors: List[float], limit: int = 5, filters: Optional[Dict] = None
     ) -> List[OutputData]:
         """
         Search for similar vectors.
@@ -246,9 +218,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             if filters:
                 logger.debug("Processing filters")
                 for key, value in filters.items():
-                    logger.debug(
-                        "Processing filter %s=%s (type=%s)", key, value, type(value)
-                    )
+                    logger.debug("Processing filter %s=%s (type=%s)", key, value, type(value))
                     if isinstance(value, (str, int, float)):
                         logger.debug("Adding simple filter for %s", key)
                         filter_namespaces.append(Namespace(key, [str(value)], []))
@@ -274,29 +244,17 @@ class GoogleMatchingEngine(VectorStoreBase):
 
             results = []
             for neighbor in response[0]:
-                logger.debug(
-                    "Processing neighbor - id: %s, distance: %s",
-                    neighbor.id,
-                    neighbor.distance,
-                )
+                logger.debug("Processing neighbor - id: %s, distance: %s", neighbor.id, neighbor.distance)
 
                 payload = {}
                 if hasattr(neighbor, "restricts"):
                     logger.debug("Processing restricts")
                     for restrict in neighbor.restricts:
-                        if (
-                            hasattr(restrict, "name")
-                            and hasattr(restrict, "allow_tokens")
-                            and restrict.allow_tokens
-                        ):
-                            logger.debug(
-                                "Adding %s: %s", restrict.name, restrict.allow_tokens[0]
-                            )
+                        if hasattr(restrict, "name") and hasattr(restrict, "allow_tokens") and restrict.allow_tokens:
+                            logger.debug("Adding %s: %s", restrict.name, restrict.allow_tokens[0])
                             payload[restrict.name] = restrict.allow_tokens[0]
 
-                output_data = OutputData(
-                    id=neighbor.id, score=neighbor.distance, payload=payload
-                )
+                output_data = OutputData(id=neighbor.id, score=neighbor.distance, payload=payload)
                 results.append(output_data)
 
             logger.debug("Returning %d results", len(results))
@@ -308,9 +266,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             logger.error("Stack trace: %s", traceback.format_exc())
             raise
 
-    def delete(
-        self, vector_id: Optional[str] = None, ids: Optional[List[str]] = None
-    ) -> bool:
+    def delete(self, vector_id: Optional[str] = None, ids: Optional[List[str]] = None) -> bool:
         """
         Delete vectors from the Matching Engine index.
         Args:
@@ -384,9 +340,7 @@ class GoogleMatchingEngine(VectorStoreBase):
                 return False
 
             datapoint = self._create_datapoint(
-                vector_id=vector_id,
-                vector=vector if vector is not None else [],
-                payload=payload,
+                vector_id=vector_id, vector=vector if vector is not None else [], payload=payload
             )
 
             logger.debug("Upserting datapoint: %s", datapoint)
@@ -414,18 +368,14 @@ class GoogleMatchingEngine(VectorStoreBase):
 
         try:
             if not self.vector_search_api_endpoint:
-                raise ValueError(
-                    "vector_search_api_endpoint is required for get operation"
-                )
+                raise ValueError("vector_search_api_endpoint is required for get operation")
 
             vector_search_client = aiplatform_v1.MatchServiceClient(
                 client_options={"api_endpoint": self.vector_search_api_endpoint},
             )
             datapoint = aiplatform_v1.IndexDatapoint(datapoint_id=vector_id)
 
-            query = aiplatform_v1.FindNeighborsRequest.Query(
-                datapoint=datapoint, neighbor_count=1
-            )
+            query = aiplatform_v1.FindNeighborsRequest.Query(datapoint=datapoint, neighbor_count=1)
             request = aiplatform_v1.FindNeighborsRequest(
                 index_endpoint=f"projects/{self.project_number}/locations/{self.region}/indexEndpoints/{self.endpoint_id}",
                 deployed_index_id=self.deployment_index_id,
@@ -448,11 +398,7 @@ class GoogleMatchingEngine(VectorStoreBase):
                                 if restrict.allow_list:
                                     payload[restrict.namespace] = restrict.allow_list[0]
 
-                        return OutputData(
-                            id=neighbor.datapoint.datapoint_id,
-                            score=neighbor.distance,
-                            payload=payload,
-                        )
+                        return OutputData(id=neighbor.datapoint.datapoint_id, score=neighbor.distance, payload=payload)
 
                 logger.debug("No results found")
                 return None
@@ -483,9 +429,7 @@ class GoogleMatchingEngine(VectorStoreBase):
         Delete a collection (index).
         Note: This operation is not supported through the API.
         """
-        logger.warning(
-            "Delete collection operation is not supported for Google Matching Engine"
-        )
+        logger.warning("Delete collection operation is not supported for Google Matching Engine")
         pass
 
     def col_info(self) -> Dict:
@@ -501,9 +445,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             "region": self.region,
         }
 
-    def list(
-        self, filters: Optional[Dict] = None, limit: Optional[int] = None
-    ) -> List[List[OutputData]]:
+    def list(self, filters: Optional[Dict] = None, limit: Optional[int] = None) -> List[List[OutputData]]:
         """List vectors matching the given filters.
 
         Args:
@@ -526,9 +468,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             # Use a large limit if none specified
             search_limit = limit if limit is not None else 10000
 
-            results = self.search(
-                query=zero_vector, limit=search_limit, filters=filters
-            )
+            results = self.search(query=zero_vector, limit=search_limit, filters=filters)
 
             logger.debug("Found %d results", len(results))
             return [results]  # Wrap in extra array to match interface
@@ -553,9 +493,7 @@ class GoogleMatchingEngine(VectorStoreBase):
         # This method is included only to satisfy the abstract base class
         pass
 
-    def add(
-        self, text: str, metadata: Optional[Dict] = None, user_id: Optional[str] = None
-    ) -> str:
+    def add(self, text: str, metadata: Optional[Dict] = None, user_id: Optional[str] = None) -> str:
         logger.debug("Starting add operation")
         logger.debug("Text: %s", text)
         logger.debug("Metadata: %s", metadata)
@@ -612,9 +550,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             )
 
         if ids and len(ids) != len(texts):
-            raise ValueError(
-                f"Number of ids ({len(ids)}) does not match number of texts ({len(texts)})"
-            )
+            raise ValueError(f"Number of ids ({len(ids)}) does not match number of texts ({len(texts)})")
 
         logger.debug("Starting add_texts operation")
         logger.debug("Number of texts: %d", len(texts))
@@ -629,11 +565,7 @@ class GoogleMatchingEngine(VectorStoreBase):
             embeddings = self.embedder.embed_documents(texts)
 
             # Add to store
-            self.insert(
-                vectors=embeddings,
-                payloads=metadatas if metadatas else [{}] * len(texts),
-                ids=ids,
-            )
+            self.insert(vectors=embeddings, payloads=metadatas if metadatas else [{}] * len(texts), ids=ids)
             return ids
 
         except Exception as e:
@@ -672,12 +604,7 @@ class GoogleMatchingEngine(VectorStoreBase):
         results = self.search(query=embedding, limit=k, filters=filter)
 
         docs_and_scores = [
-            (
-                Document(
-                    page_content=result.payload.get("text", ""), metadata=result.payload
-                ),
-                result.score,
-            )
+            (Document(page_content=result.payload.get("text", ""), metadata=result.payload), result.score)
             for result in results
         ]
         logger.debug("Found %d results", len(docs_and_scores))

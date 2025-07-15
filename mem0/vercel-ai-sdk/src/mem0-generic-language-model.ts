@@ -46,7 +46,7 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
     const mySystemPrompt = "These are the memories I have stored. Give more weightage to the question by users and try to answer that first. You have to modify your answer based on the memories I have provided. If the memories are irrelevant you can ignore them. Also don't reply to this section of the prompt, or the memories, they are only for your reference. The System prompt starts after text System Message: \n\n";
 
     const isGraphEnabled = mem0Config?.enable_graph;
-
+  
     let memoriesText = "";
     let memoriesText2 = "";
     try {
@@ -98,10 +98,10 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
   }
 
   async doGenerate(options: LanguageModelV1CallOptions): Promise<Awaited<ReturnType<LanguageModelV1['doGenerate']>>> {
-    try {
+    try {   
       const provider = this.config.provider;
       const mem0_api_key = this.config.mem0ApiKey;
-
+      
       const settings: Mem0ProviderSettings = {
         provider: provider,
         mem0ApiKey: mem0_api_key,
@@ -115,27 +115,27 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
       }
 
       const selector = new Mem0ClassSelector(this.modelId, settings, this.provider_config);
-
+      
       let messagesPrompts = options.prompt;
-
+      
       // Process memories and update prompts
       const { memories, messagesPrompts: updatedPrompts } = await this.processMemories(messagesPrompts, mem0Config);
-
+      
       const model = selector.createProvider();
 
       const ans = await model.doGenerate({
         ...options,
         prompt: updatedPrompts,
       });
-
+      
       // If there are no memories, return the original response
       if (!memories || memories?.length === 0) {
         return ans;
       }
-
+      
       // Create sources array with existing sources
       const sources = [...(ans.sources || [])];
-
+      
       // Add a combined source with all memories
       if (Array.isArray(memories) && memories?.length > 0) {
         sources.push({
@@ -150,7 +150,7 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
             }
           }
         });
-
+        
         // Add individual memory sources for more detailed information
         memories?.forEach((memory: any) => {
           sources.push({
@@ -167,7 +167,7 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
           });
         });
       }
-
+ 
       return {
         ...ans,
         sources
@@ -183,7 +183,7 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
     try {
       const provider = this.config.provider;
       const mem0_api_key = this.config.mem0ApiKey;
-
+      
       const settings: Mem0ProviderSettings = {
         provider: provider,
         mem0ApiKey: mem0_api_key,
@@ -198,9 +198,9 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
       }
 
       const selector = new Mem0ClassSelector(this.modelId, settings, this.provider_config);
-
+      
       let messagesPrompts = options.prompt;
-
+      
       // Process memories and update prompts
       const { memories, messagesPrompts: updatedPrompts } = await this.processMemories(messagesPrompts, mem0Config);
 
@@ -218,7 +218,7 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
 
       // Create a new stream that includes memory sources
       const originalStream = streamResponse.stream;
-
+      
       // Create a transform stream that adds memory sources at the beginning
       const transformStream = new TransformStream({
         start(controller) {
@@ -241,7 +241,7 @@ export class Mem0GenericLanguageModel implements LanguageModelV1 {
                   }
                 }
               });
-
+              
               // Also add individual memory sources for more detailed information
               memories?.forEach((memory: any) => {
                 controller.enqueue({

@@ -17,18 +17,10 @@ class AzureOpenAILLM(LLMBase):
         if not self.config.model:
             self.config.model = "gpt-4o"
 
-        api_key = self.config.azure_kwargs.api_key or os.getenv(
-            "LLM_AZURE_OPENAI_API_KEY"
-        )
-        azure_deployment = self.config.azure_kwargs.azure_deployment or os.getenv(
-            "LLM_AZURE_DEPLOYMENT"
-        )
-        azure_endpoint = self.config.azure_kwargs.azure_endpoint or os.getenv(
-            "LLM_AZURE_ENDPOINT"
-        )
-        api_version = self.config.azure_kwargs.api_version or os.getenv(
-            "LLM_AZURE_API_VERSION"
-        )
+        api_key = self.config.azure_kwargs.api_key or os.getenv("LLM_AZURE_OPENAI_API_KEY")
+        azure_deployment = self.config.azure_kwargs.azure_deployment or os.getenv("LLM_AZURE_DEPLOYMENT")
+        azure_endpoint = self.config.azure_kwargs.azure_endpoint or os.getenv("LLM_AZURE_ENDPOINT")
+        api_version = self.config.azure_kwargs.api_version or os.getenv("LLM_AZURE_API_VERSION")
         default_headers = self.config.azure_kwargs.default_headers
 
         self.client = AzureOpenAI(
@@ -62,9 +54,7 @@ class AzureOpenAILLM(LLMBase):
                     processed_response["tool_calls"].append(
                         {
                             "name": tool_call.function.name,
-                            "arguments": json.loads(
-                                extract_json(tool_call.function.arguments)
-                            ),
+                            "arguments": json.loads(extract_json(tool_call.function.arguments)),
                         }
                     )
 
@@ -92,6 +82,12 @@ class AzureOpenAILLM(LLMBase):
             str: The generated response.
         """
 
+        user_prompt = messages[-1]['content']
+
+        user_prompt = user_prompt.replace("assistant", "ai")
+
+        messages[-1]['content'] = user_prompt
+
         common_params = {
             "model": self.config.model,
             "messages": messages,
@@ -108,9 +104,7 @@ class AzureOpenAILLM(LLMBase):
             }
         if response_format:
             params["response_format"] = response_format
-        if (
-            tools
-        ):  # TODO: Remove tools if no issues found with new memory addition logic
+        if tools:  # TODO: Remove tools if no issues found with new memory addition logic
             params["tools"] = tools
             params["tool_choice"] = tool_choice
 

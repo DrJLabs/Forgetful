@@ -4,6 +4,8 @@ from typing import Dict, List, Optional
 
 from openai import OpenAI
 
+from openai import OpenAI
+
 from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase
 from mem0.memory.utils import extract_json
@@ -16,9 +18,7 @@ class VllmLLM(LLMBase):
         if not self.config.model:
             self.config.model = "Qwen/Qwen2.5-32B-Instruct"
 
-        self.config.api_key = (
-            self.config.api_key or os.getenv("VLLM_API_KEY") or "vllm-api-key"
-        )
+        self.config.api_key = self.config.api_key or os.getenv("VLLM_API_KEY") or "vllm-api-key"
         base_url = self.config.vllm_base_url or os.getenv("VLLM_BASE_URL")
 
         self.client = OpenAI(base_url=base_url, api_key=self.config.api_key)
@@ -45,9 +45,7 @@ class VllmLLM(LLMBase):
                     processed_response["tool_calls"].append(
                         {
                             "name": tool_call.function.name,
-                            "arguments": json.loads(
-                                extract_json(tool_call.function.arguments)
-                            ),
+                            "arguments": json.loads(extract_json(tool_call.function.arguments)),
                         }
                     )
 

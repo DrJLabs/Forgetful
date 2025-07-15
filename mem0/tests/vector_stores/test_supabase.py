@@ -27,9 +27,7 @@ def mock_collection():
 @pytest.fixture
 def supabase_instance(mock_vecs_client, mock_collection):
     # Set up the mock client to return our mock collection
-    mock_vecs_client.return_value.get_or_create_collection.return_value = (
-        mock_collection
-    )
+    mock_vecs_client.return_value.get_or_create_collection.return_value = mock_collection
     mock_vecs_client.return_value.list_collections.return_value = ["test_collection"]
 
     instance = Supabase(
@@ -48,12 +46,8 @@ def supabase_instance(mock_vecs_client, mock_collection):
 def test_create_col(supabase_instance, mock_vecs_client, mock_collection):
     supabase_instance.create_col(1536)
 
-    mock_vecs_client.return_value.get_or_create_collection.assert_called_with(
-        name="test_collection", dimension=1536
-    )
-    mock_collection.create_index.assert_called_with(
-        method="hnsw", measure="cosine_distance"
-    )
+    mock_vecs_client.return_value.get_or_create_collection.assert_called_with(name="test_collection", dimension=1536)
+    mock_collection.create_index.assert_called_with(method="hnsw", measure="cosine_distance")
 
 
 def test_insert_vectors(supabase_instance, mock_collection):
@@ -63,32 +57,20 @@ def test_insert_vectors(supabase_instance, mock_collection):
 
     supabase_instance.insert(vectors=vectors, payloads=payloads, ids=ids)
 
-    expected_records = [
-        ("id1", [0.1, 0.2, 0.3], {"name": "vector1"}),
-        ("id2", [0.4, 0.5, 0.6], {"name": "vector2"}),
-    ]
+    expected_records = [("id1", [0.1, 0.2, 0.3], {"name": "vector1"}), ("id2", [0.4, 0.5, 0.6], {"name": "vector2"})]
     mock_collection.upsert.assert_called_once_with(expected_records)
 
 
 def test_search_vectors(supabase_instance, mock_collection):
-    mock_results = [
-        ("id1", 0.9, {"name": "vector1"}),
-        ("id2", 0.8, {"name": "vector2"}),
-    ]
+    mock_results = [("id1", 0.9, {"name": "vector1"}), ("id2", 0.8, {"name": "vector2"})]
     mock_collection.query.return_value = mock_results
 
     vectors = [[0.1, 0.2, 0.3]]
     filters = {"category": "test"}
-    results = supabase_instance.search(
-        query="", vectors=vectors, limit=2, filters=filters
-    )
+    results = supabase_instance.search(query="", vectors=vectors, limit=2, filters=filters)
 
     mock_collection.query.assert_called_once_with(
-        data=vectors,
-        limit=2,
-        filters={"category": {"$eq": "test"}},
-        include_metadata=True,
-        include_value=True,
+        data=vectors, limit=2, filters={"category": {"$eq": "test"}}, include_metadata=True, include_value=True
     )
 
     assert len(results) == 2
@@ -108,9 +90,7 @@ def test_update_vector(supabase_instance, mock_collection):
     new_vector = [0.7, 0.8, 0.9]
     new_payload = {"name": "updated_vector"}
 
-    supabase_instance.update(
-        vector_id=vector_id, vector=new_vector, payload=new_payload
-    )
+    supabase_instance.update(vector_id=vector_id, vector=new_vector, payload=new_payload)
     mock_collection.upsert.assert_called_once_with([("id1", new_vector, new_payload)])
 
 
@@ -133,10 +113,7 @@ def test_get_vector(supabase_instance, mock_collection):
 
 def test_list_vectors(supabase_instance, mock_collection):
     mock_query_results = [("id1", 0.9, {}), ("id2", 0.8, {})]
-    mock_fetch_results = [
-        ("id1", [0.1, 0.2, 0.3], {"name": "vector1"}),
-        ("id2", [0.4, 0.5, 0.6], {"name": "vector2"}),
-    ]
+    mock_fetch_results = [("id1", [0.1, 0.2, 0.3], {"name": "vector1"}), ("id2", [0.4, 0.5, 0.6], {"name": "vector2"})]
 
     mock_collection.query.return_value = mock_query_results
     mock_collection.fetch.return_value = mock_fetch_results
@@ -164,9 +141,7 @@ def test_col_info(supabase_instance, mock_collection):
 def test_preprocess_filters(supabase_instance):
     # Test single filter
     single_filter = {"category": "test"}
-    assert supabase_instance._preprocess_filters(single_filter) == {
-        "category": {"$eq": "test"}
-    }
+    assert supabase_instance._preprocess_filters(single_filter) == {"category": {"$eq": "test"}}
 
     # Test multiple filters
     multi_filter = {"category": "test", "type": "document"}

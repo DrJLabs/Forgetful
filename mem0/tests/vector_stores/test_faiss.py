@@ -37,24 +37,16 @@ def faiss_instance(mock_faiss_index):
 
 def test_create_col(faiss_instance, mock_faiss_index):
     # Test creating a collection with euclidean distance
-    with patch(
-        "faiss.IndexFlatL2", return_value=mock_faiss_index
-    ) as mock_index_flat_l2:
+    with patch("faiss.IndexFlatL2", return_value=mock_faiss_index) as mock_index_flat_l2:
         with patch("faiss.write_index"):
             faiss_instance.create_col(name="new_collection")
-            mock_index_flat_l2.assert_called_once_with(
-                faiss_instance.embedding_model_dims
-            )
+            mock_index_flat_l2.assert_called_once_with(faiss_instance.embedding_model_dims)
 
     # Test creating a collection with inner product distance
-    with patch(
-        "faiss.IndexFlatIP", return_value=mock_faiss_index
-    ) as mock_index_flat_ip:
+    with patch("faiss.IndexFlatIP", return_value=mock_faiss_index) as mock_index_flat_ip:
         with patch("faiss.write_index"):
             faiss_instance.create_col(name="new_collection", distance="inner_product")
-            mock_index_flat_ip.assert_called_once_with(
-                faiss_instance.embedding_model_dims
-            )
+            mock_index_flat_ip.assert_called_once_with(faiss_instance.embedding_model_dims)
 
 
 def test_insert(faiss_instance, mock_faiss_index):
@@ -64,9 +56,7 @@ def test_insert(faiss_instance, mock_faiss_index):
     ids = ["id1", "id2"]
 
     # Mock the numpy array conversion
-    with patch(
-        "numpy.array", return_value=np.array(vectors, dtype=np.float32)
-    ) as mock_np_array:
+    with patch("numpy.array", return_value=np.array(vectors, dtype=np.float32)) as mock_np_array:
         # Mock index.add
         mock_faiss_index.add.return_value = None
 
@@ -109,13 +99,9 @@ def test_search(faiss_instance, mock_faiss_index):
             OutputData(id="id2", score=0.8, payload={"name": "vector2"}),
         ]
 
-        with patch.object(
-            faiss_instance, "_parse_output", return_value=expected_results
-        ):
+        with patch.object(faiss_instance, "_parse_output", return_value=expected_results):
             # Call search
-            results = faiss_instance.search(
-                query="test query", vectors=query_vector, limit=2
-            )
+            results = faiss_instance.search(query="test query", vectors=query_vector, limit=2)
 
             # Verify numpy.array was called (but we don't check exact call arguments since it's complex)
             assert mock_np_array.called
@@ -138,10 +124,7 @@ def test_search_with_filters(faiss_instance, mock_faiss_index):
     query_vector = [0.1, 0.2, 0.3]
 
     # Setup the docstore and index_to_id mapping
-    faiss_instance.docstore = {
-        "id1": {"name": "vector1", "category": "A"},
-        "id2": {"name": "vector2", "category": "B"},
-    }
+    faiss_instance.docstore = {"id1": {"name": "vector1", "category": "A"}, "id2": {"name": "vector2", "category": "B"}}
     faiss_instance.index_to_id = {0: "id1", 1: "id2"}
 
     # First set up the search return values
@@ -156,27 +139,16 @@ def test_search_with_filters(faiss_instance, mock_faiss_index):
         # Directly mock the _parse_output method to return our expected values
         # We're simulating that _parse_output filters to just the first result
         all_results = [
-            OutputData(
-                id="id1", score=0.9, payload={"name": "vector1", "category": "A"}
-            ),
-            OutputData(
-                id="id2", score=0.8, payload={"name": "vector2", "category": "B"}
-            ),
+            OutputData(id="id1", score=0.9, payload={"name": "vector1", "category": "A"}),
+            OutputData(id="id2", score=0.8, payload={"name": "vector2", "category": "B"}),
         ]
 
         # Replace the _apply_filters method to handle our test case
         with patch.object(faiss_instance, "_parse_output", return_value=all_results):
-            with patch.object(
-                faiss_instance,
-                "_apply_filters",
-                side_effect=lambda p, f: p.get("category") == "A",
-            ):
+            with patch.object(faiss_instance, "_apply_filters", side_effect=lambda p, f: p.get("category") == "A"):
                 # Call search with filters
                 results = faiss_instance.search(
-                    query="test query",
-                    vectors=query_vector,
-                    limit=2,
-                    filters={"category": "A"},
+                    query="test query", vectors=query_vector, limit=2, filters={"category": "A"}
                 )
 
                 # Verify numpy.array was called

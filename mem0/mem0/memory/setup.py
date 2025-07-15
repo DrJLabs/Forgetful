@@ -39,12 +39,7 @@ def get_or_create_user_id(vector_store):
     # Try to get existing user_id from vector store
     try:
         existing = vector_store.get(vector_id=user_id)
-        if (
-            existing
-            and hasattr(existing, "payload")
-            and existing.payload
-            and "user_id" in existing.payload
-        ):
+        if existing and hasattr(existing, "payload") and existing.payload and "user_id" in existing.payload:
             return existing.payload["user_id"]
     except Exception:
         pass
@@ -53,9 +48,7 @@ def get_or_create_user_id(vector_store):
     try:
         dims = getattr(vector_store, "embedding_model_dims", 1536)
         vector_store.insert(
-            vectors=[[0.1] * dims],
-            payloads=[{"user_id": user_id, "type": "user_identity"}],
-            ids=[user_id],
+            vectors=[[0.1] * dims], payloads=[{"user_id": user_id, "type": "user_identity"}], ids=[user_id]
         )
     except Exception:
         pass

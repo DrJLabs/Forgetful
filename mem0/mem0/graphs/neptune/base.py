@@ -6,9 +6,7 @@ from mem0.memory.utils import format_entities
 try:
     from rank_bm25 import BM25Okapi
 except ImportError:
-    raise ImportError(
-        "rank_bm25 is not installed. Please install it using pip install rank-bm25"
-    )
+    raise ImportError("rank_bm25 is not installed. Please install it using pip install rank-bm25")
 
 from mem0.graphs.tools import (
     DELETE_MEMORY_STRUCT_TOOL_GRAPH,
@@ -57,20 +55,12 @@ class NeptuneBase(ABC):
             filters (dict): A dictionary containing filters to be applied during the addition.
         """
         entity_type_map = self._retrieve_nodes_from_data(data, filters)
-        to_be_added = self._establish_nodes_relations_from_data(
-            data, filters, entity_type_map
-        )
-        search_output = self._search_graph_db(
-            node_list=list(entity_type_map.keys()), filters=filters
-        )
-        to_be_deleted = self._get_delete_entities_from_search_output(
-            search_output, data, filters
-        )
+        to_be_added = self._establish_nodes_relations_from_data(data, filters, entity_type_map)
+        search_output = self._search_graph_db(node_list=list(entity_type_map.keys()), filters=filters)
+        to_be_deleted = self._get_delete_entities_from_search_output(search_output, data, filters)
 
         deleted_entities = self._delete_entities(to_be_deleted, filters["user_id"])
-        added_entities = self._add_entities(
-            to_be_added, filters["user_id"], entity_type_map
-        )
+        added_entities = self._add_entities(to_be_added, filters["user_id"], entity_type_map)
 
         return {"deleted_entities": deleted_entities, "added_entities": added_entities}
 
@@ -105,10 +95,7 @@ class NeptuneBase(ABC):
                 f"Error in search tool: {e}, llm_provider={self.llm_provider}, search_results={search_results}"
             )
 
-        entity_type_map = {
-            k.lower().replace(" ", "_"): v.lower().replace(" ", "_")
-            for k, v in entity_type_map.items()
-        }
+        entity_type_map = {k.lower().replace(" ", "_"): v.lower().replace(" ", "_") for k, v in entity_type_map.items()}
         return entity_type_map
 
     def _establish_nodes_relations_from_data(self, data, filters, entity_type_map):
@@ -119,9 +106,7 @@ class NeptuneBase(ABC):
             messages = [
                 {
                     "role": "system",
-                    "content": EXTRACT_RELATIONS_PROMPT.replace(
-                        "USER_ID", filters["user_id"]
-                    ).replace(
+                    "content": EXTRACT_RELATIONS_PROMPT.replace("USER_ID", filters["user_id"]).replace(
                         "CUSTOM_PROMPT", f"4. {self.config.graph_store.custom_prompt}"
                     ),
                 },
@@ -131,9 +116,7 @@ class NeptuneBase(ABC):
             messages = [
                 {
                     "role": "system",
-                    "content": EXTRACT_RELATIONS_PROMPT.replace(
-                        "USER_ID", filters["user_id"]
-                    ),
+                    "content": EXTRACT_RELATIONS_PROMPT.replace("USER_ID", filters["user_id"]),
                 },
                 {
                     "role": "user",
@@ -171,9 +154,7 @@ class NeptuneBase(ABC):
         """
 
         search_output_string = format_entities(search_output)
-        system_prompt, user_prompt = get_delete_messages(
-            search_output_string, data, filters["user_id"]
-        )
+        system_prompt, user_prompt = get_delete_messages(search_output_string, data, filters["user_id"])
 
         _tools = [DELETE_MEMORY_TOOL_GRAPH]
         if self.llm_provider in ["azure_openai_structured", "openai_structured"]:
@@ -210,9 +191,7 @@ class NeptuneBase(ABC):
             relationship = item["relationship"]
 
             # Delete the specific relationship between nodes
-            cypher, params = self._delete_entities_cypher(
-                source, destination, relationship, user_id
-            )
+            cypher, params = self._delete_entities_cypher(source, destination, relationship, user_id)
             result = self.graph.query(cypher, params=params)
             results.append(result)
         return results
@@ -246,12 +225,8 @@ class NeptuneBase(ABC):
             dest_embedding = self.embedding_model.embed(destination)
 
             # search for the nodes with the closest embeddings
-            source_node_search_result = self._search_source_node(
-                source_embedding, user_id, threshold=0.9
-            )
-            destination_node_search_result = self._search_destination_node(
-                dest_embedding, user_id, threshold=0.9
-            )
+            source_node_search_result = self._search_source_node(source_embedding, user_id, threshold=0.9)
+            destination_node_search_result = self._search_destination_node(dest_embedding, user_id, threshold=0.9)
 
             cypher, params = self._add_entities_cypher(
                 source_node_search_result,
@@ -304,16 +279,13 @@ class NeptuneBase(ABC):
         """
 
         entity_type_map = self._retrieve_nodes_from_data(query, filters)
-        search_output = self._search_graph_db(
-            node_list=list(entity_type_map.keys()), filters=filters
-        )
+        search_output = self._search_graph_db(node_list=list(entity_type_map.keys()), filters=filters)
 
         if not search_output:
             return []
 
         search_outputs_sequence = [
-            [item["source"], item["relationship"], item["destination"]]
-            for item in search_output
+            [item["source"], item["relationship"], item["destination"]] for item in search_output
         ]
         bm25 = BM25Okapi(search_outputs_sequence)
 
@@ -322,16 +294,12 @@ class NeptuneBase(ABC):
 
         search_results = []
         for item in reranked_results:
-            search_results.append(
-                {"source": item[0], "relationship": item[1], "destination": item[2]}
-            )
+            search_results.append({"source": item[0], "relationship": item[1], "destination": item[2]})
 
         return search_results
 
     def _search_source_node(self, source_embedding, user_id, threshold=0.9):
-        cypher, params = self._search_source_node_cypher(
-            source_embedding, user_id, threshold
-        )
+        cypher, params = self._search_source_node_cypher(source_embedding, user_id, threshold)
         result = self.graph.query(cypher, params=params)
         return result
 
@@ -343,16 +311,12 @@ class NeptuneBase(ABC):
         pass
 
     def _search_destination_node(self, destination_embedding, user_id, threshold=0.9):
-        cypher, params = self._search_destination_node_cypher(
-            destination_embedding, user_id, threshold
-        )
+        cypher, params = self._search_destination_node_cypher(destination_embedding, user_id, threshold)
         result = self.graph.query(cypher, params=params)
         return result
 
     @abstractmethod
-    def _search_destination_node_cypher(
-        self, destination_embedding, user_id, threshold
-    ):
+    def _search_destination_node_cypher(self, destination_embedding, user_id, threshold):
         """
         Returns the OpenCypher query and parameters to search for destination nodes
         """
@@ -415,9 +379,7 @@ class NeptuneBase(ABC):
 
         for node in node_list:
             n_embedding = self.embedding_model.embed(node)
-            cypher_query, params = self._search_graph_db_cypher(
-                n_embedding, filters, limit
-            )
+            cypher_query, params = self._search_graph_db_cypher(n_embedding, filters, limit)
             ans = self.graph.query(cypher_query, params=params)
             result_relations.extend(ans)
 
@@ -445,6 +407,4 @@ class NeptuneBase(ABC):
             skipSnapshot=True,
         )
         waiter = self.graph.client.get_waiter("graph_available")
-        waiter.wait(
-            graphIdentifier=graph_id, WaiterConfig={"Delay": 10, "MaxAttempts": 60}
-        )
+        waiter.wait(graphIdentifier=graph_id, WaiterConfig={"Delay": 10, "MaxAttempts": 60})

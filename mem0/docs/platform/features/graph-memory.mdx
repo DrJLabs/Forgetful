@@ -48,10 +48,10 @@ messages = [
 
 # Enable graph memory when adding
 client.add(
-    messages,
-    user_id="joseph",
-    version="v1",
-    enable_graph=True,
+    messages, 
+    user_id="joseph", 
+    version="v1", 
+    enable_graph=True, 
     output_format="v1.1"
 )
 ```
@@ -114,8 +114,8 @@ The graph memory would look like this:
 
 
 <Note>
-Response for the graph memory's `add` operation will not be available directly in the response.
-As adding graph memories is an asynchronous operation due to heavy processing,
+Response for the graph memory's `add` operation will not be available directly in the response. 
+As adding graph memories is an asynchronous operation due to heavy processing, 
 you can use the `get_all()` endpoint to retrieve the memory with the graph metadata.
 </Note>
 
@@ -129,9 +129,9 @@ When searching memories, Graph Memory helps retrieve entities that are contextua
 ```python Python
 # Search with graph memory enabled
 results = client.search(
-    "what is my name?",
-    user_id="joseph",
-    enable_graph=True,
+    "what is my name?", 
+    user_id="joseph", 
+    enable_graph=True, 
     output_format="v1.1"
 )
 
@@ -200,8 +200,8 @@ When retrieving all memories, Graph Memory provides additional relationship cont
 ```python Python
 # Get all memories with graph context
 memories = client.get_all(
-    user_id="joseph",
-    enable_graph=True,
+    user_id="joseph", 
+    enable_graph=True, 
     output_format="v1.1"
 )
 
@@ -297,7 +297,7 @@ client = MemoryClient(
 )
 
 # Enable graph memory for all operations in this project
-client.update_project(enable_graph=True, version="v1")
+client.project.update(enable_graph=True)
 
 # Now all add operations will use graph memory by default
 messages = [
@@ -355,3 +355,4 @@ Graph Memory requires additional processing and may increase response times slig
 If you have any questions, please feel free to reach out to us using one of the following methods:
 
 <Snippet file="get-help.mdx" />
+

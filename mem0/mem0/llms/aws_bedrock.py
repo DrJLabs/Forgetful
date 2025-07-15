@@ -6,23 +6,12 @@ from typing import Any, Dict, List, Optional
 try:
     import boto3
 except ImportError:
-    raise ImportError(
-        "The 'boto3' library is required. Please install it using 'pip install boto3'."
-    )
+    raise ImportError("The 'boto3' library is required. Please install it using 'pip install boto3'.")
 
 from mem0.configs.llms.base import BaseLlmConfig
 from mem0.llms.base import LLMBase
 
-PROVIDERS = [
-    "ai21",
-    "amazon",
-    "anthropic",
-    "cohere",
-    "meta",
-    "mistral",
-    "stability",
-    "writer",
-]
+PROVIDERS = ["ai21", "amazon", "anthropic", "cohere", "meta", "mistral", "stability", "writer"]
 
 
 def extract_provider(model: str) -> str:
@@ -165,9 +154,7 @@ class AWSBedrockLLM(LLMBase):
                 },
             }
             input_body["textGenerationConfig"] = {
-                k: v
-                for k, v in input_body["textGenerationConfig"].items()
-                if v is not None
+                k: v for k, v in input_body["textGenerationConfig"].items() if v is not None
             }
 
         return input_body
@@ -201,12 +188,8 @@ class AWSBedrockLLM(LLMBase):
                     }
                 }
 
-                for prop, details in (
-                    function["parameters"].get("properties", {}).items()
-                ):
-                    new_tool["toolSpec"]["inputSchema"]["json"]["properties"][
-                        prop
-                    ] = details
+                for prop, details in function["parameters"].get("properties", {}).items():
+                    new_tool["toolSpec"]["inputSchema"]["json"]["properties"][prop] = details
 
                 new_tools.append(new_tool)
 
@@ -256,19 +239,13 @@ class AWSBedrockLLM(LLMBase):
             # Use invoke_model method when no tools are provided
             prompt = self._format_messages(messages)
             provider = extract_provider(self.config.model)
-            input_body = self._prepare_input(
-                provider, self.config.model, prompt, model_kwargs=self.model_kwargs
-            )
+            input_body = self._prepare_input(provider, self.config.model, prompt, model_kwargs=self.model_kwargs)
             body = json.dumps(input_body)
 
             if provider == "anthropic" or provider == "deepseek":
                 input_body = {
-                    "messages": [
-                        {"role": "user", "content": [{"type": "text", "text": prompt}]}
-                    ],
-                    "max_tokens": self.model_kwargs["max_tokens_to_sample"]
-                    or self.model_kwargs["max_tokens"]
-                    or 5000,
+                    "messages": [{"role": "user", "content": [{"type": "text", "text": prompt}]}],
+                    "max_tokens": self.model_kwargs["max_tokens_to_sample"] or self.model_kwargs["max_tokens"] or 5000,
                     "temperature": self.model_kwargs["temperature"] or 0.1,
                     "top_p": self.model_kwargs["top_p"] or 0.9,
                     "anthropic_version": "bedrock-2023-05-31",

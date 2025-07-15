@@ -6,12 +6,12 @@ iconType: "solid"
 
 <Snippet file="security-compliance.mdx" />
 
-Update memory prompt is a prompt used to determine the action to be performed on the memory.
-By customizing this prompt, you can control how the memory is updated.
+Update memory prompt is a prompt used to determine the action to be performed on the memory. 
+By customizing this prompt, you can control how the memory is updated.  
 
 
-## Introduction
-Mem0 memory system compares the newly retrieved facts with the existing memory and determines the action to be performed on the memory.
+## Introduction  
+Mem0 memory system compares the newly retrieved facts with the existing memory and determines the action to be performed on the memory.  
 The kinds of actions are:
 - Add
     - Add the newly retrieved facts to the memory.
@@ -21,7 +21,7 @@ The kinds of actions are:
     - Delete the existing memory.
 - No Change
     - Do not make any changes to the memory.
-
+  
 ### Example
 Example of a custom update memory prompt:
 
@@ -67,8 +67,8 @@ There are specific guidelines to select which operation to perform:
 
         }
 
-2. **Update**: If the retrieved facts contain information that is already present in the memory but the information is totally different, then you have to update it.
-If the retrieved fact contains information that conveys the same thing as the elements present in the memory, then you have to keep the fact which has the most information.
+2. **Update**: If the retrieved facts contain information that is already present in the memory but the information is totally different, then you have to update it. 
+If the retrieved fact contains information that conveys the same thing as the elements present in the memory, then you have to keep the fact which has the most information. 
 Example (a) -- if the memory contains "User likes to play cricket" and the retrieved fact is "Loves to play cricket with friends", then update the memory with the retrieved facts.
 Example (b) -- if the memory contains "Likes cheese pizza" and the retrieved fact is "Loves cheese pizza", then you do not need to update it because they convey the same information.
 If the direction is to update the memory, then you have to update it.
@@ -177,7 +177,7 @@ Please note to return the IDs in the output from the input IDs only and do not g
         }
 """
 ```
-</CodeGroup>
+</CodeGroup>  
 
 ## Output format
 The prompt needs to guide the output to follow the structure as shown below:
@@ -231,8 +231,8 @@ The prompt needs to guide the output to follow the structure as shown below:
 }
 ```
 </CodeGroup>
-
-
+  
+  
 ## custom update memory prompt vs custom prompt
 
 | Feature | `custom_update_memory_prompt` | `custom_prompt` |

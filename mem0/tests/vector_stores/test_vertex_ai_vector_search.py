@@ -53,14 +53,10 @@ def vector_store(config, mock_vertex_ai):
 
 def test_initialization(vector_store, mock_vertex_ai, config):
     """Test proper initialization of GoogleMatchingEngine"""
-    mock_vertex_ai["init"].assert_called_once_with(
-        project=config.project_id, location=config.region
-    )
+    mock_vertex_ai["init"].assert_called_once_with(project=config.project_id, location=config.region)
 
     expected_index_path = f"projects/{config.project_number}/locations/{config.region}/indexes/{config.index_id}"
-    mock_vertex_ai["index_class"].assert_called_once_with(
-        index_name=expected_index_path
-    )
+    mock_vertex_ai["index_class"].assert_called_once_with(index_name=expected_index_path)
 
 
 def test_insert_vectors(vector_store, mock_vertex_ai):
@@ -126,9 +122,7 @@ def test_delete(vector_store, mock_vertex_ai):
 
     remove_mock = Mock()
 
-    with patch.object(
-        GoogleMatchingEngine, "delete", wraps=vector_store.delete
-    ) as delete_spy:
+    with patch.object(GoogleMatchingEngine, "delete", wraps=vector_store.delete) as delete_spy:
         with patch.object(vector_store.index, "remove_datapoints", remove_mock):
             vector_store.delete(ids=[vector_id])
 
@@ -138,14 +132,10 @@ def test_delete(vector_store, mock_vertex_ai):
 
 def test_error_handling(vector_store, mock_vertex_ai):
     """Test error handling during operations"""
-    mock_vertex_ai["index"].upsert_datapoints.side_effect = exceptions.InvalidArgument(
-        "Invalid request"
-    )
+    mock_vertex_ai["index"].upsert_datapoints.side_effect = exceptions.InvalidArgument("Invalid request")
 
     with pytest.raises(Exception) as exc_info:
-        vector_store.insert(
-            vectors=[[0.1, 0.2, 0.3]], payloads=[{"name": "test"}], ids=["test-id"]
-        )
+        vector_store.insert(vectors=[[0.1, 0.2, 0.3]], payloads=[{"name": "test"}], ids=["test-id"])
 
     assert isinstance(exc_info.value, exceptions.InvalidArgument)
     assert "Invalid request" in str(exc_info.value)

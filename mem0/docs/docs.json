@@ -1,48 +1,14 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "background": {
-    "color": {
-      "dark": "#0f1117",
-      "light": "#fff"
-    }
-  },
-  "colors": {
-    "dark": "#a3df02",
-    "light": "#E6FFA2",
-    "primary": "#6c60f0"
-  },
-  "description": "Mem0 is a self-improving memory layer for LLM applications, enabling personalized AI experiences that save costs and delight users.",
-  "favicon": "/logo/favicon.png",
-  "footer": {
-    "socials": {
-      "discord": "https://mem0.dev/DiD",
-      "github": "https://github.com/mem0ai",
-      "linkedin": "https://www.linkedin.com/company/mem0/",
-      "x": "https://x.com/mem0ai"
-    }
-  },
-  "integrations": {
-    "intercom": {
-      "appId": "jjv2r0tt"
-    },
-    "posthog": {
-      "apiHost": "https://mango.mem0.ai",
-      "apiKey": "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX"
-    }
-  },
-  "logo": {
-    "dark": "/logo/dark.svg",
-    "href": "https://github.com/mem0ai/mem0",
-    "light": "/logo/light.svg"
-  },
+  "theme": "maple",
   "name": "Mem0",
-  "navbar": {
-    "primary": {
-      "href": "https://app.mem0.ai",
-      "label": "Your Dashboard",
-      "type": "button"
-    }
+  "description": "Mem0 is a self-improving memory layer for LLM applications, enabling personalized AI experiences that save costs and delight users.",
+  "colors": {
+    "primary": "#6c60f0",
+    "light": "#E6FFA2",
+    "dark": "#a3df02"
   },
+  "favicon": "/logo/favicon.png",
   "navigation": {
     "anchors": [
       {
@@ -50,6 +16,7 @@
         "icon": "book-open",
         "tabs": [
           {
+            "tab": "Documentation",
             "groups": [
               {
                 "group": "Getting Started",
@@ -228,22 +195,22 @@
                   "contributing/documentation"
                 ]
               }
-            ],
-            "tab": "Documentation"
+            ]
           },
           {
+            "tab": "OpenMemory",
             "icon": "square-terminal",
             "pages": [
               "openmemory/overview",
               "openmemory/quickstart",
               "openmemory/integrations"
-            ],
-            "tab": "OpenMemory"
+            ]
           },
           {
+            "tab": "Examples",
             "groups": [
               {
-                "group": "\ud83d\udca1 Examples",
+                "group": "💡 Examples",
                 "icon": "lightbulb",
                 "pages": [
                   "examples",
@@ -270,10 +237,10 @@
                   "examples/youtube-assistant"
                 ]
               }
-            ],
-            "tab": "Examples"
+            ]
           },
           {
+            "tab": "Integrations",
             "groups": [
               {
                 "group": "Integrations",
@@ -293,6 +260,7 @@
                   "integrations/livekit",
                   "integrations/pipecat",
                   "integrations/elevenlabs",
+                  "integrations/aws-bedrock",
                   "integrations/flowise",
                   "integrations/langchain-tools",
                   "integrations/agentops",
@@ -301,10 +269,11 @@
                   "integrations/raycast"
                 ]
               }
-            ],
-            "tab": "Integrations"
+            ]
           },
           {
+            "tab": "API Reference",
+            "icon": "square-terminal",
             "groups": [
               {
                 "group": "API Reference",
@@ -376,11 +345,11 @@
                   }
                 ]
               }
-            ],
-            "icon": "square-terminal",
-            "tab": "API Reference"
+            ]
           },
           {
+            "tab": "Changelog",
+            "icon": "clock",
             "groups": [
               {
                 "group": "Product Updates",
@@ -389,13 +358,45 @@
                   "changelog"
                 ]
               }
-            ],
-            "icon": "clock",
-            "tab": "Changelog"
+            ]
           }
         ]
       }
     ]
   },
-  "theme": "maple"
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://github.com/mem0ai/mem0"
+  },
+  "background": {
+    "color": {
+      "light": "#fff",
+      "dark": "#0f1117"
+    }
+  },
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "Your Dashboard",
+      "href": "https://app.mem0.ai"
+    }
+  },
+  "footer": {
+    "socials": {
+      "discord": "https://mem0.dev/DiD",
+      "x": "https://x.com/mem0ai",
+      "github": "https://github.com/mem0ai",
+      "linkedin": "https://www.linkedin.com/company/mem0/"
+    }
+  },
+  "integrations": {
+    "posthog": {
+      "apiKey": "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX",
+      "apiHost": "https://mango.mem0.ai"
+    },
+    "intercom": {
+      "appId": "jjv2r0tt"
+    }
+  }
 }

@@ -12,10 +12,10 @@ iconType: "solid"
 
 Everything you love about OpenMemory MCP but with zero setup.
 
-✅ Works with all MCP-compatible tools (Claude Desktop, Cursor...)
-✅ Same standard memory ops: `add_memories`, `search_memory`, etc
-✅ One-click provisioning, no Docker required
-✅ Powered by Mem0
+✅ Works with all MCP-compatible tools (Claude Desktop, Cursor...)  
+✅ Same standard memory ops: `add_memories`, `search_memory`, etc  
+✅ One-click provisioning, no Docker required  
+✅ Powered by Mem0  
 
 Add shared, persistent, low-friction memory to your MCP-compatible clients in seconds.
 
@@ -93,12 +93,12 @@ Before running the project, you need to configure environment variables for both
 
 You can do this in one of the following ways:
 
-- **Manually**:
+- **Manually**:  
   Create a `.env` file in each of the following directories:
   - `/api/.env`
   - `/ui/.env`
 
-- **Using `.env.example` files**:
+- **Using `.env.example` files**:  
   Copy and rename the example files:
 
   ```bash
@@ -106,7 +106,7 @@ You can do this in one of the following ways:
   cp ui/.env.example ui/.env
   ```
 
- - **Using Makefile** (if supported):
+ - **Using Makefile** (if supported):  
     Run:
 
    ```bash
@@ -116,7 +116,7 @@ You can do this in one of the following ways:
 
 ``` bash
 OPENAI_API_KEY=sk-xxx
-USER=<user-id> # The User Id you want to associate the memories with
+USER=<user-id> # The User Id you want to associate the memories with 
 ```
 - #### Example `/ui/.env`
 
@@ -130,7 +130,7 @@ You can run the project using the following two commands:
 ```bash
 make build # builds the mcp server and ui
 make up  # runs openmemory mcp server and ui
-```
+``` 
 
 After running these commands, you will have:
 - OpenMemory MCP server running at: http://localhost:8765 (API documentation available at http://localhost:8765/docs)

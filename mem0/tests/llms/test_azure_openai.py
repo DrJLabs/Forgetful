@@ -20,9 +20,7 @@ def mock_openai_client():
 
 
 def test_generate_response_without_tools(mock_openai_client):
-    config = BaseLlmConfig(
-        model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS, top_p=TOP_P
-    )
+    config = BaseLlmConfig(model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS, top_p=TOP_P)
     llm = AzureOpenAILLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -30,27 +28,19 @@ def test_generate_response_without_tools(mock_openai_client):
     ]
 
     mock_response = Mock()
-    mock_response.choices = [
-        Mock(message=Mock(content="I'm doing well, thank you for asking!"))
-    ]
+    mock_response.choices = [Mock(message=Mock(content="I'm doing well, thank you for asking!"))]
     mock_openai_client.chat.completions.create.return_value = mock_response
 
     response = llm.generate_response(messages)
 
     mock_openai_client.chat.completions.create.assert_called_once_with(
-        model=MODEL,
-        messages=messages,
-        temperature=TEMPERATURE,
-        max_tokens=MAX_TOKENS,
-        top_p=TOP_P,
+        model=MODEL, messages=messages, temperature=TEMPERATURE, max_tokens=MAX_TOKENS, top_p=TOP_P
     )
     assert response == "I'm doing well, thank you for asking!"
 
 
 def test_generate_response_with_tools(mock_openai_client):
-    config = BaseLlmConfig(
-        model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS, top_p=TOP_P
-    )
+    config = BaseLlmConfig(model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS, top_p=TOP_P)
     llm = AzureOpenAILLM(config)
     messages = [
         {"role": "system", "content": "You are a helpful assistant."},
@@ -64,12 +54,7 @@ def test_generate_response_with_tools(mock_openai_client):
                 "description": "Add a memory",
                 "parameters": {
                     "type": "object",
-                    "properties": {
-                        "data": {
-                            "type": "string",
-                            "description": "Data to add to memory",
-                        }
-                    },
+                    "properties": {"data": {"type": "string", "description": "Data to add to memory"}},
                     "required": ["data"],
                 },
             },
@@ -142,6 +127,4 @@ def test_generate_with_http_proxies(default_headers):
             api_version=None,
             default_headers=default_headers,
         )
-        mock_http_client.assert_called_once_with(
-            proxies="http://testproxy.mem0.net:8000"
-        )
+        mock_http_client.assert_called_once_with(proxies="http://testproxy.mem0.net:8000")

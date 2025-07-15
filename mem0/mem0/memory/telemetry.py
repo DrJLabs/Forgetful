@@ -46,9 +46,7 @@ class AnonymousTelemetry:
             **properties,
         }
         distinct_id = self.user_id if user_email is None else user_email
-        self.posthog.capture(
-            distinct_id=distinct_id, event=event_name, properties=properties
-        )
+        self.posthog.capture(distinct_id=distinct_id, event=event_name, properties=properties)
 
     def close(self):
         self.posthog.shutdown()
@@ -59,22 +57,18 @@ client_telemetry = AnonymousTelemetry()
 
 def capture_event(event_name, memory_instance, additional_data=None):
     oss_telemetry = AnonymousTelemetry(
-        vector_store=(
-            memory_instance._telemetry_vector_store
-            if hasattr(memory_instance, "_telemetry_vector_store")
-            else None
-        ),
+        vector_store=memory_instance._telemetry_vector_store
+        if hasattr(memory_instance, "_telemetry_vector_store")
+        else None,
     )
 
     event_data = {
         "collection": memory_instance.collection_name,
         "vector_size": memory_instance.embedding_model.config.embedding_dims,
         "history_store": "sqlite",
-        "graph_store": (
-            f"{memory_instance.graph.__class__.__module__}.{memory_instance.graph.__class__.__name__}"
-            if memory_instance.config.graph_store.config
-            else None
-        ),
+        "graph_store": f"{memory_instance.graph.__class__.__module__}.{memory_instance.graph.__class__.__name__}"
+        if memory_instance.config.graph_store.config
+        else None,
         "vector_store": f"{memory_instance.vector_store.__class__.__module__}.{memory_instance.vector_store.__class__.__name__}",
         "llm": f"{memory_instance.llm.__class__.__module__}.{memory_instance.llm.__class__.__name__}",
         "embedding_model": f"{memory_instance.embedding_model.__class__.__module__}.{memory_instance.embedding_model.__class__.__name__}",

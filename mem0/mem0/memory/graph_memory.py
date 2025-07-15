@@ -5,16 +5,12 @@ from mem0.memory.utils import format_entities
 try:
     from langchain_neo4j import Neo4jGraph
 except ImportError:
-    raise ImportError(
-        "langchain_neo4j is not installed. Please install it using pip install langchain-neo4j"
-    )
+    raise ImportError("langchain_neo4j is not installed. Please install it using pip install langchain-neo4j")
 
 try:
     from rank_bm25 import BM25Okapi
 except ImportError:
-    raise ImportError(
-        "rank_bm25 is not installed. Please install it using pip install rank-bm25"
-    )
+    raise ImportError("rank_bm25 is not installed. Please install it using pip install rank-bm25")
 
 from mem0.graphs.tools import (
     DELETE_MEMORY_STRUCT_TOOL_GRAPH,
@@ -42,20 +38,14 @@ class MemoryGraph:
             driver_config={"notifications_min_severity": "OFF"},
         )
         self.embedding_model = EmbedderFactory.create(
-            self.config.embedder.provider,
-            self.config.embedder.config,
-            self.config.vector_store.config,
+            self.config.embedder.provider, self.config.embedder.config, self.config.vector_store.config
         )
-        self.node_label = (
-            ":`__Entity__`" if self.config.graph_store.config.base_label else ""
-        )
+        self.node_label = ":`__Entity__`" if self.config.graph_store.config.base_label else ""
 
         if self.config.graph_store.config.base_label:
             # Safely add user_id index
             try:
-                self.graph.query(
-                    f"CREATE INDEX entity_single IF NOT EXISTS FOR (n {self.node_label}) ON (n.user_id)"
-                )
+                self.graph.query(f"CREATE INDEX entity_single IF NOT EXISTS FOR (n {self.node_label}) ON (n.user_id)")
             except Exception:
                 pass
             try:  # Safely try to add composite index (Enterprise only)
@@ -84,15 +74,9 @@ class MemoryGraph:
             filters (dict): A dictionary containing filters to be applied during the addition.
         """
         entity_type_map = self._retrieve_nodes_from_data(data, filters)
-        to_be_added = self._establish_nodes_relations_from_data(
-            data, filters, entity_type_map
-        )
-        search_output = self._search_graph_db(
-            node_list=list(entity_type_map.keys()), filters=filters
-        )
-        to_be_deleted = self._get_delete_entities_from_search_output(
-            search_output, data, filters
-        )
+        to_be_added = self._establish_nodes_relations_from_data(data, filters, entity_type_map)
+        search_output = self._search_graph_db(node_list=list(entity_type_map.keys()), filters=filters)
+        to_be_deleted = self._get_delete_entities_from_search_output(search_output, data, filters)
 
         # TODO: Batch queries with APOC plugin
         # TODO: Add more filter support
@@ -116,16 +100,13 @@ class MemoryGraph:
                 - "entities": List of related graph data based on the query.
         """
         entity_type_map = self._retrieve_nodes_from_data(query, filters)
-        search_output = self._search_graph_db(
-            node_list=list(entity_type_map.keys()), filters=filters
-        )
+        search_output = self._search_graph_db(node_list=list(entity_type_map.keys()), filters=filters)
 
         if not search_output:
             return []
 
         search_outputs_sequence = [
-            [item["source"], item["relationship"], item["destination"]]
-            for item in search_output
+            [item["source"], item["relationship"], item["destination"]] for item in search_output
         ]
         bm25 = BM25Okapi(search_outputs_sequence)
 
@@ -134,9 +115,7 @@ class MemoryGraph:
 
         search_results = []
         for item in reranked_results:
-            search_results.append(
-                {"source": item[0], "relationship": item[1], "destination": item[2]}
-            )
+            search_results.append({"source": item[0], "relationship": item[1], "destination": item[2]})
 
         logger.info(f"Returned {len(search_results)} search results")
 
@@ -169,13 +148,12 @@ class MemoryGraph:
                 - 'entities': A list of strings representing the nodes and relationships
         """
         params = {"user_id": filters["user_id"], "limit": limit}
-
+        
         # Build node properties based on filters
         node_props = ["user_id: $user_id"]
         if filters.get("agent_id"):
             node_props.append("agent_id: $agent_id")
             params["agent_id"] = filters["agent_id"]
-
         node_props_str = ", ".join(node_props)
 
         query = f"""
@@ -228,13 +206,8 @@ class MemoryGraph:
                 f"Error in search tool: {e}, llm_provider={self.llm_provider}, search_results={search_results}"
             )
 
-        entity_type_map = {
-            k.lower().replace(" ", "_"): v.lower().replace(" ", "_")
-            for k, v in entity_type_map.items()
-        }
-        logger.debug(
-            f"Entity type map: {entity_type_map}\n search_results={search_results}"
-        )
+        entity_type_map = {k.lower().replace(" ", "_"): v.lower().replace(" ", "_") for k, v in entity_type_map.items()}
+        logger.debug(f"Entity type map: {entity_type_map}\n search_results={search_results}")
         return entity_type_map
 
     def _establish_nodes_relations_from_data(self, data, filters, entity_type_map):
@@ -248,9 +221,7 @@ class MemoryGraph:
         if self.config.graph_store.custom_prompt:
             system_content = EXTRACT_RELATIONS_PROMPT.replace("USER_ID", user_identity)
             # Add the custom prompt line if configured
-            system_content = system_content.replace(
-                "CUSTOM_PROMPT", f"4. {self.config.graph_store.custom_prompt}"
-            )
+            system_content = system_content.replace("CUSTOM_PROMPT", f"4. {self.config.graph_store.custom_prompt}")
             messages = [
                 {"role": "system", "content": system_content},
                 {"role": "user", "content": data},
@@ -259,10 +230,7 @@ class MemoryGraph:
             system_content = EXTRACT_RELATIONS_PROMPT.replace("USER_ID", user_identity)
             messages = [
                 {"role": "system", "content": system_content},
-                {
-                    "role": "user",
-                    "content": f"List of entities: {list(entity_type_map.keys())}. \n\nText: {data}",
-                },
+                {"role": "user", "content": f"List of entities: {list(entity_type_map.keys())}. \n\nText: {data}"},
             ]
 
         _tools = [RELATIONS_TOOL]
@@ -276,11 +244,7 @@ class MemoryGraph:
 
         entities = []
         if extracted_entities.get("tool_calls"):
-            entities = (
-                extracted_entities["tool_calls"][0]
-                .get("arguments", {})
-                .get("entities", [])
-            )
+            entities = extracted_entities["tool_calls"][0].get("arguments", {}).get("entities", [])
 
         entities = self._remove_spaces_from_entities(entities)
         logger.debug(f"Extracted entities: {entities}")
@@ -289,8 +253,8 @@ class MemoryGraph:
     def _search_graph_db(self, node_list, filters, limit=100):
         """Search similar nodes among and their respective incoming and outgoing relations."""
         result_relations = []
-
-        # Build node properties for initial MATCH
+        
+        # Build node properties for filtering
         node_props = ["user_id: $user_id"]
         if filters.get("agent_id"):
             node_props.append("agent_id: $agent_id")
@@ -305,10 +269,12 @@ class MemoryGraph:
             WITH n, round(2 * vector.similarity.cosine(n.embedding, $n_embedding) - 1, 4) AS similarity // denormalize for backward compatibility
             WHERE similarity >= $threshold
             CALL {{
+                WITH n
                 MATCH (n)-[r]->(m {self.node_label} {{{node_props_str}}})
                 RETURN n.name AS source, elementId(n) AS source_id, type(r) AS relationship, elementId(r) AS relation_id, m.name AS destination, elementId(m) AS destination_id
                 UNION
-                MATCH (m {self.node_label} {{{node_props_str}}})-[r]->(n)
+                WITH n  
+                MATCH (n)<-[r]-(m {self.node_label} {{{node_props_str}}})
                 RETURN m.name AS source, elementId(m) AS source_id, type(r) AS relationship, elementId(r) AS relation_id, n.name AS destination, elementId(n) AS destination_id
             }}
             WITH distinct source, source_id, relationship, relation_id, destination, destination_id, similarity
@@ -340,9 +306,7 @@ class MemoryGraph:
         if filters.get("agent_id"):
             user_identity += f", agent_id: {filters['agent_id']}"
 
-        system_prompt, user_prompt = get_delete_messages(
-            search_output_string, data, user_identity
-        )
+        system_prompt, user_prompt = get_delete_messages(search_output_string, data, user_identity)
 
         _tools = [DELETE_MEMORY_TOOL_GRAPH]
         if self.llm_provider in ["azure_openai_structured", "openai_structured"]:
@@ -378,9 +342,8 @@ class MemoryGraph:
             destination = item["destination"]
             relationship = item["relationship"]
 
-            # Build node properties for MATCH clause
-            node_props = ["name: $source_name", "user_id: $user_id"]
-            dest_props = ["name: $dest_name", "user_id: $user_id"]
+            # Build the agent filter for the query
+
             params = {
                 "source_name": source,
                 "dest_name": destination,
@@ -388,20 +351,17 @@ class MemoryGraph:
             }
 
             if agent_id:
-                node_props.append("agent_id: $agent_id")
-                dest_props.append("agent_id: $agent_id")
+    
                 params["agent_id"] = agent_id
-
-            source_props_str = ", ".join(node_props)
-            dest_props_str = ", ".join(dest_props)
 
             # Delete the specific relationship between nodes
             cypher = f"""
-            MATCH (n {self.node_label} {{{source_props_str}}})
+            MATCH (n {self.node_label} {{name: $source_name, user_id: $user_id}})
             -[r:{relationship}]->
-            (m {self.node_label} {{{dest_props_str}}})
+            (m {self.node_label} {{name: $dest_name, user_id: $user_id}})
+            
             DELETE r
-            RETURN
+            RETURN 
                 n.name AS source,
                 m.name AS target,
                 type(r) AS relationship
@@ -428,24 +388,16 @@ class MemoryGraph:
             source_label = self.node_label if self.node_label else f":`{source_type}`"
             source_extra_set = f", source:`{source_type}`" if self.node_label else ""
             destination_type = entity_type_map.get(destination, "__User__")
-            destination_label = (
-                self.node_label if self.node_label else f":`{destination_type}`"
-            )
-            destination_extra_set = (
-                f", destination:`{destination_type}`" if self.node_label else ""
-            )
+            destination_label = self.node_label if self.node_label else f":`{destination_type}`"
+            destination_extra_set = f", destination:`{destination_type}`" if self.node_label else ""
 
             # embeddings
             source_embedding = self.embedding_model.embed(source)
             dest_embedding = self.embedding_model.embed(destination)
 
             # search for the nodes with the closest embeddings
-            source_node_search_result = self._search_source_node(
-                source_embedding, filters, threshold=0.9
-            )
-            destination_node_search_result = self._search_destination_node(
-                dest_embedding, filters, threshold=0.9
-            )
+            source_node_search_result = self._search_source_node(source_embedding, filters, threshold=0.9)
+            destination_node_search_result = self._search_destination_node(dest_embedding, filters, threshold=0.9)
 
             # TODO: Create a cypher query and common params for all the cases
             if not destination_node_search_result and source_node_search_result:
@@ -471,7 +423,7 @@ class MemoryGraph:
                 CALL db.create.setNodeVectorProperty(destination, 'embedding', $destination_embedding)
                 WITH source, destination
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET
+                ON CREATE SET 
                     r.created = timestamp(),
                     r.mentions = 1
                 ON MATCH SET
@@ -480,9 +432,7 @@ class MemoryGraph:
                 """
 
                 params = {
-                    "source_id": source_node_search_result[0][
-                        "elementId(source_candidate)"
-                    ],
+                    "source_id": source_node_search_result[0]["elementId(source_candidate)"],
                     "destination_name": destination,
                     "destination_embedding": dest_embedding,
                     "user_id": user_id,
@@ -513,7 +463,7 @@ class MemoryGraph:
                 CALL db.create.setNodeVectorProperty(source, 'embedding', $source_embedding)
                 WITH source, destination
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET
+                ON CREATE SET 
                     r.created = timestamp(),
                     r.mentions = 1
                 ON MATCH SET
@@ -522,9 +472,7 @@ class MemoryGraph:
                 """
 
                 params = {
-                    "destination_id": destination_node_search_result[0][
-                        "elementId(destination_candidate)"
-                    ],
+                    "destination_id": destination_node_search_result[0]["elementId(destination_candidate)"],
                     "source_name": source,
                     "source_embedding": source_embedding,
                     "user_id": user_id,
@@ -542,7 +490,7 @@ class MemoryGraph:
                 WHERE elementId(destination) = $destination_id
                 SET destination.mentions = coalesce(destination.mentions, 0) + 1
                 MERGE (source)-[r:{relationship}]->(destination)
-                ON CREATE SET
+                ON CREATE SET 
                     r.created_at = timestamp(),
                     r.updated_at = timestamp(),
                     r.mentions = 1
@@ -551,12 +499,8 @@ class MemoryGraph:
                 """
 
                 params = {
-                    "source_id": source_node_search_result[0][
-                        "elementId(source_candidate)"
-                    ],
-                    "destination_id": destination_node_search_result[0][
-                        "elementId(destination_candidate)"
-                    ],
+                    "source_id": source_node_search_result[0]["elementId(source_candidate)"],
+                    "destination_id": destination_node_search_result[0]["elementId(destination_candidate)"],
                     "user_id": user_id,
                 }
                 if agent_id:
@@ -616,15 +560,12 @@ class MemoryGraph:
         return entity_list
 
     def _search_source_node(self, source_embedding, filters, threshold=0.9):
-        agent_filter = ""
-        if filters.get("agent_id"):
-            agent_filter = "AND source_candidate.agent_id = $agent_id"
 
         cypher = f"""
             MATCH (source_candidate {self.node_label})
-            WHERE source_candidate.embedding IS NOT NULL
+            WHERE source_candidate.embedding IS NOT NULL 
             AND source_candidate.user_id = $user_id
-            {agent_filter}
+            
 
             WITH source_candidate,
             round(2 * vector.similarity.cosine(source_candidate.embedding, $source_embedding) - 1, 4) AS source_similarity // denormalize for backward compatibility
@@ -649,15 +590,12 @@ class MemoryGraph:
         return result
 
     def _search_destination_node(self, destination_embedding, filters, threshold=0.9):
-        agent_filter = ""
-        if filters.get("agent_id"):
-            agent_filter = "AND destination_candidate.agent_id = $agent_id"
 
         cypher = f"""
             MATCH (destination_candidate {self.node_label})
-            WHERE destination_candidate.embedding IS NOT NULL
+            WHERE destination_candidate.embedding IS NOT NULL 
             AND destination_candidate.user_id = $user_id
-            {agent_filter}
+            
 
             WITH destination_candidate,
             round(2 * vector.similarity.cosine(destination_candidate.embedding, $destination_embedding) - 1, 4) AS destination_similarity // denormalize for backward compatibility

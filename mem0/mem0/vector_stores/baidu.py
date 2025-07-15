@@ -34,9 +34,7 @@ try:
         VectorTopkSearchRequest,
     )
 except ImportError:
-    raise ImportError(
-        "The 'pymochow' library is required. Please install it using 'pip install pymochow'."
-    )
+    raise ImportError("The 'pymochow' library is required. Please install it using 'pip install pymochow'.")
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +76,7 @@ class BaiduDB(VectorStoreBase):
         self.metric_type = metric_type
 
         # Initialize Mochow client
-        config = Configuration(
-            credentials=BceCredentials(account, api_key), endpoint=endpoint
-        )
+        config = Configuration(credentials=BceCredentials(account, api_key), endpoint=endpoint)
         self.client = pymochow.MochowClient(config)
 
         # Ensure database and table exist
@@ -135,12 +131,7 @@ class BaiduDB(VectorStoreBase):
             # Define table schema
             fields = [
                 Field(
-                    "id",
-                    FieldType.STRING,
-                    primary_key=True,
-                    partition_key=True,
-                    auto_increment=False,
-                    not_null=True,
+                    "id", FieldType.STRING, primary_key=True, partition_key=True, auto_increment=False, not_null=True
                 ),
                 Field("vector", FieldType.FLOAT_VECTOR, dimension=vector_size),
                 Field("metadata", FieldType.JSON),
@@ -155,23 +146,16 @@ class BaiduDB(VectorStoreBase):
                     metric_type=metric_type,
                     params=HNSWParams(m=16, efconstruction=200),
                     auto_build=True,
-                    auto_build_index_policy=AutoBuildRowCountIncrement(
-                        row_count_increment=10000
-                    ),
+                    auto_build_index_policy=AutoBuildRowCountIncrement(row_count_increment=10000),
                 ),
-                FilteringIndex(
-                    index_name="metadata_filtering_idx", fields=["metadata"]
-                ),
+                FilteringIndex(index_name="metadata_filtering_idx", fields=["metadata"]),
             ]
 
             schema = Schema(fields=fields, indexes=indexes)
 
             # Create table
             self._table = self._database.create_table(
-                table_name=name,
-                replication=3,
-                partition=Partition(partition_num=1),
-                schema=schema,
+                table_name=name, replication=3, partition=Partition(partition_num=1), schema=schema
             )
             logger.info(f"Created table: {name}")
 
@@ -182,9 +166,7 @@ class BaiduDB(VectorStoreBase):
                 if table.state == TableState.NORMAL:
                     logger.info(f"Table {name} is ready.")
                     break
-                logger.info(
-                    f"Waiting for table {name} to be ready, current state: {table.state}"
-                )
+                logger.info(f"Waiting for table {name} to be ready, current state: {table.state}")
             self._table = table
         except Exception as e:
             logger.error(f"Error creating table: {e}")
@@ -203,9 +185,7 @@ class BaiduDB(VectorStoreBase):
             row = Row(id=idx, vector=vector, metadata=metadata)
             self._table.upsert(rows=[row])
 
-    def search(
-        self, query: str, vectors: list, limit: int = 5, filters: dict = None
-    ) -> list:
+    def search(self, query: str, vectors: list, limit: int = 5, filters: dict = None) -> list:
         """
         Search for similar vectors.
 
@@ -241,9 +221,7 @@ class BaiduDB(VectorStoreBase):
         for row in res.rows:
             row_data = row.get("row", {})
             output_data = OutputData(
-                id=row_data.get("id"),
-                score=row.get("score", 0.0),
-                payload=row_data.get("metadata", {}),
+                id=row_data.get("id"), score=row.get("score", 0.0), payload=row_data.get("metadata", {})
             )
             output.append(output_data)
 
@@ -281,9 +259,7 @@ class BaiduDB(VectorStoreBase):
             OutputData: Retrieved vector.
         """
         projections = ["id", "metadata"]
-        result = self._table.query(
-            primary_key={"id": vector_id}, projections=projections
-        )
+        result = self._table.query(primary_key={"id": vector_id}, projections=projections)
         row = result.row
         return OutputData(id=row.get("id"), score=None, payload=row.get("metadata", {}))
 
@@ -305,9 +281,7 @@ class BaiduDB(VectorStoreBase):
             # skip drop table if table not exists
             table_exists = any(table.table_name == self.table_name for table in tables)
             if not table_exists:
-                logger.info(
-                    f"Table {self.table_name} does not exist, skipping deletion"
-                )
+                logger.info(f"Table {self.table_name} does not exist, skipping deletion")
                 return
 
             # Delete the table
@@ -322,9 +296,7 @@ class BaiduDB(VectorStoreBase):
                     logger.info(f"Waiting for table {self.table_name} to be deleted...")
                 except ServerError as e:
                     if e.code == ServerErrCode.TABLE_NOT_EXIST:
-                        logger.info(
-                            f"Table {self.table_name} has been completely deleted"
-                        )
+                        logger.info(f"Table {self.table_name} has been completely deleted")
                         break
                     logger.error(f"Error checking table status: {e}")
                     raise
@@ -354,15 +326,11 @@ class BaiduDB(VectorStoreBase):
         """
         projections = ["id", "metadata"]
         list_filter = self._create_filter(filters) if filters else None
-        result = self._table.select(
-            filter=list_filter, projections=projections, limit=limit
-        )
+        result = self._table.select(filter=list_filter, projections=projections, limit=limit)
 
         memories = []
         for row in result.rows:
-            obj = OutputData(
-                id=row.get("id"), score=None, payload=row.get("metadata", {})
-            )
+            obj = OutputData(id=row.get("id"), score=None, payload=row.get("metadata", {}))
             memories.append(obj)
 
         return [memories]
