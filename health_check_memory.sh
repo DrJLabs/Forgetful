@@ -86,8 +86,8 @@ fi
 
 echo -n "Testing OpenMemory API: "
 if response=$(curl -s "http://localhost:8765/api/v1/memories/?user_id=drj"); then
-    if echo "$response" | grep -q '"memories"'; then
-        count=$(echo "$response" | jq -r '.memories | length' 2>/dev/null || echo "0")
+    if echo "$response" | grep -q '"items"'; then
+        count=$(echo "$response" | jq -r '.total' 2>/dev/null || echo "0")
         echo "✅ SUCCESS ($count memories)"
     else
         echo "❌ FAILED"

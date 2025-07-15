@@ -1,110 +1,84 @@
-# Add directories or file patterns to ignore during indexing (e.g. foo/ or *.csv)
-
-# Data and cache directories
-data/
+# Virtual Environments & Dependencies
+mcp_env/
+test_env/
+test_validation_env/
 venv/
 env/
 ENV/
-
-# Node modules and dependencies
+.venv/
+.env/
 node_modules/
-**/node_modules/
-*.lock
-pnpm-lock.yaml
-yarn.lock
-package-lock.json
+.bmad-core/
 
-# Python cache and build artifacts
+# Git and Version Control
+.git/
+.gitignore
+
+# Database & Data Files
+data/
+backups/
+*.db
+*.sqlite
+*.sqlite3
+
+# Build & Distribution
+dist/
+build/
+htmlcov/
+coverage/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
 
-# Virtual environments
-.venv/
-.env/
-venv/
-env/
-ENV/
-env.bak/
-venv.bak/
-pyenv/
+# Test & Coverage Reports
+test-reports/
+test-results/
+*.coverage
+.coverage
+.pytest_cache/
+.tox/
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-db/
-test-db/
+# Large External Projects (if these are git submodules or external deps)
+mem0/
+openmemory/
 
-# Log files
-*.log
-logs/
-
-# IDE and editor files
+# IDE & System Files
+.DS_Store
 .vscode/
-.idea/
 *.swp
 *.swo
 *~
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Testing and coverage
-.coverage
-.pytest_cache/
-.tox/
-htmlcov/
-coverage.xml
-*.cover
-
-# Documentation build
-docs/_build/
-site/
-
-# Temporary files
+# Logs & Temporary Files
+*.log
 *.tmp
-*.temp
-.tmp/
-.temp/
+logs/
+tmp/
 
-# Large directories that shouldn't be indexed
-mem0/openmemory/
-mem0/cookbooks/
-mem0/embedchain/
-mem0/evaluation/
-mem0/examples/
-mem0/uv.lock
+# Documentation Build
+docs/_build/
+docs/build/
 
-# Jupyter notebooks checkpoints
-.ipynb_checkpoints/
+# Archive & Backup Files
+archive/
+*.tar.gz
+*.zip
+*.tar
+*.rar
 
-# Cache directories
-.cache/
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# SSL & Security Files
+*.pem
+*.key
+*.crt
+*.cert
+
+# Environment Files (keep .env for reference but ignore others)
+.env.*
+!.env.example
+!.env.template
+
+# Monitoring & Analytics
+monitoring/data/
+*.pid
