@@ -46,6 +46,14 @@ deploy_*.py
 update_*.sh
 update_*.py
 
+# Exception: Essential deployment scripts needed by cloud agents
+!start_mcp_production.sh
+!setup_project_context.sh
+!start_chatgpt_bridge.sh
+!start_secure_mcp.sh
+!setup_ssl.sh
+!setup_test_environment.sh
+
 # MCP specific files that might contain secrets
 mcp_*.py
 mcp_*.sh
@@ -56,7 +64,6 @@ mcp_*.json
 # Production deployment files
 deploy_production_mcp.sh
 test_production_deployment.py
-start_mcp_production.sh
 
 # Log files
 *.log
