@@ -100,10 +100,9 @@ def optimized_test_engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
         echo=False,
-        # Phase 2.3: Optimized pool settings
-        pool_size=1,  # Single connection for tests
-        max_overflow=0,  # No overflow for simplicity
-        pool_recycle=-1,  # Don't recycle connections
+        # SQLite with StaticPool doesn't support pool_size/max_overflow
+        # These parameters are only valid for QueuePool and other connection pools
+        pool_recycle=-1,  # Keep this - valid for SQLite
     )
 
     # Create schema once per session
@@ -112,6 +111,43 @@ def optimized_test_engine():
 
     # Cleanup once per session
     Base.metadata.drop_all(bind=engine)
+    engine.dispose()
+
+
+@pytest.fixture(scope="session")
+def test_db_engine():
+    """
+    Test database engine for framework testing.
+
+    This fixture provides a basic database engine for testing database
+    framework functionality, separate from the optimized test engine.
+    """
+    # Import all models to ensure complete schema
+    from app.models import (  # noqa: F401
+        AccessControl,
+        App,
+        ArchivePolicy,
+        Category,
+        Config,
+        Memory,
+        MemoryState,
+        MemoryStatusHistory,
+        User,
+    )
+
+    engine = create_engine(
+        TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False,
+    )
+
+    # Create all tables
+    Base.metadata.create_all(engine)
+
+    yield engine
+
+    # Cleanup
     engine.dispose()
 
 

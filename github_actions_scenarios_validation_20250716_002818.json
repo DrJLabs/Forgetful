@@ -1,0 +1,51 @@
+{
+  "timestamp": "2025-07-16T00:21:00.044736",
+  "scenarios": {
+    "background_agents_service_startup": {
+      "status": "PASSED",
+      "details": "Started 1 background test services",
+      "timestamp": "2025-07-16T00:21:05.387290"
+    },
+    "background_agents_processing": {
+      "status": "PASSED",
+      "details": "All 2 agents completed successfully",
+      "timestamp": "2025-07-16T00:22:05.446328"
+    },
+    "docker_in_docker_setup": {
+      "status": "PASSED",
+      "details": "Docker-in-Docker environment configured successfully",
+      "timestamp": "2025-07-16T00:22:06.030116"
+    },
+    "container_runtime_testing": {
+      "status": "PASSED",
+      "details": "All container runtimes tested: ['docker']",
+      "timestamp": "2025-07-16T00:22:07.879538"
+    },
+    "parallel_testcontainers": {
+      "status": "PASSED",
+      "details": "Parallel testcontainer execution successful",
+      "timestamp": "2025-07-16T00:22:18.621394"
+    },
+    "memory_persistence_scenario": {
+      "status": "PASSED",
+      "details": "Memory persistence scenario completed successfully",
+      "timestamp": "2025-07-16T00:24:18.735262"
+    },
+    "extended_resource_monitoring": {
+      "status": "PASSED",
+      "details": "Extended monitoring completed: {'avg_cpu': 7.743333333333334, 'avg_memory': 30.436666666666667, 'duration': 180.153582572937}",
+      "timestamp": "2025-07-16T00:27:18.899249"
+    },
+    "stress_testing_scenario": {
+      "status": "PASSED",
+      "details": "Stress testing scenario completed",
+      "timestamp": "2025-07-16T00:28:18.945383"
+    }
+  },
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "success_rate": 100.0
+  }
+}

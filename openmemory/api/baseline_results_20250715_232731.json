@@ -1,0 +1,234 @@
+{
+  "1_workers": {
+    "workers": 1,
+    "statistics": {
+      "mean_total_time": 8.58895635077109,
+      "median_total_time": 8.715289267711341,
+      "min_total_time": 8.188150431029499,
+      "max_total_time": 8.863429353572428,
+      "std_total_time": 0.3549231046785479,
+      "mean_collection_time": 5.9099256210029125,
+      "tests_collected": 0,
+      "tests_passed": 0,
+      "tests_failed": 0
+    },
+    "iterations": [
+      {
+        "configuration": "1_worker",
+        "workers": 1,
+        "total_time": 8.188150431029499,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.872152208350599,
+        "execution_time": 2.3159982226788998,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "1_worker",
+        "workers": 1,
+        "total_time": 8.863429353572428,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.992546527646482,
+        "execution_time": 2.8708828259259462,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "1_worker",
+        "workers": 1,
+        "total_time": 8.715289267711341,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.865078127011657,
+        "execution_time": 2.8502111406996846,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      }
+    ]
+  },
+  "2_workers": {
+    "workers": 2,
+    "statistics": {
+      "mean_total_time": 7.1857770960778,
+      "median_total_time": 7.1942794574424624,
+      "min_total_time": 7.165203361772001,
+      "max_total_time": 7.197848469018936,
+      "std_total_time": 0.017906517483097014,
+      "mean_collection_time": 5.7657858325789375,
+      "tests_collected": 0,
+      "tests_passed": 0,
+      "tests_failed": 0
+    },
+    "iterations": [
+      {
+        "configuration": "2_workers",
+        "workers": 2,
+        "total_time": 7.165203361772001,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.799474903382361,
+        "execution_time": 1.3657284583896399,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "2_workers",
+        "workers": 2,
+        "total_time": 7.1942794574424624,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.782020723447204,
+        "execution_time": 1.4122587339952588,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "2_workers",
+        "workers": 2,
+        "total_time": 7.197848469018936,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.715861870907247,
+        "execution_time": 1.481986598111689,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      }
+    ]
+  },
+  "4_workers": {
+    "workers": 4,
+    "statistics": {
+      "mean_total_time": 7.682378015791376,
+      "median_total_time": 7.667781133204699,
+      "min_total_time": 7.631784416735172,
+      "max_total_time": 7.7475684974342585,
+      "std_total_time": 0.059256139528069754,
+      "mean_collection_time": 5.794184918825825,
+      "tests_collected": 0,
+      "tests_passed": 0,
+      "tests_failed": 0
+    },
+    "iterations": [
+      {
+        "configuration": "4_workers",
+        "workers": 4,
+        "total_time": 7.667781133204699,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.808852682821453,
+        "execution_time": 1.858928450383246,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "4_workers",
+        "workers": 4,
+        "total_time": 7.7475684974342585,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.78693079110235,
+        "execution_time": 1.9606377063319087,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "4_workers",
+        "workers": 4,
+        "total_time": 7.631784416735172,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.786771282553673,
+        "execution_time": 1.8450131341814995,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      }
+    ]
+  },
+  "8_workers": {
+    "workers": 8,
+    "statistics": {
+      "mean_total_time": 8.20224147910873,
+      "median_total_time": 8.188245130702853,
+      "min_total_time": 8.170960512943566,
+      "max_total_time": 8.247518793679774,
+      "std_total_time": 0.04015240856841648,
+      "mean_collection_time": 5.815199458661179,
+      "tests_collected": 0,
+      "tests_passed": 0,
+      "tests_failed": 0
+    },
+    "iterations": [
+      {
+        "configuration": "8_workers",
+        "workers": 8,
+        "total_time": 8.188245130702853,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.810542491264641,
+        "execution_time": 2.377702639438212,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "8_workers",
+        "workers": 8,
+        "total_time": 8.170960512943566,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.83162693399936,
+        "execution_time": 2.3393335789442062,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      },
+      {
+        "configuration": "8_workers",
+        "workers": 8,
+        "total_time": 8.247518793679774,
+        "tests_collected": 0,
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "collection_time": 5.803428950719535,
+        "execution_time": 2.4440898429602385,
+        "setup_time": 0.0,
+        "teardown_time": 0.0,
+        "memory_peak_mb": 0.0,
+        "cpu_usage_percent": 0.0
+      }
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "timestamp": "2025-07-16T00:10:43.872480",
+  "test_duration_minutes": 5,
+  "tests": {
+    "docker_daemon_access": {
+      "status": "PASSED",
+      "details": "Docker version: 28.3.2",
+      "duration_seconds": 0.006426334381103516,
+      "timestamp": "2025-07-16T00:10:43.886266"
+    },
+    "basic_container_operations": {
+      "status": "PASSED",
+      "details": "Hello-world container executed successfully",
+      "duration_seconds": 1.651867151260376,
+      "timestamp": "2025-07-16T00:10:45.538542"
+    },
+    "multi_container_networking": {
+      "status": "PASSED",
+      "details": "Multi-container networking validated",
+      "duration_seconds": 16.809526205062866,
+      "timestamp": "2025-07-16T00:11:02.348323"
+    },
+    "background_agent_simulation": {
+      "status": "PASSED",
+      "details": "Background agent simulation completed",
+      "duration_seconds": 60.062416315078735,
+      "timestamp": "2025-07-16T00:12:02.920528"
+    },
+    "background_resource_monitoring": {
+      "status": "PASSED",
+      "details": "Resource monitoring: {'avg_cpu': 4.985, 'max_memory': 30.4, 'avg_memory': 30.175, 'disk_usage': 51.2}",
+      "duration_seconds": 120.10624504089355,
+      "timestamp": "2025-07-16T00:14:03.026949"
+    },
+    "graceful_shutdown_handling": {
+      "status": "PASSED",
+      "details": "Graceful shutdown completed successfully",
+      "duration_seconds": 5.004191637039185,
+      "timestamp": "2025-07-16T00:14:08.031381"
+    },
+    "extended_timeout_handling": {
+      "status": "PASSED",
+      "details": "Extended operation (5 min) completed",
+      "duration_seconds": 300.30965304374695,
+      "timestamp": "2025-07-16T00:19:08.341351"
+    },
+    "workflow_timeout_configuration": {
+      "status": "PASSED",
+      "details": "Found 8 timeout configurations",
+      "duration_seconds": 0.0014500617980957031,
+      "timestamp": "2025-07-16T00:19:08.342994"
+    }
+  },
+  "summary": {
+    "total_tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "warnings": 0,
+    "success_rate": 100.0
+  },
+  "system_info": {
+    "python_version": "3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]",
+    "platform": "linux",
+    "cpu_count": 16,
+    "memory_total_gb": 117.78207015991211,
+    "disk_total_gb": 575.6700210571289
+  }
+}

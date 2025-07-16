@@ -1,0 +1,38 @@
+{
+  "timestamp": "2025-07-16T00:19:32.653783",
+  "test_duration_minutes": 3,
+  "tests": {
+    "docker_daemon_access": {
+      "status": "PASSED",
+      "details": "Docker version: 28.3.2",
+      "duration_seconds": 0.0075931549072265625,
+      "timestamp": "2025-07-16T00:19:32.671724"
+    },
+    "basic_container_operations": {
+      "status": "PASSED",
+      "details": "Hello-world container executed successfully",
+      "duration_seconds": 0.33873748779296875,
+      "timestamp": "2025-07-16T00:19:33.010697"
+    },
+    "multi_container_networking": {
+      "status": "PASSED",
+      "details": "Multi-container networking validated",
+      "duration_seconds": 10.432508707046509,
+      "timestamp": "2025-07-16T00:19:43.443492"
+    }
+  },
+  "summary": {
+    "total_tests": 3,
+    "passed": 3,
+    "failed": 0,
+    "warnings": 0,
+    "success_rate": 100.0
+  },
+  "system_info": {
+    "python_version": "3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]",
+    "platform": "linux",
+    "cpu_count": 16,
+    "memory_total_gb": 117.78207015991211,
+    "disk_total_gb": 575.6700210571289
+  }
+}
