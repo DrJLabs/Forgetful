@@ -22,7 +22,10 @@ class TestMemoryUtils:
             mock_client = MagicMock()
             mock_get_client.return_value = mock_client
 
-            client = get_memory_client()
+            # Import the function to get the mocked version
+            from app.utils.memory import get_memory_client as test_client
+
+            client = test_client()
             assert client is mock_client
             mock_get_client.assert_called_once()
 

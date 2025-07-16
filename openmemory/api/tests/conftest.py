@@ -107,17 +107,17 @@ def mock_memory_client():
 
 
 @pytest.fixture
-def test_user(test_db):
+def test_user(test_db_session):
     """Create test user for contract testing"""
     user = User(
         id=uuid4(),
-        user_id="test_user_contract",
+        user_id="test_user",
         name="Test User Contract",
         email="test_contract@example.com",
     )
-    test_db.add(user)
-    test_db.commit()
-    test_db.refresh(user)
+    test_db_session.add(user)
+    test_db_session.commit()
+    test_db_session.refresh(user)
     return user
 
 
@@ -190,7 +190,7 @@ def cleanup_after_test(test_db):
 def valid_memory_create_request():
     """Valid memory creation request data"""
     return {
-        "user_id": "test_user_contract",
+        "user_id": "test_user",
         "text": "Test memory content for API contract testing",
         "metadata": {"test": True, "contract_test": True, "category": "testing"},
         "app": "test_app_contract",

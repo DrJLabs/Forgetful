@@ -330,7 +330,17 @@ class TestConfigRouter:
     async def test_update_configuration_success(self, test_client: AsyncClient):
         """Test successful configuration update"""
         config_data = {
-            "llm": {"model": "gpt-4", "temperature": 0.7, "max_tokens": 1000}
+            "mem0": {
+                "llm": {
+                    "provider": "openai",
+                    "config": {
+                        "model": "gpt-4",
+                        "temperature": 0.7,
+                        "max_tokens": 1000,
+                        "api_key": "env:OPENAI_API_KEY",
+                    },
+                }
+            }
         }
 
         response = await test_client.put("/api/v1/config/", json=config_data)
