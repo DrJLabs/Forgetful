@@ -3,8 +3,7 @@ Comprehensive tests for coding-specific memory optimizations.
 """
 
 import json
-from typing import Any, Dict, List
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -13,7 +12,7 @@ from mem0.configs.coding_config import (
     CodingMemoryConfig,
     create_coding_optimized_config,
 )
-from mem0.memory.coding_memory import AsyncCodingMemory, CodingMemory
+from mem0.memory.coding_memory import CodingMemory
 from mem0.memory.enhanced_deduplication import (
     AutonomousDeduplicationManager,
     EnhancedDeduplicator,
@@ -1145,7 +1144,7 @@ class TestStorageOptimization:
                 "memory": f"Memory {i}",
                 "metadata": {
                     "category": "bug_fix",
-                    "last_accessed": f"2024-01-{i+1:02d}T10:00:00Z",
+                    "last_accessed": f"2024-01-{i + 1:02d}T10:00:00Z",
                 },
             }
             for i in range(20)

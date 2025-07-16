@@ -4,9 +4,8 @@ BMad Service Validation Script
 Validates that mem0 and Context7 MCP servers are accessible before BMad operations.
 """
 
-import json
 import sys
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import requests
 
@@ -44,7 +43,7 @@ class ServiceValidator:
                     data = response.json()
                     if "mem0" in data and "openmemory" in data:
                         return True, "✅ Context7 MCP server accessible"
-                except:
+                except Exception:
                     pass
                 return True, "✅ Context7 MCP server accessible"
             else:

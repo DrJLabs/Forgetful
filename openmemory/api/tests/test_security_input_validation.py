@@ -12,22 +12,17 @@ This module implements comprehensive input validation security tests including:
 Author: Quinn (QA Agent) - Step 2.2.2 Security Testing Suite
 """
 
-import datetime
 import json
 
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
-from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
 import pytest
-from app.models import App, Memory, MemoryState, User
 from fastapi import status
 from httpx import AsyncClient
-from sqlalchemy.orm import Session
 
 sys.path.append("/workspace")
-from shared.errors import ValidationError
 from shared.logging_system import get_logger
 
 logger = get_logger("security_input_validation_tests")
@@ -597,7 +592,9 @@ class TestInputValidationIntegration:
             assert response.status_code in [200, 400, 404, 422]
 
             # Log for security monitoring
-            logger.warning(f"Batch malicious request {i+1} handled: {payload[:20]}...")
+            logger.warning(
+                f"Batch malicious request {i + 1} handled: {payload[:20]}..."
+            )
 
 
 if __name__ == "__main__":

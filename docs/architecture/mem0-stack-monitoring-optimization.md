@@ -83,10 +83,10 @@ service_degradation_level = Gauge(
 
 class MetricsCollector:
     """Collects and exposes metrics for AI operations"""
-    
+
     def __init__(self):
         self.operation_timers: Dict[str, float] = {}
-    
+
     @staticmethod
     def track_operation(operation: str, agent_type: str = 'unknown'):
         """Decorator to track operation metrics"""
@@ -96,7 +96,7 @@ class MetricsCollector:
                 start_time = time.time()
                 status = 'success'
                 user_id = kwargs.get('user_id', 'unknown')
-                
+
                 try:
                     result = await func(*args, **kwargs)
                     return result
@@ -112,15 +112,15 @@ class MetricsCollector:
                         user_id=user_id,
                         status=status
                     ).inc()
-                    
+
                     ai_memory_latency.labels(
                         operation=operation,
                         agent_type=agent_type
                     ).observe(duration)
-            
+
             return wrapper
         return decorator
-    
+
     @staticmethod
     def track_cache_hit(cache_layer: str, operation: str, hit: bool):
         """Track cache hit/miss"""
@@ -128,7 +128,7 @@ class MetricsCollector:
             cache_layer=cache_layer,
             operation=operation
         ).observe(1.0 if hit else 0.0)
-    
+
     @staticmethod
     def update_context_size(agent_id: str, agent_type: str, size_bytes: int):
         """Update agent context size metric"""
@@ -136,21 +136,21 @@ class MetricsCollector:
             agent_id=agent_id,
             agent_type=agent_type
         ).set(size_bytes)
-    
+
     @staticmethod
     def track_relevance_score(agent_type: str, score: float):
         """Track memory relevance scores"""
         ai_memory_relevance.labels(
             agent_type=agent_type
         ).observe(score)
-    
+
     @staticmethod
     def track_batch_size(operation_type: str, size: int):
         """Track batch operation sizes"""
         ai_batch_efficiency.labels(
             operation_type=operation_type
         ).observe(size)
-    
+
     @staticmethod
     def update_circuit_breaker_state(service_name: str, state: str):
         """Update circuit breaker state"""
@@ -158,7 +158,7 @@ class MetricsCollector:
         circuit_breaker_state.labels(
             service_name=service_name
         ).set(state_map.get(state, -1))
-    
+
     @staticmethod
     def track_circuit_breaker_failure(service_name: str, error_type: str):
         """Track circuit breaker failures"""
@@ -166,7 +166,7 @@ class MetricsCollector:
             service_name=service_name,
             error_type=error_type
         ).inc()
-    
+
     @staticmethod
     def update_degradation_level(service_name: str, level: str):
         """Update service degradation level"""
@@ -188,64 +188,64 @@ import asyncio
 
 class PrometheusMiddleware:
     """Middleware to collect HTTP metrics"""
-    
+
     def __init__(self, app):
         self.app = app
-        
+
         # HTTP metrics
         self.http_requests = Counter(
             'http_requests_total',
             'Total HTTP requests',
             ['method', 'endpoint', 'status']
         )
-        
+
         self.http_duration = Histogram(
             'http_request_duration_seconds',
             'HTTP request duration',
             ['method', 'endpoint'],
             buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0)
         )
-        
+
         self.concurrent_requests = Gauge(
             'http_concurrent_requests',
             'Number of concurrent HTTP requests'
         )
-    
+
     async def __call__(self, scope, receive, send):
         if scope['type'] != 'http':
             await self.app(scope, receive, send)
             return
-        
+
         path = scope['path']
         method = scope['method']
-        
+
         # Skip metrics endpoint
         if path == '/metrics':
             await self.app(scope, receive, send)
             return
-        
+
         start_time = time.time()
         self.concurrent_requests.inc()
-        
+
         async def send_wrapper(message):
             if message['type'] == 'http.response.start':
                 status = message['status']
                 duration = time.time() - start_time
-                
+
                 # Record metrics
                 self.http_requests.labels(
                     method=method,
                     endpoint=path,
                     status=status
                 ).inc()
-                
+
                 self.http_duration.labels(
                     method=method,
                     endpoint=path
                 ).observe(duration)
-            
+
             await send(message)
-        
+
         try:
             await self.app(scope, receive, send_wrapper)
         finally:
@@ -268,7 +268,7 @@ from typing import List, Dict, Any
 
 class AIPatternMetrics:
     """Specialized metrics for AI usage patterns"""
-    
+
     def __init__(self):
         # Query pattern metrics
         self.query_patterns = Counter(
@@ -276,7 +276,7 @@ class AIPatternMetrics:
             'Query patterns by type',
             ['pattern_type', 'agent_type']
         )
-        
+
         # Memory access patterns
         self.memory_access_patterns = Histogram(
             'ai_memory_access_interval_seconds',
@@ -284,14 +284,14 @@ class AIPatternMetrics:
             ['agent_type'],
             buckets=(0.1, 0.5, 1.0, 5.0, 10.0, 30.0, 60.0, 300.0)
         )
-        
+
         # Context evolution metrics
         self.context_growth_rate = Gauge(
             'ai_context_growth_rate_per_hour',
             'Context growth rate per hour',
             ['agent_id']
         )
-        
+
         # Decision quality metrics
         self.decision_confidence = Histogram(
             'ai_decision_confidence_score',
@@ -299,17 +299,17 @@ class AIPatternMetrics:
             ['agent_type', 'decision_type'],
             buckets=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
         )
-        
+
         # Memory consolidation metrics
         self.consolidation_efficiency = Gauge(
             'ai_memory_consolidation_ratio',
             'Ratio of memories consolidated',
             ['agent_type']
         )
-        
+
         # Pattern tracking
         self.pattern_history: Dict[str, List[float]] = {}
-    
+
     def track_query_pattern(self, query: str, agent_type: str):
         """Analyze and track query patterns"""
         pattern_type = self._classify_query_pattern(query)
@@ -317,36 +317,36 @@ class AIPatternMetrics:
             pattern_type=pattern_type,
             agent_type=agent_type
         ).inc()
-    
+
     def track_memory_access(self, agent_type: str, last_access_time: float):
         """Track memory access intervals"""
         current_time = time.time()
         interval = current_time - last_access_time
-        
+
         self.memory_access_patterns.labels(
             agent_type=agent_type
         ).observe(interval)
-    
+
     def calculate_context_growth(self, agent_id: str, context_sizes: List[int]):
         """Calculate context growth rate"""
         if len(context_sizes) < 2:
             return
-        
+
         # Calculate growth rate using linear regression
         times = np.arange(len(context_sizes))
         slope, _ = np.polyfit(times, context_sizes, 1)
-        
+
         # Convert to per-hour rate
         growth_rate = slope * 3600  # Assuming measurements are per second
-        
+
         self.context_growth_rate.labels(
             agent_id=agent_id
         ).set(growth_rate)
-    
+
     def _classify_query_pattern(self, query: str) -> str:
         """Classify query into pattern types"""
         query_lower = query.lower()
-        
+
         if any(word in query_lower for word in ['error', 'bug', 'issue']):
             return 'debugging'
         elif any(word in query_lower for word in ['implement', 'create', 'build']):
@@ -486,7 +486,7 @@ from typing import Dict, List, Any
 
 class SystemHealthDashboard:
     """Generate system health dashboard configuration"""
-    
+
     @staticmethod
     def generate_dashboard() -> Dict[str, Any]:
         return {
@@ -601,7 +601,7 @@ input {
     codec => json_lines
     type => "ai_events"
   }
-  
+
   beats {
     port => 5044
     type => "system_logs"
@@ -620,7 +620,7 @@ filter {
         }
       }
     }
-    
+
     # Parse memory operation logs
     if [operation] == "memory_operation" {
       # Calculate operation duration
@@ -632,7 +632,7 @@ filter {
           end
         "
       }
-      
+
       # Classify operation performance
       if [duration_ms] {
         if [duration_ms] <= 50 {
@@ -646,7 +646,7 @@ filter {
         }
       }
     }
-    
+
     # Parse error logs
     if [level] == "ERROR" {
       # Extract error details
@@ -656,7 +656,7 @@ filter {
         }
         tag_on_failure => []
       }
-      
+
       # Add error classification
       if [error_type] {
         mutate {
@@ -667,24 +667,24 @@ filter {
         }
       }
     }
-    
+
     # Enrich with pattern detection
     if [query] {
       ruby {
         code => "
           query = event.get('query').downcase
           patterns = []
-          
+
           patterns << 'debugging' if query.include?('error') || query.include?('bug')
           patterns << 'implementation' if query.include?('implement') || query.include?('create')
           patterns << 'exploration' if query.include?('what') || query.include?('how')
-          
+
           event.set('query_patterns', patterns) unless patterns.empty?
         "
       }
     }
   }
-  
+
   # Add geographic information if IP is present
   if [client_ip] {
     geoip {
@@ -692,7 +692,7 @@ filter {
       target => "geoip"
     }
   }
-  
+
   # Calculate metrics for aggregation
   metrics {
     meter => "ai_events"
@@ -711,7 +711,7 @@ output {
     template => "/etc/logstash/templates/ai_events.json"
     template_overwrite => true
   }
-  
+
   # Critical errors to alerting system
   if [requires_attention] == "true" {
     http {
@@ -732,7 +732,7 @@ output {
       }
     }
   }
-  
+
   # Performance metrics to monitoring
   if "metric" in [tags] {
     statsd {
@@ -814,7 +814,7 @@ import time
 
 class TracingManager:
     """Manages distributed tracing for AI operations"""
-    
+
     def __init__(self, service_name: str = "mem0-stack"):
         # Configure Jaeger exporter
         jaeger_exporter = JaegerExporter(
@@ -822,29 +822,29 @@ class TracingManager:
             agent_port=6831,
             max_tag_value_length=1024  # For large AI contexts
         )
-        
+
         # Create tracer provider
         resource = Resource(attributes={
             "service.name": service_name,
             "service.version": "1.0.0",
             "deployment.environment": "production"
         })
-        
+
         provider = TracerProvider(resource=resource)
         processor = BatchSpanProcessor(jaeger_exporter)
         provider.add_span_processor(processor)
-        
+
         # Set global tracer provider
         trace.set_tracer_provider(provider)
-        
+
         # Get tracer
         self.tracer = trace.get_tracer(__name__)
-        
+
         # Auto-instrument libraries
         FastAPIInstrumentor.instrument()
         RequestsInstrumentor.instrument()
         AsyncPGInstrumentor.instrument()
-    
+
     @contextmanager
     def trace_operation(
         self,
@@ -855,14 +855,14 @@ class TracingManager:
         with self.tracer.start_as_current_span(operation_name) as span:
             # Add default attributes
             span.set_attribute("operation.type", "ai_memory")
-            
+
             # Add custom attributes
             if attributes:
                 for key, value in attributes.items():
                     span.set_attribute(key, value)
-            
+
             start_time = time.time()
-            
+
             try:
                 yield span
             except Exception as e:
@@ -873,7 +873,7 @@ class TracingManager:
                 # Record duration
                 duration = time.time() - start_time
                 span.set_attribute("duration_ms", duration * 1000)
-    
+
     def trace_ai_memory_operation(
         self,
         operation_type: str,
@@ -889,7 +889,7 @@ class TracingManager:
                     "ai.user_id": user_id,
                     "ai.context_size": kwargs.get('context_size', 0)
                 }
-                
+
                 with self.trace_operation(
                     f"ai.memory.{operation_type}",
                     attributes
@@ -897,9 +897,9 @@ class TracingManager:
                     # Add baggage for downstream propagation
                     span = trace.get_current_span()
                     span.set_attribute("ai.trace_id", span.get_span_context().trace_id)
-                    
+
                     result = await func(*args, **kwargs)
-                    
+
                     # Add result attributes
                     if isinstance(result, dict):
                         span.set_attribute(
@@ -910,12 +910,12 @@ class TracingManager:
                             "ai.cache_hit",
                             result.get('cached', False)
                         )
-                    
+
                     return result
-            
+
             return wrapper
         return decorator
-    
+
     def create_child_span(
         self,
         name: str,
@@ -923,7 +923,7 @@ class TracingManager:
     ):
         """Create a child span for nested operations"""
         parent_span = trace.get_current_span()
-        
+
         with self.tracer.start_as_current_span(
             name,
             context=trace.set_span_in_context(parent_span)
@@ -931,7 +931,7 @@ class TracingManager:
             if attributes:
                 for key, value in attributes.items():
                     span.set_attribute(key, value)
-            
+
             return span
 
 # Usage example
@@ -954,14 +954,14 @@ async def search_memories_with_tracing(
         {"query_length": len(query)}
     ):
         embedding = await generate_embedding(query)
-    
+
     # Trace database search
     with tracing_manager.trace_operation(
         "vector_search",
         {"limit": limit}
     ):
         results = await search_vector_db(embedding, limit)
-    
+
     return {"memories": results, "cached": False}
 ```
 
@@ -977,8 +977,8 @@ groups:
     rules:
       - alert: HighMemoryOperationLatency
         expr: |
-          histogram_quantile(0.99, 
-            sum(rate(ai_memory_operation_duration_seconds_bucket[5m])) 
+          histogram_quantile(0.99,
+            sum(rate(ai_memory_operation_duration_seconds_bucket[5m]))
             by (operation, le)
           ) > 0.1
         for: 5m
@@ -989,7 +989,7 @@ groups:
           summary: "High memory operation latency detected"
           description: "P99 latency for {{ $labels.operation }} is {{ $value }}s"
           runbook_url: "https://wiki.internal/runbooks/ai-memory-latency"
-      
+
       - alert: LowCacheHitRatio
         expr: |
           avg_over_time(ai_cache_hit_ratio[10m]) < 0.7
@@ -1000,7 +1000,7 @@ groups:
         annotations:
           summary: "Cache hit ratio below threshold"
           description: "Cache hit ratio is {{ $value }} for {{ $labels.cache_layer }}"
-      
+
       - alert: CircuitBreakerOpen
         expr: circuit_breaker_state == 1
         for: 1m
@@ -1010,7 +1010,7 @@ groups:
         annotations:
           summary: "Circuit breaker is open"
           description: "Circuit breaker for {{ $labels.service_name }} is open"
-      
+
       - alert: ServiceDegraded
         expr: service_degradation_level > 0
         for: 5m
@@ -1020,10 +1020,10 @@ groups:
         annotations:
           summary: "Service operating in degraded mode"
           description: "{{ $labels.service_name }} is in degradation level {{ $value }}"
-      
+
       - alert: HighErrorRate
         expr: |
-          sum(rate(ai_memory_operations_total{status="error"}[5m])) 
+          sum(rate(ai_memory_operations_total{status="error"}[5m]))
           / sum(rate(ai_memory_operations_total[5m])) > 0.05
         for: 5m
         labels:
@@ -1032,7 +1032,7 @@ groups:
         annotations:
           summary: "High error rate in AI operations"
           description: "Error rate is {{ $value | humanizePercentage }}"
-      
+
       - alert: AIAgentContextGrowthAnomaly
         expr: |
           ai_context_growth_rate_per_hour > 10000
@@ -1043,7 +1043,7 @@ groups:
         annotations:
           summary: "Abnormal context growth detected"
           description: "Agent {{ $labels.agent_id }} context growing at {{ $value }} bytes/hour"
-      
+
       - alert: MemoryConsolidationBacklog
         expr: |
           ai_memory_consolidation_ratio < 0.5
@@ -1068,7 +1068,7 @@ groups:
         annotations:
           summary: "Database connection pool nearly exhausted"
           description: "{{ $value | humanizePercentage }} of connections in use"
-      
+
       - alert: HighMemoryUsage
         expr: |
           (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.85
@@ -1100,11 +1100,11 @@ route:
         severity: critical
       receiver: 'critical-alerts'
       continue: true
-    
+
     - match:
         team: ai-platform
       receiver: 'ai-team'
-    
+
     - match:
         team: infrastructure
       receiver: 'infra-team'
@@ -1115,7 +1115,7 @@ receivers:
       - channel: '#alerts'
         title: 'mem0-Stack Alert'
         text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-  
+
   - name: 'critical-alerts'
     slack_configs:
       - channel: '#critical-alerts'
@@ -1123,12 +1123,12 @@ receivers:
         text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
     pagerduty_configs:
       - service_key: 'YOUR_PAGERDUTY_KEY'
-  
+
   - name: 'ai-team'
     slack_configs:
       - channel: '#ai-platform-alerts'
         send_resolved: true
-  
+
   - name: 'infra-team'
     slack_configs:
       - channel: '#infrastructure-alerts'
@@ -1156,36 +1156,36 @@ from typing import Dict, Any
 
 class AISystemHealthChecker:
     """Comprehensive health checker for AI systems"""
-    
+
     def __init__(self, pushgateway_url: str = "localhost:9091"):
         self.pushgateway_url = pushgateway_url
         self.registry = CollectorRegistry()
-        
+
         # Define gauges
         self.health_score = Gauge(
             'ai_system_health_score',
             'Overall system health score (0-100)',
             registry=self.registry
         )
-        
+
         self.component_health = Gauge(
             'ai_component_health',
             'Individual component health',
             ['component'],
             registry=self.registry
         )
-        
+
         self.check_duration = Gauge(
             'ai_health_check_duration_seconds',
             'Time taken for health check',
             registry=self.registry
         )
-    
+
     async def check_system_health(self) -> Dict[str, Any]:
         """Run comprehensive health checks"""
         start_time = time.time()
         health_results = {}
-        
+
         # Check each component
         checks = [
             ('mem0_api', self._check_mem0_api),
@@ -1195,7 +1195,7 @@ class AISystemHealthChecker:
             ('redis', self._check_redis),
             ('monitoring', self._check_monitoring)
         ]
-        
+
         for component, check_func in checks:
             try:
                 health_results[component] = await check_func()
@@ -1208,30 +1208,30 @@ class AISystemHealthChecker:
                     'error': str(e)
                 }
                 self.component_health.labels(component=component).set(0)
-        
+
         # Calculate overall health score
         healthy_components = sum(
             1 for r in health_results.values() if r.get('healthy', False)
         )
         total_components = len(health_results)
         overall_score = (healthy_components / total_components) * 100
-        
+
         self.health_score.set(overall_score)
         self.check_duration.set(time.time() - start_time)
-        
+
         # Push to Prometheus
         push_to_gateway(
             self.pushgateway_url,
             job='ai_health_check',
             registry=self.registry
         )
-        
+
         return {
             'overall_score': overall_score,
             'components': health_results,
             'timestamp': time.time()
         }
-    
+
     async def _check_mem0_api(self) -> Dict[str, Any]:
         """Check mem0 API health"""
         async with aiohttp.ClientSession() as session:
@@ -1246,24 +1246,24 @@ class AISystemHealthChecker:
                     }
             except Exception as e:
                 return {'healthy': False, 'error': str(e)}
-    
+
     async def _check_postgresql(self) -> Dict[str, Any]:
         """Check PostgreSQL health"""
         import asyncpg
-        
+
         try:
             conn = await asyncpg.connect(
                 'postgresql://user:password@localhost/mem0',
                 timeout=5
             )
-            
+
             # Check vector extension
             result = await conn.fetchval(
                 "SELECT count(*) FROM pg_extension WHERE extname = 'vector'"
             )
-            
+
             await conn.close()
-            
+
             return {
                 'healthy': True,
                 'vector_extension': result > 0
@@ -1274,15 +1274,15 @@ class AISystemHealthChecker:
 # Run health check
 async def main():
     checker = AISystemHealthChecker()
-    
+
     while True:
         health = await checker.check_system_health()
         print(f"System Health Score: {health['overall_score']:.1f}%")
-        
+
         for component, status in health['components'].items():
             status_emoji = "✅" if status['healthy'] else "❌"
             print(f"{status_emoji} {component}: {status}")
-        
+
         await asyncio.sleep(30)  # Check every 30 seconds
 
 if __name__ == "__main__":
@@ -1295,8 +1295,8 @@ This monitoring and observability optimization provides:
 
 1. **AI-Specific Metrics** tracking agent patterns, memory operations, and context evolution
 2. **Comprehensive Dashboards** for real-time visibility into AI agent behavior
-3. **Intelligent Log Processing** with pattern detection and anomaly identification  
+3. **Intelligent Log Processing** with pattern detection and anomaly identification
 4. **Distributed Tracing** for end-to-end request visibility
 5. **Proactive Alerting** for autonomous operation issues
 
-The implementation focuses on understanding AI agent behavior patterns, detecting anomalies early, and providing actionable insights for maintaining optimal performance during autonomous operations. 
+The implementation focuses on understanding AI agent behavior patterns, detecting anomalies early, and providing actionable insights for maintaining optimal performance during autonomous operations.

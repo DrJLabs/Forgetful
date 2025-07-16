@@ -17,9 +17,7 @@ class TimezoneConfig:
     Configuration for timezone handling in the memory system.
     """
 
-    def __init__(
-        self, default_timezone: str = "US/Pacific", use_system_timezone: bool = False
-    ):
+    def __init__(self, default_timezone: str = "US/Pacific", use_system_timezone: bool = False):
         """
         Initialize timezone configuration.
 
@@ -54,9 +52,7 @@ class TimezoneConfig:
 _timezone_config = TimezoneConfig()
 
 
-def configure_timezone(
-    default_timezone: str = "US/Pacific", use_system_timezone: bool = False
-):
+def configure_timezone(default_timezone: str = "US/Pacific", use_system_timezone: bool = False):
     """
     Configure global timezone settings for the memory system.
 
@@ -66,9 +62,7 @@ def configure_timezone(
     """
     global _timezone_config
     _timezone_config = TimezoneConfig(default_timezone, use_system_timezone)
-    logger.info(
-        f"Timezone configured: default={default_timezone}, use_system={use_system_timezone}"
-    )
+    logger.info(f"Timezone configured: default={default_timezone}, use_system={use_system_timezone}")
 
 
 def safe_datetime_now(reference_time: Optional[datetime] = None) -> datetime:
@@ -163,9 +157,7 @@ def create_memory_timestamp(reference_time: Optional[datetime] = None) -> str:
     return safe_datetime_now(reference_time).isoformat()
 
 
-def get_memory_age_hours(
-    created_at: str, reference_time: Optional[datetime] = None
-) -> float:
+def get_memory_age_hours(created_at: str, reference_time: Optional[datetime] = None) -> float:
     """
     Calculate age of memory in hours from timestamp string.
 
@@ -186,9 +178,7 @@ def get_memory_age_hours(
         return 0.0
 
 
-def get_memory_age_days(
-    created_at: str, reference_time: Optional[datetime] = None
-) -> int:
+def get_memory_age_days(created_at: str, reference_time: Optional[datetime] = None) -> int:
     """
     Calculate age of memory in days from timestamp string.
 

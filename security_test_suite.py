@@ -5,12 +5,10 @@ Tests all security measures before public deployment
 """
 
 import asyncio
-import json
 import os
 import subprocess
 import sys
 import time
-from typing import Dict, List, Optional, Tuple
 
 import aiohttp
 
@@ -99,11 +97,6 @@ class SecurityTestSuite:
     async def test_rate_limiting(self) -> bool:
         """Test rate limiting protection"""
         print("\n🚦 Testing Rate Limiting...")
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
 
         async with aiohttp.ClientSession() as session:
             # Test health endpoint rate limiting (30/minute)
@@ -591,7 +584,7 @@ Domain: {self.domain}
 Total Tests: {total_tests}
 Passed: {passed_tests}
 Failed: {failed_tests}
-Success Rate: {(passed_tests/total_tests)*100:.1f}%
+Success Rate: {(passed_tests / total_tests) * 100:.1f}%
 
 """
 
@@ -634,7 +627,7 @@ async def main():
 PORT=8081
 MEM0_API_URL=http://localhost:8000
 OPENMEMORY_API_URL=http://localhost:8765
-JWT_SECRET={subprocess.check_output(['openssl', 'rand', '-hex', '32']).decode().strip()}
+JWT_SECRET={subprocess.check_output(["openssl", "rand", "-hex", "32"]).decode().strip()}
 API_KEYS={api_key}
 ALLOWED_HOSTS=localhost,127.0.0.1,mem-mcp.onemainarmy.com
 """

@@ -150,7 +150,7 @@ env:
   APP_DEBUG: false
   APP_LOG_LEVEL: INFO
   APP_USER_ID: test_user
-  
+
   # Database Configuration
   DATABASE_HOST: localhost
   DATABASE_PORT: 5432
@@ -158,7 +158,7 @@ env:
   DATABASE_USER: postgres
   DATABASE_PASSWORD: testpass
   DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
-  
+
   # Neo4j Configuration
   NEO4J_HOST: localhost
   NEO4J_PORT: 7687
@@ -166,18 +166,18 @@ env:
   NEO4J_PASSWORD: testpass
   NEO4J_URI: bolt://localhost:7687
   NEO4J_AUTH: neo4j/testpass
-  
+
   # OpenAI Configuration
   OPENAI_API_KEY: sk-test-key-for-mocking-only
   OPENAI_MODEL: gpt-4o-mini
   OPENAI_EMBEDDING_MODEL: text-embedding-3-small
-  
+
   # Testing Configuration
   TESTING: true
   CI: true
   GITHUB_ACTIONS: true
   COVERAGE_THRESHOLD: 80
-  
+
   # Legacy Variables (for backward compatibility)
   POSTGRES_HOST: localhost
   POSTGRES_DB: test_db
@@ -230,7 +230,7 @@ env:
 - `openmemory/api/app/database.py` expected DATABASE_URL directly
 - CI workflows used different DATABASE_URL formats
 
-**Solution**: 
+**Solution**:
 - Standardized DATABASE_URL construction: `postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}`
 - Consistent variable naming across all services
 - Clear documentation of URL construction

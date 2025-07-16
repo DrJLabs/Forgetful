@@ -17,7 +17,6 @@ import random
 # Add the workspace to the path dynamically
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -113,20 +112,20 @@ class TestBatchingPerformance:
 
             # Verify results
             successful_results = [r for r in results if not isinstance(r, Exception)]
-            assert len(successful_results) == len(
-                requests
-            ), f"Expected {len(requests)} results, got {len(successful_results)}"
+            assert len(successful_results) == len(requests), (
+                f"Expected {len(requests)} results, got {len(successful_results)}"
+            )
 
             # Check batch processor stats
             stats = batch_processor.get_stats()
 
             assert stats["batches_processed"] > 0, "Should have processed batches"
-            assert stats["requests_processed"] == len(
-                requests
-            ), f"Expected {len(requests)} requests processed"
-            assert (
-                stats["success_rate"] > 0.95
-            ), f"Success rate too low: {stats['success_rate']:.3f}"
+            assert stats["requests_processed"] == len(requests), (
+                f"Expected {len(requests)} requests processed"
+            )
+            assert stats["success_rate"] > 0.95, (
+                f"Success rate too low: {stats['success_rate']:.3f}"
+            )
 
             print(
                 f"Batch Processor Performance: Time={total_time:.3f}s, Batches={stats['batches_processed']}, Success Rate={stats['success_rate']:.3f}"
@@ -168,15 +167,15 @@ class TestBatchingPerformance:
 
             # Verify all requests completed
             successful_results = [r for r in results if not isinstance(r, Exception)]
-            assert len(successful_results) == len(
-                all_requests
-            ), f"Expected {len(all_requests)} results"
+            assert len(successful_results) == len(all_requests), (
+                f"Expected {len(all_requests)} results"
+            )
 
             # Check stats
             stats = batch_processor.get_stats()
-            assert stats["requests_processed"] == len(
-                all_requests
-            ), "Should process all requests"
+            assert stats["requests_processed"] == len(all_requests), (
+                "Should process all requests"
+            )
 
             print(
                 f"Priority Batching Performance: Time={total_time:.3f}s, Requests={len(all_requests)}"
@@ -238,23 +237,23 @@ class TestBatchingPerformance:
                 total_time = time.time() - start_time
 
                 # Performance assertions
-                assert (
-                    total_time < 10.0
-                ), f"Memory write batching too slow: {total_time:.3f}s"
+                assert total_time < 10.0, (
+                    f"Memory write batching too slow: {total_time:.3f}s"
+                )
 
                 # Verify results
                 successful_results = [
                     r for r in results if not isinstance(r, Exception)
                 ]
-                assert len(successful_results) == len(
-                    test_data
-                ), f"Expected {len(test_data)} results"
+                assert len(successful_results) == len(test_data), (
+                    f"Expected {len(test_data)} results"
+                )
 
                 # Check stats
                 stats = batcher.get_stats()
-                assert stats["requests_processed"] == len(
-                    test_data
-                ), "Should process all writes"
+                assert stats["requests_processed"] == len(test_data), (
+                    "Should process all writes"
+                )
 
                 print(
                     f"Memory Write Batcher Performance: Time={total_time:.3f}s, Writes={len(test_data)}, Success Rate={stats['success_rate']:.3f}"
@@ -324,23 +323,23 @@ class TestBatchingPerformance:
                 total_time = time.time() - start_time
 
                 # Performance assertions
-                assert (
-                    total_time < 8.0
-                ), f"Vector search batching too slow: {total_time:.3f}s"
+                assert total_time < 8.0, (
+                    f"Vector search batching too slow: {total_time:.3f}s"
+                )
 
                 # Verify results
                 successful_results = [
                     r for r in results if not isinstance(r, Exception)
                 ]
-                assert len(successful_results) == len(
-                    test_searches
-                ), f"Expected {len(test_searches)} results"
+                assert len(successful_results) == len(test_searches), (
+                    f"Expected {len(test_searches)} results"
+                )
 
                 # Check stats
                 stats = batcher.get_stats()
-                assert stats["requests_processed"] == len(
-                    test_searches
-                ), "Should process all searches"
+                assert stats["requests_processed"] == len(test_searches), (
+                    "Should process all searches"
+                )
 
                 print(
                     f"Vector Search Batcher Performance: Time={total_time:.3f}s, Searches={len(test_searches)}, Success Rate={stats['success_rate']:.3f}"
@@ -407,23 +406,23 @@ class TestBatchingPerformance:
                 total_time = time.time() - start_time
 
                 # Performance assertions
-                assert (
-                    total_time < 8.0
-                ), f"Graph query batching too slow: {total_time:.3f}s"
+                assert total_time < 8.0, (
+                    f"Graph query batching too slow: {total_time:.3f}s"
+                )
 
                 # Verify results
                 successful_results = [
                     r for r in results if not isinstance(r, Exception)
                 ]
-                assert len(successful_results) == len(
-                    test_queries
-                ), f"Expected {len(test_queries)} results"
+                assert len(successful_results) == len(test_queries), (
+                    f"Expected {len(test_queries)} results"
+                )
 
                 # Check stats
                 stats = batcher.get_stats()
-                assert stats["requests_processed"] == len(
-                    test_queries
-                ), "Should process all queries"
+                assert stats["requests_processed"] == len(test_queries), (
+                    "Should process all queries"
+                )
 
                 print(
                     f"Graph Query Batcher Performance: Time={total_time:.3f}s, Queries={len(test_queries)}, Success Rate={stats['success_rate']:.3f}"
@@ -539,25 +538,25 @@ class TestBatchingPerformance:
                 total_time = time.time() - start_time
 
                 # Performance assertions
-                assert (
-                    total_time < 15.0
-                ), f"Batching manager too slow: {total_time:.3f}s"
+                assert total_time < 15.0, (
+                    f"Batching manager too slow: {total_time:.3f}s"
+                )
 
                 # Verify results
                 successful_results = [
                     r for r in results if not isinstance(r, Exception)
                 ]
-                assert len(successful_results) == len(
-                    operations
-                ), f"Expected {len(operations)} results"
+                assert len(successful_results) == len(operations), (
+                    f"Expected {len(operations)} results"
+                )
 
                 # Check comprehensive stats
                 stats = manager.get_comprehensive_stats()
 
                 assert "memory_write_batcher" in stats, "Should have memory write stats"
-                assert (
-                    "vector_search_batcher" in stats
-                ), "Should have vector search stats"
+                assert "vector_search_batcher" in stats, (
+                    "Should have vector search stats"
+                )
                 assert "graph_query_batcher" in stats, "Should have graph query stats"
 
                 print(
@@ -681,9 +680,9 @@ class TestBatchingPerformance:
 
             # Verify eventual success
             successful_results = [r for r in results if not isinstance(r, Exception)]
-            assert len(successful_results) == len(
-                requests
-            ), f"Expected all requests to eventually succeed"
+            assert len(successful_results) == len(requests), (
+                "Expected all requests to eventually succeed"
+            )
 
             # Check stats
             stats = failing_processor_instance.get_stats()
@@ -730,32 +729,32 @@ class TestBatchingPerformance:
         assert stats_time < 0.01, f"Stats collection too slow: {stats_time:.3f}s"
 
         # Verify stats accuracy
-        assert (
-            stats["batches_processed"] == 1000
-        ), f"Expected 1000 batches, got {stats['batches_processed']}"
-        assert (
-            stats["requests_processed"] == 10000
-        ), f"Expected 10000 requests, got {stats['requests_processed']}"
-        assert (
-            stats["requests_failed"] == 100
-        ), f"Expected 100 failures, got {stats['requests_failed']}"
-        assert (
-            stats["flush_count"] == 10
-        ), f"Expected 10 flushes, got {stats['flush_count']}"
-        assert (
-            stats["timeout_count"] == 20
-        ), f"Expected 20 timeouts, got {stats['timeout_count']}"
-        assert (
-            stats["retry_count"] == 20
-        ), f"Expected 20 retries, got {stats['retry_count']}"
+        assert stats["batches_processed"] == 1000, (
+            f"Expected 1000 batches, got {stats['batches_processed']}"
+        )
+        assert stats["requests_processed"] == 10000, (
+            f"Expected 10000 requests, got {stats['requests_processed']}"
+        )
+        assert stats["requests_failed"] == 100, (
+            f"Expected 100 failures, got {stats['requests_failed']}"
+        )
+        assert stats["flush_count"] == 10, (
+            f"Expected 10 flushes, got {stats['flush_count']}"
+        )
+        assert stats["timeout_count"] == 20, (
+            f"Expected 20 timeouts, got {stats['timeout_count']}"
+        )
+        assert stats["retry_count"] == 20, (
+            f"Expected 20 retries, got {stats['retry_count']}"
+        )
 
         # Check calculated metrics
-        assert (
-            stats["success_rate"] >= 0.99
-        ), f"Success rate too low: {stats['success_rate']:.3f}"
-        assert (
-            stats["average_batch_size"] == 10.0
-        ), f"Average batch size incorrect: {stats['average_batch_size']}"
+        assert stats["success_rate"] >= 0.99, (
+            f"Success rate too low: {stats['success_rate']:.3f}"
+        )
+        assert stats["average_batch_size"] == 10.0, (
+            f"Average batch size incorrect: {stats['average_batch_size']}"
+        )
 
         print(
             f"Batch Metrics Performance: Recording={metrics_time:.3f}s, Stats={stats_time:.3f}s"

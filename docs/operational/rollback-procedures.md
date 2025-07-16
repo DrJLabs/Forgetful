@@ -275,7 +275,7 @@ if [ -f "backup/emergency_restore.flag" ]; then
     docker exec postgres-mem0 dropdb -U $POSTGRES_USER mem0
     docker exec postgres-mem0 createdb -U $POSTGRES_USER mem0
     docker exec -i postgres-mem0 psql -U $POSTGRES_USER mem0 < backup/mem0_emergency.sql
-    
+
     # Neo4j restore
     docker-compose stop neo4j
     rm -rf data/neo4j/*
@@ -415,8 +415,8 @@ crontab -l | grep -q "rollback_test" || echo "0 2 * * 1 /path/to/rollback_test.s
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: January 11, 2025  
-**Next Review**: February 11, 2025  
-**Owner**: Winston (Architect)  
-**Approval**: Pending PO Review 
+**Document Version**: 1.0
+**Last Updated**: January 11, 2025
+**Next Review**: February 11, 2025
+**Owner**: Winston (Architect)
+**Approval**: Pending PO Review

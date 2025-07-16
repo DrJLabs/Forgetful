@@ -22,9 +22,8 @@ import argparse
 import logging
 import os
 import sys
-import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import List
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent
@@ -175,7 +174,7 @@ def validate_database_connection(config: Config) -> ValidationResult:
                 vector_version = cur.fetchone()
 
                 if vector_version:
-                    result.add_success(f"pgvector extension available")
+                    result.add_success("pgvector extension available")
                 else:
                     result.add_warning("pgvector extension not found")
 
@@ -374,7 +373,7 @@ def generate_validation_report(results: List[ValidationResult], level: str) -> N
     total_warnings = sum(len(r.warnings) for r in results)
     total_success = sum(len(r.success) for r in results)
 
-    print(f"\n📊 Summary:")
+    print("\n📊 Summary:")
     print(f"   ✅ Success: {total_success}")
     print(f"   ⚠️  Warnings: {total_warnings}")
     print(f"   ❌ Errors: {total_errors}")

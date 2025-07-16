@@ -23,7 +23,7 @@ I enhanced the `database.py` file to demonstrate proper database initialization 
    # Test the connection to ensure it's working
    with engine.connect() as conn:
        conn.execute(text("SELECT 1"))
-   
+
    logger.info("Database connection initialized and tested successfully.")
    ```
 
@@ -59,14 +59,14 @@ logger.info(f"Database URL configured: {DATABASE_URL}")
 # Engine creation and connection testing
 try:
     engine = create_engine(DATABASE_URL)
-    
+
     # Test the connection to ensure it's working
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
-    
+
     # Only log success after actual testing
     logger.info("Database connection initialized and tested successfully.")
-    
+
 except SQLAlchemyError as e:
     logger.error(f"Failed to initialize database connection: {e}")
     raise RuntimeError(f"Database connection failed: {e}")

@@ -3,10 +3,9 @@ Unit tests for utility functions
 """
 
 from datetime import UTC, datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from app.models import App, Memory, MemoryState, User
 from app.utils.memory import get_memory_client
 from app.utils.permissions import check_memory_access_permissions
 
@@ -82,7 +81,6 @@ class TestDataFactoryUtils:
 
     def test_create_user_data(self):
         """Test user data creation"""
-        from tests.utils.contract_test_helpers import TestDataFactory
 
         user_data = TestDataFactory.create_test_user_data()
         assert "user_id" in user_data
@@ -92,7 +90,6 @@ class TestDataFactoryUtils:
 
     def test_create_user_data_default(self):
         """Test user data creation with defaults"""
-        from tests.utils.contract_test_helpers import TestDataFactory
 
         user_data = TestDataFactory.create_test_user_data()
         assert user_data["user_id"].startswith("test_user_")
@@ -100,7 +97,6 @@ class TestDataFactoryUtils:
 
     def test_create_memory_data(self):
         """Test memory data creation with parameters"""
-        from tests.utils.contract_test_helpers import TestDataFactory
 
         memory_data = TestDataFactory.create_memory_data("test_user")
         assert memory_data["user_id"] == "test_user"
@@ -110,7 +106,6 @@ class TestDataFactoryUtils:
 
     def test_create_memory_data_default(self):
         """Test memory data creation with defaults"""
-        from tests.utils.contract_test_helpers import TestDataFactory
 
         memory_data = TestDataFactory.create_memory_data()
         assert memory_data["user_id"].startswith("test_user_")
@@ -119,7 +114,6 @@ class TestDataFactoryUtils:
 
     def test_create_app_data(self):
         """Test app data creation"""
-        from tests.utils.contract_test_helpers import TestDataFactory
 
         app_data = TestDataFactory.create_test_app_data()
         assert "name" in app_data
@@ -128,7 +122,6 @@ class TestDataFactoryUtils:
 
     def test_create_app_data_default(self):
         """Test app data creation with defaults"""
-        from tests.utils.contract_test_helpers import TestDataFactory
 
         app_data = TestDataFactory.create_test_app_data()
         assert app_data["name"].startswith("test_app_")

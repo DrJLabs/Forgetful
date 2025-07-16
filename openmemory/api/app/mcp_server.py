@@ -12,7 +12,6 @@ import contextvars
 import datetime
 import json
 import logging
-import os
 import uuid
 
 from app.database import SessionLocal
@@ -26,22 +25,17 @@ from fastapi.routing import APIRouter
 from mcp.server.fastmcp import FastMCP
 from mcp.server.sse import SseServerTransport
 
-from shared.caching import cache_manager, cached
 from shared.errors import (
     ExternalServiceError,
-    NotFoundError,
-    ValidationError,
-    create_error_response,
     handle_error,
 )
 
 # Agent 4 Integration - Structured Logging and Error Handling
 from shared.logging_system import (
-    CorrelationContextManager,
     get_logger,
     performance_logger,
 )
-from shared.resilience import RetryPolicy, resilient, retry
+from shared.resilience import RetryPolicy, retry
 
 # Replace standard logging with structured logging
 logger = get_logger("mcp_server")
@@ -459,7 +453,7 @@ async def handle_post_message(request: Request):
     return await handle_post_message(request)
 
 
-async def handle_post_message(request: Request):
+async def handle_sse_post_message(request: Request):
     """Handle POST messages for SSE"""
     try:
         body = await request.body()
@@ -485,7 +479,7 @@ async def handle_post_message(request: Request):
 
 def setup_mcp_server(app: FastAPI):
     """Setup MCP server with the FastAPI application"""
-    mcp._mcp_server.name = f"mem0-mcp-server"
+    mcp._mcp_server.name = "mem0-mcp-server"
 
     # Include MCP router in the FastAPI app
     app.include_router(mcp_router)

@@ -1,7 +1,7 @@
 from app.database import get_db
 from app.mem0_client import get_memory_client
 from app.models import App, User
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/v1/stats", tags=["stats"])
@@ -29,7 +29,7 @@ async def get_profile(user_id: str, db: Session = Depends(get_db)):
         memory_client = get_memory_client()
         memories = memory_client.get_all(user_id=user_id)
         total_memories = len(memories.get("results", []))
-    except Exception as e:
+    except Exception:
         total_memories = 0
 
     # Get total number of apps

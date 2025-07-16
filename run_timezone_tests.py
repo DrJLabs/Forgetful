@@ -138,7 +138,9 @@ def run_tests():
         icon = (
             "🚨"
             if critical and status == "FAILED"
-            else "✅" if status == "PASSED" else "❌"
+            else "✅"
+            if status == "PASSED"
+            else "❌"
         )
         criticality = " (CRITICAL)" if critical else ""
         print(f"  {icon} {name}: {status}{criticality}")

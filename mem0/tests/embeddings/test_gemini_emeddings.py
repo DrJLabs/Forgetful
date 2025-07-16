@@ -20,9 +20,9 @@ def config():
 
 
 def test_embed_query(mock_genai, config):
-    mock_embedding_response = type('Response', (), {
-        'embeddings': [type('Embedding', (), {'values': [0.1, 0.2, 0.3, 0.4]})]
-    })()
+    mock_embedding_response = type(
+        "Response", (), {"embeddings": [type("Embedding", (), {"values": [0.1, 0.2, 0.3, 0.4]})]}
+    )()
     mock_genai.return_value = mock_embedding_response
 
     embedder = GoogleGenAIEmbedding(config)
@@ -35,7 +35,7 @@ def test_embed_query(mock_genai, config):
 
 
 def test_embed_returns_empty_list_if_none(mock_genai, config):
-    mock_genai.return_value = type('Response', (), {'embeddings': [type('Embedding', (), {'values': []})]})()
+    mock_genai.return_value = type("Response", (), {"embeddings": [type("Embedding", (), {"values": []})]})()
 
     embedder = GoogleGenAIEmbedding(config)
 

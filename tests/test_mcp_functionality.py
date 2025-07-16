@@ -5,8 +5,6 @@ Tests all MCP endpoints and operations to verify proper functionality
 """
 
 import asyncio
-import json
-import os
 import sys
 from datetime import datetime
 
@@ -181,7 +179,7 @@ class MCPTester:
         print(f"\nTotal Tests: {total_tests}")
         print(f"Passed: {passed}")
         print(f"Failed: {total_tests - passed}")
-        print(f"Success Rate: {(passed/total_tests)*100:.1f}%")
+        print(f"Success Rate: {(passed / total_tests) * 100:.1f}%")
 
         print("\nDetailed Results:")
         print("-" * 60)
@@ -193,8 +191,8 @@ class MCPTester:
         print("-" * 60)
         print("1. Open Cursor Settings > MCP Servers")
         print("2. Add new MCP server:")
-        print(f"   - Name: mem0")
-        print(f"   - Type: SSE")
+        print("   - Name: mem0")
+        print("   - Type: SSE")
         print(f"   - Endpoint: {self.base_url}/mcp/messages/")
         print("3. Restart Cursor to apply changes")
 

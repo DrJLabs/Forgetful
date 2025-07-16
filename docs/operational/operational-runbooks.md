@@ -99,7 +99,7 @@ check_service() {
     local service=$1
     local url=$2
     local timeout=5
-    
+
     if curl -s -f --max-time $timeout "$url" > /dev/null 2>&1; then
         echo "$(date): $service OK" >> $LOG_FILE
         return 0
@@ -138,7 +138,7 @@ find /var/log -name "mem0-health.log" -mtime +7 -delete
    ```bash
    # CPU and memory usage
    docker stats --no-stream | grep -E "mem0|postgres|neo4j|openmemory"
-   
+
    # Check for resource contention
    docker exec postgres-mem0 psql -U $POSTGRES_USER -d mem0 -c "SELECT * FROM pg_stat_activity WHERE state = 'active';"
    ```
@@ -147,7 +147,7 @@ find /var/log -name "mem0-health.log" -mtime +7 -delete
    ```bash
    # PostgreSQL slow queries
    docker exec postgres-mem0 psql -U $POSTGRES_USER -d mem0 -c "SELECT query, mean_time, calls FROM pg_stat_statements ORDER BY mean_time DESC LIMIT 10;"
-   
+
    # Neo4j performance
    docker exec neo4j-mem0 cypher-shell -u neo4j -p $NEO4J_PASSWORD "CALL dbms.listQueries() YIELD query, elapsedTimeMillis WHERE elapsedTimeMillis > 1000 RETURN query, elapsedTimeMillis"
    ```
@@ -181,7 +181,7 @@ find /var/log -name "mem0-health.log" -mtime +7 -delete
    # Service logs
    docker logs mem0 --tail 100 | grep -i error
    docker logs openmemory-mcp --tail 100 | grep -i error
-   
+
    # Database logs
    docker exec postgres-mem0 tail -100 /var/log/postgresql/postgresql.log
    docker logs neo4j-mem0 --tail 100 | grep -i error
@@ -614,8 +614,8 @@ docker exec neo4j-mem0 cypher-shell -u neo4j -p $NEO4J_PASSWORD "CALL db.indexes
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: January 11, 2025  
-**Next Review**: February 11, 2025  
-**Owner**: Winston (Architect)  
-**Approval**: Pending PO Review 
+**Document Version**: 1.0
+**Last Updated**: January 11, 2025
+**Next Review**: February 11, 2025
+**Owner**: Winston (Architect)
+**Approval**: Pending PO Review

@@ -57,7 +57,7 @@ tests/
 ```
 
 **Positive**: Basic test structure exists
-**Issues**: 
+**Issues**:
 - Incomplete coverage
 - No integration testing
 - No memory system end-to-end testing
@@ -141,23 +141,23 @@ tests/
    from sqlalchemy import create_engine
    from sqlalchemy.orm import sessionmaker
    from testcontainers.postgres import PostgresContainer
-   
+
    from app.main import app
    from app.database import get_db
    from app.models import Base
-   
+
    # Test database setup
    @pytest.fixture(scope="session")
    def postgres_container():
        """Setup PostgreSQL test container"""
        with PostgresContainer("postgres:15") as postgres:
            yield postgres
-   
+
    @pytest.fixture(scope="session")
    def test_db_url(postgres_container):
        """Create test database URL"""
        return postgres_container.get_connection_url()
-   
+
    @pytest.fixture(scope="session")
    def test_engine(test_db_url):
        """Create test database engine"""
@@ -165,7 +165,7 @@ tests/
        Base.metadata.create_all(bind=engine)
        yield engine
        Base.metadata.drop_all(bind=engine)
-   
+
    @pytest.fixture
    def test_session(test_engine):
        """Create test database session"""
@@ -175,7 +175,7 @@ tests/
            yield session
        finally:
            session.close()
-   
+
    @pytest.fixture
    async def client(test_session):
        """Create test HTTP client"""
@@ -190,29 +190,29 @@ tests/
    import factory
    from factory.alchemy import SQLAlchemyModelFactory
    from app.models import Memory, App, User
-   
+
    class UserFactory(SQLAlchemyModelFactory):
        class Meta:
            model = User
            sqlalchemy_session_persistence = "commit"
-   
+
        id = factory.Sequence(lambda n: f"user_{n}")
        created_at = factory.Faker("date_time")
-   
+
    class AppFactory(SQLAlchemyModelFactory):
        class Meta:
            model = App
            sqlalchemy_session_persistence = "commit"
-   
+
        id = factory.Sequence(lambda n: f"app_{n}")
        name = factory.Faker("company")
        description = factory.Faker("text")
-   
+
    class MemoryFactory(SQLAlchemyModelFactory):
        class Meta:
            model = Memory
            sqlalchemy_session_persistence = "commit"
-   
+
        id = factory.Sequence(lambda n: n)
        memory = factory.Faker("text")
        category = factory.Faker("word")
@@ -229,7 +229,7 @@ tests/
    import pytest
    from app.models import Memory, App, User
    from tests.factories import MemoryFactory, AppFactory, UserFactory
-   
+
    class TestMemoryModel:
        def test_memory_creation(self, test_session):
            """Test memory model creation"""
@@ -237,13 +237,13 @@ tests/
            assert memory.id is not None
            assert memory.memory is not None
            assert memory.user_id is not None
-   
+
        def test_memory_vector_field(self, test_session):
            """Test vector field handling"""
            memory = MemoryFactory()
            # Test vector field operations
            assert hasattr(memory, 'vector')
-   
+
        def test_memory_relationships(self, test_session):
            """Test memory relationships"""
            memory = MemoryFactory()
@@ -257,7 +257,7 @@ tests/
    import pytest
    from httpx import AsyncClient
    from tests.factories import MemoryFactory, UserFactory
-   
+
    class TestMemoryRouter:
        @pytest.mark.asyncio
        async def test_get_memories(self, client: AsyncClient, test_session):
@@ -265,14 +265,14 @@ tests/
            # Create test data
            user = UserFactory()
            memories = MemoryFactory.create_batch(3, user_id=user.id)
-           
+
            # Test API call
            response = await client.get(f"/memories?user_id={user.id}")
            assert response.status_code == 200
-           
+
            data = response.json()
            assert len(data) == 3
-   
+
        @pytest.mark.asyncio
        async def test_create_memory(self, client: AsyncClient, test_session):
            """Test POST /memories endpoint"""
@@ -281,27 +281,27 @@ tests/
                "messages": [{"role": "user", "content": "Test memory"}],
                "user_id": user.id
            }
-           
+
            response = await client.post("/memories", json=memory_data)
            assert response.status_code == 201
-           
+
            data = response.json()
            assert data["memory"] is not None
-   
+
        @pytest.mark.asyncio
        async def test_search_memories(self, client: AsyncClient, test_session):
            """Test POST /search endpoint"""
            user = UserFactory()
            MemoryFactory.create_batch(5, user_id=user.id)
-           
+
            search_data = {
                "query": "test query",
                "user_id": user.id
            }
-           
+
            response = await client.post("/search", json=search_data)
            assert response.status_code == 200
-           
+
            data = response.json()
            assert "results" in data
    ```
@@ -337,11 +337,11 @@ tests/
    ```javascript
    // openmemory/ui/jest.config.js
    const nextJest = require('next/jest')
-   
+
    const createJestConfig = nextJest({
      dir: './',
    })
-   
+
    const customJestConfig = {
      setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
      testEnvironment: 'jest-environment-jsdom',
@@ -360,7 +360,7 @@ tests/
        },
      },
    }
-   
+
    module.exports = createJestConfig(customJestConfig)
    ```
 
@@ -369,7 +369,7 @@ tests/
    // openmemory/ui/jest.setup.js
    import '@testing-library/jest-dom'
    import { server } from './src/mocks/server'
-   
+
    beforeAll(() => server.listen())
    afterEach(() => server.resetHandlers())
    afterAll(() => server.close())
@@ -382,7 +382,7 @@ tests/
    ```javascript
    // openmemory/ui/src/mocks/handlers.js
    import { rest } from 'msw'
-   
+
    export const handlers = [
      rest.get('/memories', (req, res, ctx) => {
        return res(
@@ -395,14 +395,14 @@ tests/
            },
            {
              id: 2,
-             memory: "Test memory 2", 
+             memory: "Test memory 2",
              category: "work",
              created_at: "2024-01-02T00:00:00Z"
            }
          ])
        )
      }),
-     
+
      rest.post('/memories', (req, res, ctx) => {
        return res(
          ctx.status(201),
@@ -413,7 +413,7 @@ tests/
          })
        )
      }),
-     
+
      rest.post('/search', (req, res, ctx) => {
        return res(
          ctx.json({
@@ -436,42 +436,42 @@ tests/
    import { render, screen, waitFor } from '@testing-library/react'
    import userEvent from '@testing-library/user-event'
    import { MemoryList } from '../MemoryList'
-   
+
    describe('MemoryList', () => {
      it('renders memories correctly', async () => {
        render(<MemoryList userId="test_user" />)
-       
+
        await waitFor(() => {
          expect(screen.getByText('Test memory 1')).toBeInTheDocument()
          expect(screen.getByText('Test memory 2')).toBeInTheDocument()
        })
      })
-   
+
      it('handles memory creation', async () => {
        const user = userEvent.setup()
        render(<MemoryList userId="test_user" />)
-       
+
        const input = screen.getByLabelText('Add memory')
        const button = screen.getByText('Add')
-       
+
        await user.type(input, 'New memory')
        await user.click(button)
-       
+
        await waitFor(() => {
          expect(screen.getByText('New test memory')).toBeInTheDocument()
        })
      })
-   
+
      it('handles search functionality', async () => {
        const user = userEvent.setup()
        render(<MemoryList userId="test_user" />)
-       
+
        const searchInput = screen.getByPlaceholderText('Search memories')
        const searchButton = screen.getByText('Search')
-       
+
        await user.type(searchInput, 'test query')
        await user.click(searchButton)
-       
+
        await waitFor(() => {
          expect(screen.getByText('Matching memory')).toBeInTheDocument()
        })
@@ -492,7 +492,7 @@ tests/
    from httpx import AsyncClient
    from testcontainers.postgres import PostgresContainer
    from testcontainers.neo4j import Neo4jContainer
-   
+
    @pytest.mark.integration
    class TestServiceIntegration:
        @pytest.fixture(scope="class")
@@ -504,7 +504,7 @@ tests/
                    "postgres": postgres,
                    "neo4j": neo4j
                }
-   
+
        @pytest.mark.asyncio
        async def test_memory_lifecycle(self, services):
            """Test complete memory lifecycle"""
@@ -513,17 +513,17 @@ tests/
                "messages": [{"role": "user", "content": "Integration test memory"}],
                "user_id": "test_user"
            }
-           
+
            async with AsyncClient(app=app, base_url="http://test") as client:
                # Create
                response = await client.post("/memories", json=memory_data)
                assert response.status_code == 201
                memory_id = response.json()["id"]
-               
+
                # Retrieve
                response = await client.get(f"/memories/{memory_id}")
                assert response.status_code == 200
-               
+
                # Search
                response = await client.post("/search", json={
                    "query": "Integration test",
@@ -531,16 +531,16 @@ tests/
                })
                assert response.status_code == 200
                assert len(response.json()["results"]) > 0
-               
+
                # Update
                update_data = {"text": "Updated integration test memory"}
                response = await client.put(f"/memories/{memory_id}", json=update_data)
                assert response.status_code == 200
-               
+
                # Delete
                response = await client.delete(f"/memories/{memory_id}")
                assert response.status_code == 204
-   
+
        @pytest.mark.asyncio
        async def test_vector_search_integration(self, services):
            """Test vector search functionality"""
@@ -550,18 +550,18 @@ tests/
                {"messages": [{"role": "user", "content": "JavaScript development"}], "user_id": "test_user"},
                {"messages": [{"role": "user", "content": "Database design"}], "user_id": "test_user"}
            ]
-           
+
            async with AsyncClient(app=app, base_url="http://test") as client:
                # Create memories
                for memory in memories:
                    await client.post("/memories", json=memory)
-               
+
                # Search for programming-related memories
                response = await client.post("/search", json={
                    "query": "programming",
                    "user_id": "test_user"
                })
-               
+
                assert response.status_code == 200
                results = response.json()["results"]
                assert len(results) >= 2  # Should find Python and JavaScript
@@ -574,7 +574,7 @@ tests/
    ```javascript
    // openmemory/ui/playwright.config.ts
    import { defineConfig, devices } from '@playwright/test'
-   
+
    export default defineConfig({
      testDir: './tests/e2e',
      fullyParallel: true,
@@ -604,47 +604,47 @@ tests/
    ```javascript
    // openmemory/ui/tests/e2e/memory-workflow.spec.ts
    import { test, expect } from '@playwright/test'
-   
+
    test.describe('Memory Management Workflow', () => {
      test.beforeEach(async ({ page }) => {
        await page.goto('/')
      })
-   
+
      test('should create and display memory', async ({ page }) => {
        // Navigate to memories page
        await page.click('text=Memories')
-       
+
        // Add new memory
        await page.fill('[placeholder="Add your memory..."]', 'Test memory from E2E')
        await page.click('text=Add Memory')
-       
+
        // Verify memory appears
        await expect(page.locator('text=Test memory from E2E')).toBeVisible()
      })
-   
+
      test('should search memories', async ({ page }) => {
        // Navigate to memories page
        await page.click('text=Memories')
-       
+
        // Search for memories
        await page.fill('[placeholder="Search memories..."]', 'test')
        await page.click('text=Search')
-       
+
        // Verify search results
        await expect(page.locator('[data-testid="memory-item"]')).toBeVisible()
      })
-   
+
      test('should edit memory', async ({ page }) => {
        // Navigate to memories page
        await page.click('text=Memories')
-       
+
        // Click edit on first memory
        await page.click('[data-testid="edit-memory"]')
-       
+
        // Update memory text
        await page.fill('[data-testid="memory-input"]', 'Updated memory text')
        await page.click('text=Save')
-       
+
        // Verify update
        await expect(page.locator('text=Updated memory text')).toBeVisible()
      })
@@ -660,17 +660,17 @@ tests/
    ```yaml
    # .github/workflows/test.yml
    name: Test Suite
-   
+
    on:
      push:
        branches: [ main, develop ]
      pull_request:
        branches: [ main, develop ]
-   
+
    jobs:
      backend-tests:
        runs-on: ubuntu-latest
-       
+
        services:
          postgres:
            image: postgres:15
@@ -682,7 +682,7 @@ tests/
              --health-interval 10s
              --health-timeout 5s
              --health-retries 5
-         
+
          neo4j:
            image: neo4j:5.0
            env:
@@ -692,77 +692,77 @@ tests/
              --health-interval 30s
              --health-timeout 10s
              --health-retries 5
-   
+
        steps:
          - uses: actions/checkout@v4
-         
+
          - name: Set up Python
            uses: actions/setup-python@v4
            with:
              python-version: '3.11'
-         
+
          - name: Install dependencies
            run: |
              cd openmemory/api
              pip install -r requirements.txt
              pip install -r requirements-test.txt
-         
+
          - name: Run tests
            run: |
              cd openmemory/api
              pytest tests/ -v --cov=app --cov-report=xml
-         
+
          - name: Upload coverage
            uses: codecov/codecov-action@v3
            with:
              file: ./openmemory/api/coverage.xml
-   
+
      frontend-tests:
        runs-on: ubuntu-latest
-       
+
        steps:
          - uses: actions/checkout@v4
-         
+
          - name: Set up Node.js
            uses: actions/setup-node@v4
            with:
              node-version: '18'
              cache: 'npm'
              cache-dependency-path: openmemory/ui/package-lock.json
-         
+
          - name: Install dependencies
            run: |
              cd openmemory/ui
              npm ci
-         
+
          - name: Run unit tests
            run: |
              cd openmemory/ui
              npm run test:coverage
-         
+
          - name: Run E2E tests
            run: |
              cd openmemory/ui
              npx playwright install
              npm run test:e2e
-   
+
      integration-tests:
        runs-on: ubuntu-latest
        needs: [backend-tests, frontend-tests]
-       
+
        steps:
          - uses: actions/checkout@v4
-         
+
          - name: Set up Docker Compose
            run: |
              docker-compose -f docker-compose.yml up -d
              sleep 30
-         
+
          - name: Run integration tests
            run: |
              cd openmemory/api
              pytest tests/test_integration.py -v -m integration
-         
+
          - name: Cleanup
            run: docker-compose down
    ```
@@ -771,34 +771,34 @@ tests/
    ```bash
    #!/bin/bash
    # scripts/run_tests.sh
-   
+
    set -euo pipefail
-   
+
    echo "🧪 Running mem0-stack test suite..."
-   
+
    # Backend tests
    echo "Running backend tests..."
    cd openmemory/api
    pytest tests/ -v --cov=app --cov-report=term-missing
    cd ../..
-   
+
    # Frontend tests
    echo "Running frontend tests..."
    cd openmemory/ui
    npm run test:coverage
    cd ../..
-   
+
    # Integration tests
    echo "Running integration tests..."
    docker-compose up -d postgres neo4j
    sleep 10
-   
+
    cd openmemory/api
    pytest tests/test_integration.py -v -m integration
    cd ../..
-   
+
    docker-compose down
-   
+
    echo "✅ All tests completed successfully!"
    ```
 
@@ -913,4 +913,4 @@ tests/
 ./scripts/generate_coverage.sh
 ```
 
-**Expected Outcome**: Comprehensive testing framework with 80%+ coverage, automated CI/CD testing, and confidence in system stability for future development. 
+**Expected Outcome**: Comprehensive testing framework with 80%+ coverage, automated CI/CD testing, and confidence in system stability for future development.

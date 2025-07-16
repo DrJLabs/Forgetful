@@ -1,0 +1,58 @@
+# Recommended .pre-commit-config.yaml based on 2024/2025 best practices
+# This config eliminates the multiple commit problem and follows modern conventions
+
+default_language_version:
+  python: python3
+
+# CRITICAL: Set to false to allow auto-fixing tools to work properly
+fail_fast: false
+
+repos:
+  # Essential file hygiene (minimal set)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-yaml
+      - id: check-json
+
+  # Modern Python tooling - use local system installs for speed
+  - repo: local
+    hooks:
+      # Ruff: Modern replacement for black, isort, flake8, pyupgrade, bandit
+      - id: ruff-format
+        name: "Format with Ruff"
+        entry: ruff format
+        language: system
+        types: [python]
+
+      - id: ruff-check
+        name: "Lint with Ruff"
+        entry: ruff check --fix
+        language: system
+        types: [python]
+
+  # Security scanning (choose one)
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.22.1
+    hooks:
+      - id: gitleaks
+        name: "Security scan"
+
+  # Optional: Type checking (uncomment if desired)
+  # - repo: local
+  #   hooks:
+  #     - id: mypy
+  #       name: "Type check with MyPy"
+  #       entry: mypy
+  #       language: system
+  #       types: [python]
+  #       # Only run if there are actual changes
+  #       stages: [manual]
+
+# Global settings
+minimum_pre_commit_version: 3.0.0

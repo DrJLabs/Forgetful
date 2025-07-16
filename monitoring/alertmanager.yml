@@ -287,7 +287,7 @@ time_intervals:
           - start_time: '00:00'
             end_time: '23:59'
         weekdays: ['saturday', 'sunday']
-  
+
   - name: 'maintenance-window'
     time_intervals:
       - times:

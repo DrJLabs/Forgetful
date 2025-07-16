@@ -415,4 +415,4 @@ docker logs neo4j-mem0        # View Neo4j logs
 
 ---
 
-*This document reflects the actual state of the mem0-stack system as of January 2025. It should be updated as the system evolves and technical debt is addressed.* 
+*This document reflects the actual state of the mem0-stack system as of January 2025. It should be updated as the system evolves and technical debt is addressed.*

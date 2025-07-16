@@ -5,15 +5,12 @@ Comprehensive tests for CORS, security headers, and response security
 validation in the OpenMemory API.
 """
 
-import asyncio
 import logging
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from httpx import AsyncClient
 
 # Import after setting test environment
-from main import app  # noqa: E402
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -141,9 +138,9 @@ class TestCORSValidation:
             # Security check: credentials are now properly configured
             if allow_credentials.lower() == "true":
                 # Should have specific origin, not wildcard
-                assert (
-                    allow_origin != "*"
-                ), "CORS should not allow credentials with wildcard origin"
+                assert allow_origin != "*", (
+                    "CORS should not allow credentials with wildcard origin"
+                )
                 assert allow_origin in [
                     "http://localhost:3000",
                     "http://127.0.0.1:3000",
@@ -435,8 +432,7 @@ class TestResponseHeaderSecurity:
         for header in version_headers:
             if header in response.headers:
                 logger.warning(
-                    f"⚠ Version header present: {header}: "
-                    f"{response.headers[header]}"
+                    f"⚠ Version header present: {header}: {response.headers[header]}"
                 )
             else:
                 logger.info(f"✓ Version header {header} not present")

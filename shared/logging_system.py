@@ -246,7 +246,7 @@ def log_response(endpoint: str, status_code: int, duration: float, **kwargs):
 def log_database_query(query: str, duration: float, **kwargs):
     """Log database query with performance metrics."""
     db_logger.info(
-        f"Database Query",
+        "Database Query",
         query=query,
         duration_seconds=duration,
         event="database_query",

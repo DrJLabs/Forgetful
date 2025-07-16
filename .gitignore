@@ -120,6 +120,9 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Ruff cache
+.ruff_cache/
+
 # Test artifacts
 test-results.xml
 .pytest_cache/

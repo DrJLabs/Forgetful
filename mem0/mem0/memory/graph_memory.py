@@ -351,7 +351,6 @@ class MemoryGraph:
             }
 
             if agent_id:
-
                 params["agent_id"] = agent_id
 
             # Delete the specific relationship between nodes
@@ -560,7 +559,6 @@ class MemoryGraph:
         return entity_list
 
     def _search_source_node(self, source_embedding, filters, threshold=0.9):
-
         cypher = f"""
             MATCH (source_candidate {self.node_label})
             WHERE source_candidate.embedding IS NOT NULL
@@ -590,7 +588,6 @@ class MemoryGraph:
         return result
 
     def _search_destination_node(self, destination_embedding, filters, threshold=0.9):
-
         cypher = f"""
             MATCH (destination_candidate {self.node_label})
             WHERE destination_candidate.embedding IS NOT NULL

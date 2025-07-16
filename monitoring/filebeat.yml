@@ -95,7 +95,7 @@ processors:
       geo.country_iso_code: "US"
       geo.region_name: "New York"
       geo.city_name: "New York"
-  
+
   # Add Docker metadata
   - add_docker_metadata:
       host: "unix:///var/run/docker.sock"
@@ -103,13 +103,13 @@ processors:
       default_indexers.enabled: true
       default_matchers.enabled: true
       cleanup_timeout: 60s
-      
+
   # Add process metadata
   - add_process_metadata:
       match_pids: ["process.pid", "process.parent.pid"]
       target: process
       include_fields: ["process.name", "process.title", "process.executable", "process.args", "process.env"]
-      
+
   # Rename fields for consistency
   - rename:
       fields:
@@ -121,7 +121,7 @@ processors:
           to: "container.image"
         - from: "docker.container.labels"
           to: "container.labels"
-          
+
   # Add service identification
   - script:
       lang: javascript
@@ -160,12 +160,12 @@ processors:
             }
           }
         }
-  
+
   # Drop unwanted fields
   - drop_fields:
       fields: ["input", "ecs.version", "agent.hostname", "agent.id", "agent.type", "agent.version", "agent.ephemeral_id"]
       ignore_missing: true
-      
+
   # Add timestamp
   - timestamp:
       field: "@timestamp"

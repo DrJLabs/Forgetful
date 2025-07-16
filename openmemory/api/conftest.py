@@ -39,7 +39,7 @@ os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_AUTH"] = "neo4j/test_password"
 
 from app.database import Base, get_db  # noqa: E402
-from app.models import App, Memory, MemoryAccessLog, MemoryState, User  # noqa: E402
+from app.models import App, Memory, MemoryState, User  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 # Import app components after setting environment
@@ -60,7 +60,7 @@ def event_loop():
 def get_app():
     """Get app components for testing."""
     from app.database import Base, get_db
-    from app.models import App, Memory, MemoryAccessLog, MemoryState, User
+    from app.models import App, Memory, MemoryState, User
     from main import app
 
     return app, get_db, Base, User, App, Memory, MemoryState
@@ -140,7 +140,6 @@ def test_db_engine():
         Category,
         Config,
         Memory,
-        MemoryAccessLog,
         MemoryState,
         MemoryStatusHistory,
         User,

@@ -20,13 +20,13 @@ import time
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 from shared.connection_pool import global_pool_manager
-from shared.logging_system import get_logger, performance_logger
+from shared.logging_system import get_logger
 
 logger = get_logger("batching")
 
@@ -396,7 +396,9 @@ class MemoryWriteBatcher:
 
     def __init__(self):
         self.config = BatchConfig(
-            batch_size=50, flush_interval=0.1, parallel_workers=2  # 100ms
+            batch_size=50,
+            flush_interval=0.1,
+            parallel_workers=2,  # 100ms
         )
         self.processor = BatchProcessor(
             "memory_write", self._process_memory_writes, self.config
@@ -615,7 +617,9 @@ class GraphQueryBatcher:
 
     def __init__(self):
         self.config = BatchConfig(
-            batch_size=10, flush_interval=0.1, parallel_workers=2  # 100ms
+            batch_size=10,
+            flush_interval=0.1,
+            parallel_workers=2,  # 100ms
         )
         self.processor = BatchProcessor(
             "graph_query", self._process_graph_queries, self.config

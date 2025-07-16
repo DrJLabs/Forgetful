@@ -47,7 +47,6 @@ datasources:
       queryTimeout: 60s
       index: 'mem0-stack-logs-*'
       timeInterval: '15s'
-      includeFrozen: false
       xpack: false
     uid: 'elasticsearch-mem0'
     version: 1
@@ -159,7 +158,6 @@ datasources:
       queryTimeout: 60s
       index: 'mem0-stack-*-logs-*'
       timeInterval: '15s'
-      includeFrozen: false
       xpack: false
     uid: 'application-logs'
     version: 1
@@ -182,7 +180,6 @@ datasources:
       queryTimeout: 60s
       index: 'mem0-stack-performance-*'
       timeInterval: '15s'
-      includeFrozen: false
       xpack: false
     uid: 'performance-metrics'
     version: 1
@@ -205,7 +202,6 @@ datasources:
       queryTimeout: 60s
       index: 'mem0-stack-errors-*'
       timeInterval: '15s'
-      includeFrozen: false
       xpack: false
     uid: 'error-logs'
     version: 1

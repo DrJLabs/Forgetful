@@ -119,7 +119,7 @@ healthcheck:
    ```yaml
    # docker-compose.monitoring.yml
    version: '3.8'
-   
+
    services:
      prometheus:
        image: prom/prometheus:latest
@@ -139,7 +139,7 @@ healthcheck:
        restart: unless-stopped
        networks:
          - mem0-network
-   
+
      grafana:
        image: grafana/grafana:latest
        container_name: grafana
@@ -154,7 +154,7 @@ healthcheck:
        restart: unless-stopped
        networks:
          - mem0-network
-   
+
      alertmanager:
        image: prom/alertmanager:latest
        container_name: alertmanager
@@ -170,7 +170,7 @@ healthcheck:
        restart: unless-stopped
        networks:
          - mem0-network
-   
+
    volumes:
      prometheus_data:
      grafana_data:
@@ -183,45 +183,45 @@ healthcheck:
    global:
      scrape_interval: 15s
      evaluation_interval: 15s
-   
+
    rule_files:
      - "alert_rules.yml"
-   
+
    alerting:
      alertmanagers:
        - static_configs:
            - targets:
                - alertmanager:9093
-   
+
    scrape_configs:
      - job_name: 'mem0-api'
        static_configs:
          - targets: ['mem0:8000']
        metrics_path: /metrics
        scrape_interval: 5s
-   
+
      - job_name: 'openmemory-api'
        static_configs:
          - targets: ['openmemory-api:8765']
        metrics_path: /metrics
        scrape_interval: 5s
-   
+
      - job_name: 'openmemory-ui'
        static_configs:
          - targets: ['openmemory-ui:3000']
        metrics_path: /api/metrics
        scrape_interval: 15s
-   
+
      - job_name: 'postgres'
        static_configs:
          - targets: ['postgres-exporter:9187']
        scrape_interval: 5s
-   
+
      - job_name: 'neo4j'
        static_configs:
          - targets: ['neo4j:2004']
        scrape_interval: 5s
-   
+
      - job_name: 'node-exporter'
        static_configs:
          - targets: ['node-exporter:9100']
@@ -237,37 +237,37 @@ healthcheck:
    from prometheus_client import Counter, Histogram, Gauge, start_http_server
    import time
    import functools
-   
+
    # Metrics definitions
    REQUEST_COUNT = Counter(
        'mem0_requests_total',
        'Total requests',
        ['method', 'endpoint', 'status_code']
    )
-   
+
    REQUEST_DURATION = Histogram(
        'mem0_request_duration_seconds',
        'Request duration in seconds',
        ['method', 'endpoint']
    )
-   
+
    MEMORY_OPERATIONS = Counter(
        'mem0_memory_operations_total',
        'Total memory operations',
        ['operation', 'status']
    )
-   
+
    ACTIVE_CONNECTIONS = Gauge(
        'mem0_active_connections',
        'Active database connections'
    )
-   
+
    VECTOR_SEARCH_DURATION = Histogram(
        'mem0_vector_search_duration_seconds',
        'Vector search duration in seconds',
        ['search_type']
    )
-   
+
    def track_request_metrics(func):
        """Decorator to track request metrics"""
        @functools.wraps(func)
@@ -276,7 +276,7 @@ healthcheck:
            method = "POST"  # Default, should be extracted from request
            endpoint = func.__name__
            status_code = "200"
-           
+
            try:
                result = await func(*args, **kwargs)
                return result
@@ -287,9 +287,9 @@ healthcheck:
                duration = time.time() - start_time
                REQUEST_COUNT.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
                REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration)
-       
+
        return wrapper
-   
+
    def track_memory_operation(operation):
        """Track memory operations"""
        def decorator(func):
@@ -312,52 +312,52 @@ healthcheck:
    from prometheus_client import Counter, Histogram, Gauge, generate_latest
    from fastapi import FastAPI, Request, Response
    import time
-   
+
    # Metrics definitions
    HTTP_REQUESTS = Counter(
        'openmemory_http_requests_total',
        'Total HTTP requests',
        ['method', 'endpoint', 'status_code']
    )
-   
+
    HTTP_REQUEST_DURATION = Histogram(
        'openmemory_http_request_duration_seconds',
        'HTTP request duration in seconds',
        ['method', 'endpoint']
    )
-   
+
    DATABASE_QUERIES = Counter(
        'openmemory_database_queries_total',
        'Total database queries',
        ['query_type', 'status']
    )
-   
+
    MEMORY_COUNT = Gauge(
        'openmemory_memories_total',
        'Total number of memories',
        ['user_id']
    )
-   
+
    async def metrics_middleware(request: Request, call_next):
        """Middleware to collect HTTP metrics"""
        start_time = time.time()
-       
+
        response = await call_next(request)
-       
+
        duration = time.time() - start_time
        method = request.method
        endpoint = request.url.path
        status_code = str(response.status_code)
-       
+
        HTTP_REQUESTS.labels(method=method, endpoint=endpoint, status_code=status_code).inc()
        HTTP_REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration)
-       
+
        return response
-   
+
    def add_prometheus_middleware(app: FastAPI):
        """Add Prometheus middleware to FastAPI app"""
        app.middleware("http")(metrics_middleware)
-       
+
        @app.get("/metrics")
        async def metrics():
            return Response(generate_latest(), media_type="text/plain")
@@ -378,14 +378,14 @@ healthcheck:
    from app.config import settings
    import asyncio
    import httpx
-   
+
    router = APIRouter()
-   
+
    @router.get("/health")
    async def health_check():
        """Basic health check"""
        return {"status": "healthy", "timestamp": time.time()}
-   
+
    @router.get("/health/detailed")
    async def detailed_health_check():
        """Detailed health check with dependency verification"""
@@ -394,7 +394,7 @@ healthcheck:
            "timestamp": time.time(),
            "dependencies": {}
        }
-       
+
        # Check database connectivity
        try:
            db = next(get_db())
@@ -409,7 +409,7 @@ healthcheck:
                "error": str(e)
            }
            health_status["status"] = "unhealthy"
-       
+
        # Check Neo4j connectivity
        try:
            driver = GraphDatabase.driver(settings.NEO4J_URI)
@@ -425,7 +425,7 @@ healthcheck:
                "error": str(e)
            }
            health_status["status"] = "unhealthy"
-       
+
        # Check OpenAI API
        try:
            async with httpx.AsyncClient() as client:
@@ -449,9 +449,9 @@ healthcheck:
                "error": str(e)
            }
            health_status["status"] = "unhealthy"
-       
+
        return health_status
-   
+
    @router.get("/health/readiness")
    async def readiness_check():
        """Kubernetes readiness probe"""
@@ -460,11 +460,11 @@ healthcheck:
            # Verify all critical dependencies
            db = next(get_db())
            db.execute(text("SELECT 1"))
-           
+
            return {"status": "ready", "timestamp": time.time()}
        except Exception as e:
            raise HTTPException(status_code=503, detail="Service not ready")
-   
+
    @router.get("/health/liveness")
    async def liveness_check():
        """Kubernetes liveness probe"""
@@ -489,7 +489,7 @@ healthcheck:
          health_check:
            http: "http://mem0:8000/health"
            interval: 10s
-           
+
        - name: openmemory-api
          port: 8765
          tags:
@@ -498,7 +498,7 @@ healthcheck:
          health_check:
            http: "http://openmemory-api:8765/health"
            interval: 10s
-           
+
        - name: openmemory-ui
          port: 3000
          tags:
@@ -580,7 +580,7 @@ healthcheck:
            annotations:
              summary: "Service {{ $labels.job }} is down"
              description: "{{ $labels.job }} has been down for more than 1 minute"
-         
+
          - alert: HighErrorRate
            expr: rate(openmemory_http_requests_total{status_code!~"2.."}[5m]) > 0.1
            for: 5m
@@ -589,7 +589,7 @@ healthcheck:
            annotations:
              summary: "High error rate detected"
              description: "Error rate is {{ $value }} requests per second"
-         
+
          - alert: SlowRequests
            expr: histogram_quantile(0.95, rate(openmemory_http_request_duration_seconds_bucket[5m])) > 2
            for: 5m
@@ -598,7 +598,7 @@ healthcheck:
            annotations:
              summary: "Slow requests detected"
              description: "95th percentile request duration is {{ $value }} seconds"
-         
+
          - alert: DatabaseConnections
            expr: mem0_active_connections > 80
            for: 5m
@@ -607,7 +607,7 @@ healthcheck:
            annotations:
              summary: "High database connection usage"
              description: "Database connections: {{ $value }}"
-         
+
          - alert: DiskSpace
            expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
            for: 5m
@@ -624,7 +624,7 @@ healthcheck:
    global:
      smtp_smarthost: 'localhost:587'
      smtp_from: 'alerts@mem0-stack.local'
-   
+
    route:
      group_by: ['alertname']
      group_wait: 10s
@@ -635,7 +635,7 @@ healthcheck:
        - match:
            severity: critical
          receiver: 'critical-receiver'
-   
+
    receivers:
      - name: 'default-receiver'
        email_configs:
@@ -646,7 +646,7 @@ healthcheck:
              Alert: {{ .Annotations.summary }}
              Description: {{ .Annotations.description }}
              {{ end }}
-   
+
      - name: 'critical-receiver'
        email_configs:
          - to: 'admin@mem0-stack.local'
@@ -673,7 +673,7 @@ healthcheck:
    ```yaml
    # docker-compose.logging.yml
    version: '3.8'
-   
+
    services:
      elasticsearch:
        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -688,7 +688,7 @@ healthcheck:
          - elasticsearch_data:/usr/share/elasticsearch/data
        networks:
          - mem0-network
-   
+
      kibana:
        image: docker.elastic.co/kibana/kibana:8.11.0
        container_name: kibana
@@ -700,7 +700,7 @@ healthcheck:
          - elasticsearch
        networks:
          - mem0-network
-   
+
      filebeat:
        image: docker.elastic.co/beats/filebeat:8.11.0
        container_name: filebeat
@@ -712,7 +712,7 @@ healthcheck:
          - elasticsearch
        networks:
          - mem0-network
-   
+
    volumes:
      elasticsearch_data:
    ```
@@ -724,18 +724,18 @@ healthcheck:
    import json
    from datetime import datetime
    from typing import Dict, Any
-   
+
    class StructuredLogger:
        def __init__(self, name: str):
            self.logger = logging.getLogger(name)
            self.logger.setLevel(logging.INFO)
-           
+
            # Create console handler with JSON formatter
            handler = logging.StreamHandler()
            formatter = JSONFormatter()
            handler.setFormatter(formatter)
            self.logger.addHandler(handler)
-       
+
        def log(self, level: str, message: str, extra: Dict[str, Any] = None):
            """Log structured message"""
            log_data = {
@@ -744,12 +744,12 @@ healthcheck:
                "message": message,
                "service": "mem0-stack"
            }
-           
+
            if extra:
                log_data.update(extra)
-           
+
            getattr(self.logger, level.lower())(json.dumps(log_data))
-   
+
    class JSONFormatter(logging.Formatter):
        def format(self, record):
            log_data = {
@@ -760,10 +760,10 @@ healthcheck:
                "function": record.funcName,
                "line": record.lineno
            }
-           
+
            if hasattr(record, 'extra'):
                log_data.update(record.extra)
-           
+
            return json.dumps(log_data)
    ```
 
@@ -828,14 +828,14 @@ healthcheck:
    ```bash
    #!/bin/bash
    # scripts/monitor_health.sh
-   
+
    set -euo pipefail
-   
+
    echo "🔍 Monitoring mem0-stack health..."
-   
+
    # Check service health
    services=("mem0" "openmemory-api" "openmemory-ui" "postgres" "neo4j")
-   
+
    for service in "${services[@]}"; do
        if docker-compose ps | grep -q "$service.*Up"; then
            echo "✅ $service is running"
@@ -844,14 +844,14 @@ healthcheck:
            exit 1
        fi
    done
-   
+
    # Check API endpoints
    endpoints=(
        "http://localhost:8000/health"
        "http://localhost:8765/health"
        "http://localhost:3000/health"
    )
-   
+
    for endpoint in "${endpoints[@]}"; do
        if curl -s "$endpoint" > /dev/null; then
            echo "✅ $endpoint is responding"
@@ -860,7 +860,7 @@ healthcheck:
            exit 1
        fi
    done
-   
+
    # Check Prometheus metrics
    if curl -s "http://localhost:9090/api/v1/query?query=up" | grep -q "success"; then
        echo "✅ Prometheus is collecting metrics"
@@ -868,7 +868,7 @@ healthcheck:
        echo "❌ Prometheus metrics collection failed"
        exit 1
    fi
-   
+
    echo "✅ All health checks passed!"
    ```
 
@@ -968,4 +968,4 @@ open http://localhost:9090  # Prometheus
 open http://localhost:5601  # Kibana
 ```
 
-**Expected Outcome**: Comprehensive monitoring system providing full visibility into mem0-stack performance, health, and operational metrics with proactive alerting for critical issues. 
+**Expected Outcome**: Comprehensive monitoring system providing full visibility into mem0-stack performance, health, and operational metrics with proactive alerting for critical issues.

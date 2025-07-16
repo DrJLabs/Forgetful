@@ -18,7 +18,6 @@ from uuid import uuid4
 
 from app.database import Base, get_db
 from app.models import App, Memory, MemoryState, User
-from app.utils.memory import get_memory_client
 from main import app
 
 # Test database configuration

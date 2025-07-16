@@ -1,10 +1,10 @@
 # GitHub Integration Technical Architecture
 
 ## Document Information
-**Created**: 2024-01-15  
-**Author**: Winston (System Architect)  
-**Version**: 1.0  
-**Status**: Design Phase  
+**Created**: 2024-01-15
+**Author**: Winston (System Architect)
+**Version**: 1.0
+**Status**: Design Phase
 
 ## Executive Summary
 
@@ -267,7 +267,7 @@ class SyncEngine:
         Main synchronization orchestrator
         """
         operation = await self.create_sync_operation(sync_type, direction)
-        
+
         try:
             if direction == SyncDirection.FROM_GITHUB:
                 await self.sync_from_github(operation)
@@ -275,7 +275,7 @@ class SyncEngine:
                 await self.sync_to_github(operation)
             else:  # BIDIRECTIONAL
                 await self.sync_bidirectional(operation)
-                
+
         except Exception as e:
             await self.handle_sync_error(operation, e)
         finally:
@@ -286,11 +286,11 @@ class SyncEngine:
         Pull changes from GitHub to local database
         """
         cursor = operation.last_cursor
-        
+
         async for page in self.github_client.paginate_changes(cursor):
             for item in page.items:
                 local_item = await self.get_local_item(item.id)
-                
+
                 if not local_item:
                     await self.create_local_item(item)
                 elif local_item.sync_version < item.version:
@@ -298,7 +298,7 @@ class SyncEngine:
                 else:
                     # Potential conflict - delegate to resolver
                     await self.conflict_resolver.resolve(local_item, item)
-                    
+
             await self.update_sync_cursor(operation, page.cursor)
 
     async def sync_to_github(self, operation: SyncOperation):
@@ -306,7 +306,7 @@ class SyncEngine:
         Push local changes to GitHub
         """
         pending_changes = await self.get_pending_local_changes()
-        
+
         for change in pending_changes:
             try:
                 github_response = await self.github_client.apply_change(change)
@@ -336,16 +336,16 @@ class ConflictResolver:
         """
         if self.is_simple_conflict(local, remote):
             return await self.auto_resolve(local, remote)
-        
+
         if self.has_clear_winner(local, remote):
             return await self.last_writer_wins(local, remote)
-            
+
         # Complex conflict - require manual resolution
         conflict = await self.create_conflict_record(local, remote)
         await self.notify_conflict(conflict)
-        
+
         return await self.wait_for_manual_resolution(conflict)
-    
+
     def is_simple_conflict(self, local: Entity, remote: Entity) -> bool:
         """
         Determine if conflict can be auto-resolved
@@ -353,7 +353,7 @@ class ConflictResolver:
         # Non-overlapping field changes
         local_changes = set(local.get_modified_fields())
         remote_changes = set(remote.get_modified_fields())
-        
+
         return len(local_changes.intersection(remote_changes)) == 0
 ```
 
@@ -372,7 +372,7 @@ class ConflictResolver:
 GET    /projects                    # List all synced projects
 GET    /projects/{id}               # Get specific project
 POST   /projects                    # Create new project (syncs to GitHub)
-PUT    /projects/{id}               # Update project (syncs to GitHub)  
+PUT    /projects/{id}               # Update project (syncs to GitHub)
 DELETE /projects/{id}               # Archive project
 
 # Issues API
@@ -382,7 +382,7 @@ POST   /issues                      # Create new issue (syncs to GitHub)
 PUT    /issues/{id}                 # Update issue (syncs to GitHub)
 DELETE /issues/{id}                 # Close issue
 
-# Milestones API  
+# Milestones API
 GET    /milestones                  # List milestones
 GET    /milestones/{id}             # Get specific milestone
 POST   /milestones                  # Create milestone (syncs to GitHub)
@@ -475,13 +475,13 @@ GET    /version                     # Service version info
   "webhook_url": "https://github.drjlabs.com/api/v1/webhooks/github",
   "permissions": {
     "issues": "write",
-    "projects": "write", 
+    "projects": "write",
     "metadata": "read",
     "repository_projects": "write"
   },
   "events": [
     "projects_v2",
-    "issues", 
+    "issues",
     "milestone",
     "project_card",
     "project_column"
@@ -505,9 +505,9 @@ def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool
         payload,
         hashlib.sha256
     ).hexdigest()
-    
+
     received_signature = signature.replace('sha256=', '')
-    
+
     return hmac.compare_digest(expected_signature, received_signature)
 ```
 
@@ -533,13 +533,13 @@ class GitHubRateLimiter:
     def __init__(self):
         self.rest_limit = TokenBucket(capacity=5000, refill_rate=5000/3600)
         self.graphql_limit = TokenBucket(capacity=5000, refill_rate=5000/3600)
-        
+
     async def acquire_rest_token(self, count: int = 1) -> bool:
         """
         Acquire tokens for REST API calls
         """
         return await self.rest_limit.consume(count)
-        
+
     async def get_rate_limit_status(self) -> dict:
         """
         Get current rate limit status
@@ -566,25 +566,25 @@ class CacheService:
     def __init__(self, redis_client):
         self.redis = redis_client
         self.default_ttl = 300  # 5 minutes
-        
+
     async def get_project(self, project_id: str) -> Optional[Project]:
         """
         Get project with caching
         """
         cache_key = f"project:{project_id}"
         cached = await self.redis.get(cache_key)
-        
+
         if cached:
             return Project.parse_raw(cached)
-            
+
         project = await self.db.get_project(project_id)
         if project:
             await self.redis.setex(
-                cache_key, 
-                self.default_ttl, 
+                cache_key,
+                self.default_ttl,
                 project.json()
             )
-            
+
         return project
 ```
 
@@ -638,7 +638,7 @@ request_duration_seconds = Histogram(
     ['method', 'endpoint']
 )
 
-# Sync Metrics  
+# Sync Metrics
 sync_operations_total = Counter(
     'github_tracker_sync_operations_total',
     'Total sync operations',
@@ -646,7 +646,7 @@ sync_operations_total = Counter(
 )
 
 github_api_requests_total = Counter(
-    'github_tracker_github_api_requests_total', 
+    'github_tracker_github_api_requests_total',
     'GitHub API requests',
     ['endpoint', 'status_code']
 )
@@ -716,12 +716,12 @@ class HealthChecker:
             self.check_disk_space(),
             return_exceptions=True
         )
-        
+
         return HealthStatus(
             status="healthy" if all(checks) else "unhealthy",
             checks={
                 "database": checks[0],
-                "github_api": checks[1], 
+                "github_api": checks[1],
                 "redis": checks[2],
                 "disk_space": checks[3]
             },
@@ -782,23 +782,23 @@ services:
       - POSTGRES_DB=mem0
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      
-      # GitHub Configuration  
+
+      # GitHub Configuration
       - GITHUB_APP_ID=${GITHUB_APP_ID}
       - GITHUB_APP_PRIVATE_KEY=${GITHUB_APP_PRIVATE_KEY}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET}
       - GITHUB_REPO_OWNER=${GITHUB_REPO_OWNER}
       - GITHUB_REPO_NAME=Forgetful
-      
+
       # Service Configuration
       - LOG_LEVEL=INFO
       - SYNC_INTERVAL_MINUTES=15
       - MAX_RETRY_ATTEMPTS=3
       - RATE_LIMIT_ENABLED=true
-      
+
       # Redis Configuration (optional caching)
       - REDIS_URL=redis://redis:6379/0
-      
+
     ports:
       - "127.0.0.1:8080:8080"
     volumes:
@@ -867,7 +867,7 @@ alembic revision --autogenerate -m "Add GitHub integration tables"
 # Apply migrations
 alembic upgrade head
 
-# Rollback migration  
+# Rollback migration
 alembic downgrade -1
 ```
 
@@ -907,7 +907,7 @@ from unittest.mock import AsyncMock, patch
 @pytest.mark.asyncio
 async def test_sync_projects_from_github():
     """Test project synchronization from GitHub"""
-    
+
     # Mock GitHub API responses
     mock_projects = [
         {
@@ -917,16 +917,16 @@ async def test_sync_projects_from_github():
             "created_at": "2024-01-15T10:00:00Z"
         }
     ]
-    
+
     with patch('app.services.github_client.GitHubClient.list_projects') as mock_list:
         mock_list.return_value = mock_projects
-        
+
         async with AsyncClient(app=app, base_url="http://test") as client:
             response = await client.post("/api/v1/sync/trigger", json={
                 "sync_type": "projects",
                 "direction": "from_github"
             })
-            
+
         assert response.status_code == 200
         assert response.json()["status"] == "started"
 
@@ -935,19 +935,19 @@ from locust import HttpUser, task, between
 
 class GitHubTrackerUser(HttpUser):
     wait_time = between(1, 3)
-    
+
     @task(3)
     def list_projects(self):
         self.client.get("/api/v1/projects")
-    
-    @task(2) 
+
+    @task(2)
     def list_issues(self):
         self.client.get("/api/v1/issues")
-        
+
     @task(1)
     def trigger_sync(self):
         self.client.post("/api/v1/sync/trigger", json={
-            "sync_type": "incremental", 
+            "sync_type": "incremental",
             "direction": "bidirectional"
         })
 ```
@@ -979,7 +979,7 @@ class GitHubTrackerUser(HttpUser):
 
 **Throughput Targets**:
 - **API Requests**: 1,000 requests/minute sustained
-- **Webhook Processing**: 500 events/minute sustained  
+- **Webhook Processing**: 500 events/minute sustained
 - **Sync Operations**: Full sync in < 5 minutes for 1,000 items
 - **Database Queries**: < 100ms p95 response time
 
@@ -997,7 +997,7 @@ class GitHubTrackerUser(HttpUser):
 - **Custom Fields**: User-defined project and issue fields
 - **Automated Workflows**: Trigger-based automation rules
 
-### Phase 3 Enhancements  
+### Phase 3 Enhancements
 - **Multi-Repository Support**: Sync multiple repositories
 - **GitHub Organizations**: Full organization-level integration
 - **Advanced Analytics**: Custom reporting and dashboards
@@ -1025,4 +1025,4 @@ The architecture supports both immediate needs and future growth while maintaini
 
 **Next Steps**: Proceed to Step 1.3 with Product Manager for PRD creation, or begin implementation planning with development team.
 
-**Document Status**: Ready for technical review and implementation planning. 
+**Document Status**: Ready for technical review and implementation planning.

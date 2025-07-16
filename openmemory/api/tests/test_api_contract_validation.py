@@ -12,28 +12,14 @@ This comprehensive test suite validates API contracts to prevent breaking change
 Based on FastAPI and pytest best practices from Context7 documentation.
 """
 
-import json
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-import jsonschema
 import pytest
-from app.database import SessionLocal, get_db
+from app.database import get_db
 from app.models import App, Memory, MemoryState, User
-from app.routers.config import ConfigSchema, LLMConfig, LLMProvider
-from app.schemas import (
-    MemoryCreate,
-    MemoryResponse,
-    MemoryUpdate,
-    PaginatedMemoryResponse,
-)
 from fastapi import status
 from fastapi.testclient import TestClient
-from jsonschema import ValidationError as JsonSchemaValidationError
-from jsonschema import validate
 from main import app
-from pydantic import ValidationError
 
 
 class TestAPIContractValidation:

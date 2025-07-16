@@ -14,18 +14,17 @@ Features:
 """
 
 import asyncio
-import logging
 import threading
 import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any, Dict
 
 import asyncpg
 
 from shared.config import Config
-from shared.logging_system import get_logger, performance_logger
+from shared.logging_system import get_logger
 
 logger = get_logger("connection_pool")
 
@@ -338,7 +337,7 @@ class OptimizedPostgreSQLPool:
                 finally:
                     self.metrics.record_connection_released()
 
-        except Exception as e:
+        except Exception:
             self.metrics.record_connection_failed()
             raise
 
@@ -526,7 +525,7 @@ class OptimizedNeo4jPool:
                 finally:
                     self.metrics.record_connection_released()
 
-        except Exception as e:
+        except Exception:
             self.metrics.record_connection_failed()
             raise
 

@@ -3,8 +3,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class APIError(Exception):
     """Exception raised for errors in the API."""
+
     pass
 
 

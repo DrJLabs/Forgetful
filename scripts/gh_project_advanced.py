@@ -8,8 +8,7 @@ import argparse
 import json
 import subprocess
 import sys
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 class GitHubProjectManager:
@@ -522,7 +521,7 @@ def print_analytics(analytics: Dict):
     print(f"📈 Total Items: {overview.get('total_items', 0)}")
     print(f"🌍 Public: {'Yes' if overview.get('public') else 'No'}")
 
-    print(f"\n📊 FIELD DISTRIBUTIONS")
+    print("\n📊 FIELD DISTRIBUTIONS")
     print("-" * 30)
 
     distributions = analytics.get("distribution", {})
@@ -531,7 +530,7 @@ def print_analytics(analytics: Dict):
         for value, count in values.items():
             print(f"  • {value}: {count}")
 
-    print(f"\n🎯 HEALTH METRICS")
+    print("\n🎯 HEALTH METRICS")
     print("-" * 30)
 
     metrics = analytics.get("health_metrics", {})
@@ -580,7 +579,7 @@ def print_velocity_report(velocity: Dict):
     print(f"📈 Total Story Points: {velocity.get('total_story_points', 0)}")
     print(f"⚡ Average Velocity: {velocity.get('average_velocity', 0)} points/week")
 
-    print(f"\n📋 COMPLETED ITEMS")
+    print("\n📋 COMPLETED ITEMS")
     print("-" * 30)
 
     for item in velocity.get("items", []):

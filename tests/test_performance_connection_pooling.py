@@ -12,12 +12,10 @@ This test suite validates:
 
 import asyncio
 import os
-import random
 
 # Add the workspace to the path dynamically
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -31,7 +29,6 @@ from shared.connection_pool import (
     ConnectionPoolMetrics,
     OptimizedNeo4jPool,
     OptimizedPostgreSQLPool,
-    OptimizedRedisPool,
 )
 
 
@@ -110,9 +107,9 @@ class TestConnectionPoolPerformance:
             init_time = time.time() - start_time
 
             # Performance assertions
-            assert (
-                init_time < 5.0
-            ), f"PostgreSQL pool initialization too slow: {init_time:.3f}s"
+            assert init_time < 5.0, (
+                f"PostgreSQL pool initialization too slow: {init_time:.3f}s"
+            )
 
             # Test connection acquisition performance
             acquisition_times = []
@@ -127,12 +124,12 @@ class TestConnectionPoolPerformance:
             max_acquisition_time = max(acquisition_times)
 
             # Performance assertions
-            assert (
-                avg_acquisition_time < 0.1
-            ), f"Average acquisition time too slow: {avg_acquisition_time:.3f}s"
-            assert (
-                max_acquisition_time < 0.5
-            ), f"Max acquisition time too slow: {max_acquisition_time:.3f}s"
+            assert avg_acquisition_time < 0.1, (
+                f"Average acquisition time too slow: {avg_acquisition_time:.3f}s"
+            )
+            assert max_acquisition_time < 0.5, (
+                f"Max acquisition time too slow: {max_acquisition_time:.3f}s"
+            )
 
             # Test query performance
             query_times = []
@@ -145,18 +142,18 @@ class TestConnectionPoolPerformance:
             avg_query_time = sum(query_times) / len(query_times)
 
             # Performance assertions
-            assert (
-                avg_query_time < 0.05
-            ), f"Average query time too slow: {avg_query_time:.3f}s"
+            assert avg_query_time < 0.05, (
+                f"Average query time too slow: {avg_query_time:.3f}s"
+            )
 
             # Get pool stats
             stats = postgres_pool.get_stats()
 
             # Verify stats
             assert stats["connections_created"] > 0, "Should have created connections"
-            assert (
-                stats["average_wait_time_ms"] < 100
-            ), f"Average wait time too high: {stats['average_wait_time_ms']:.1f}ms"
+            assert stats["average_wait_time_ms"] < 100, (
+                f"Average wait time too high: {stats['average_wait_time_ms']:.1f}ms"
+            )
 
             print(
                 f"PostgreSQL Pool Performance: Init={init_time:.3f}s, Avg Acquisition={avg_acquisition_time:.3f}s, Avg Query={avg_query_time:.3f}s"
@@ -198,9 +195,9 @@ class TestConnectionPoolPerformance:
             init_time = time.time() - start_time
 
             # Performance assertions
-            assert (
-                init_time < 5.0
-            ), f"Neo4j pool initialization too slow: {init_time:.3f}s"
+            assert init_time < 5.0, (
+                f"Neo4j pool initialization too slow: {init_time:.3f}s"
+            )
 
             # Test session acquisition performance
             session_times = []
@@ -216,12 +213,12 @@ class TestConnectionPoolPerformance:
             max_session_time = max(session_times)
 
             # Performance assertions
-            assert (
-                avg_session_time < 0.1
-            ), f"Average session time too slow: {avg_session_time:.3f}s"
-            assert (
-                max_session_time < 0.5
-            ), f"Max session time too slow: {max_session_time:.3f}s"
+            assert avg_session_time < 0.1, (
+                f"Average session time too slow: {avg_session_time:.3f}s"
+            )
+            assert max_session_time < 0.5, (
+                f"Max session time too slow: {max_session_time:.3f}s"
+            )
 
             # Test query performance
             query_times = []
@@ -234,18 +231,18 @@ class TestConnectionPoolPerformance:
             avg_query_time = sum(query_times) / len(query_times)
 
             # Performance assertions
-            assert (
-                avg_query_time < 0.05
-            ), f"Average query time too slow: {avg_query_time:.3f}s"
+            assert avg_query_time < 0.05, (
+                f"Average query time too slow: {avg_query_time:.3f}s"
+            )
 
             # Get pool stats
             stats = neo4j_pool.get_stats()
 
             # Verify stats
             assert stats["connections_created"] > 0, "Should have created connections"
-            assert (
-                stats["average_wait_time_ms"] < 100
-            ), f"Average wait time too high: {stats['average_wait_time_ms']:.1f}ms"
+            assert stats["average_wait_time_ms"] < 100, (
+                f"Average wait time too high: {stats['average_wait_time_ms']:.1f}ms"
+            )
 
             print(
                 f"Neo4j Pool Performance: Init={init_time:.3f}s, Avg Session={avg_session_time:.3f}s, Avg Query={avg_query_time:.3f}s"
@@ -316,7 +313,6 @@ class TestConnectionPoolPerformance:
             ),
             patch("redis.asyncio.Redis", return_value=mock_redis_client),
         ):
-
             # Create connection pool manager
             manager = ConnectionPoolManager(pool_config)
 
@@ -326,9 +322,9 @@ class TestConnectionPoolPerformance:
             init_time = time.time() - start_time
 
             # Performance assertions
-            assert (
-                init_time < 10.0
-            ), f"Manager initialization too slow: {init_time:.3f}s"
+            assert init_time < 10.0, (
+                f"Manager initialization too slow: {init_time:.3f}s"
+            )
 
             # Test monitoring performance
             monitoring_start = time.time()
@@ -340,9 +336,9 @@ class TestConnectionPoolPerformance:
             monitoring_setup_time = time.time() - monitoring_start
 
             # Performance assertions
-            assert (
-                monitoring_setup_time < 5.0
-            ), f"Monitoring setup too slow: {monitoring_setup_time:.3f}s"
+            assert monitoring_setup_time < 5.0, (
+                f"Monitoring setup too slow: {monitoring_setup_time:.3f}s"
+            )
 
             # Get comprehensive stats
             stats_start = time.time()
@@ -429,9 +425,9 @@ class TestConnectionPoolPerformance:
 
             # In a properly mocked scenario, we expect most connections to succeed
             # since we're not actually hitting real connection limits
-            assert (
-                successful_connections >= 0
-            ), "At least some connections should succeed"
+            assert successful_connections >= 0, (
+                "At least some connections should succeed"
+            )
 
             print(
                 f"Pool Exhaustion Test: Time={test_time:.3f}s, Success={successful_connections}, Failed={failed_connections}"
@@ -486,9 +482,9 @@ class TestConnectionPoolPerformance:
 
             # Performance assertions
             assert monitoring_time >= 2.0, "Should have run for at least 2 seconds"
-            assert (
-                stats["health_check_failures"] >= 0
-            ), "Should track health check failures"
+            assert stats["health_check_failures"] >= 0, (
+                "Should track health check failures"
+            )
 
             print(
                 f"Health Monitoring: Time={monitoring_time:.3f}s, Failures={stats['health_check_failures']}"
@@ -556,23 +552,23 @@ class TestConnectionPoolPerformance:
             max_operation_time = max(all_times)
 
             # Performance assertions
-            assert (
-                total_time < 10.0
-            ), f"Concurrent operations too slow: {total_time:.3f}s"
-            assert (
-                avg_operation_time < 0.1
-            ), f"Average operation time too slow: {avg_operation_time:.3f}s"
-            assert (
-                max_operation_time < 0.5
-            ), f"Max operation time too slow: {max_operation_time:.3f}s"
+            assert total_time < 10.0, (
+                f"Concurrent operations too slow: {total_time:.3f}s"
+            )
+            assert avg_operation_time < 0.1, (
+                f"Average operation time too slow: {avg_operation_time:.3f}s"
+            )
+            assert max_operation_time < 0.5, (
+                f"Max operation time too slow: {max_operation_time:.3f}s"
+            )
 
             # Check pool stats
             stats = postgres_pool.get_stats()
             total_acquisitions = stats["total_acquisitions"]
 
-            assert (
-                total_acquisitions == num_workers * 10
-            ), f"Expected {num_workers * 10} acquisitions, got {total_acquisitions}"
+            assert total_acquisitions == num_workers * 10, (
+                f"Expected {num_workers * 10} acquisitions, got {total_acquisitions}"
+            )
 
             print(
                 f"Concurrent Operations: Total={total_time:.3f}s, Avg={avg_operation_time:.3f}s, Max={max_operation_time:.3f}s"
@@ -613,18 +609,18 @@ class TestConnectionPoolPerformance:
         assert stats_time < 0.01, f"Stats collection too slow: {stats_time:.3f}s"
 
         # Verify stats accuracy
-        assert (
-            stats["connections_created"] == 10
-        ), f"Expected 10 connections created, got {stats['connections_created']}"
-        assert (
-            stats["connections_failed"] == 50
-        ), f"Expected 50 failures, got {stats['connections_failed']}"
-        assert (
-            stats["total_acquisitions"] == 1000
-        ), f"Expected 1000 acquisitions, got {stats['total_acquisitions']}"
-        assert (
-            stats["health_check_failures"] == 50
-        ), f"Expected 50 health check failures, got {stats['health_check_failures']}"
+        assert stats["connections_created"] == 10, (
+            f"Expected 10 connections created, got {stats['connections_created']}"
+        )
+        assert stats["connections_failed"] == 50, (
+            f"Expected 50 failures, got {stats['connections_failed']}"
+        )
+        assert stats["total_acquisitions"] == 1000, (
+            f"Expected 1000 acquisitions, got {stats['total_acquisitions']}"
+        )
+        assert stats["health_check_failures"] == 50, (
+            f"Expected 50 health check failures, got {stats['health_check_failures']}"
+        )
 
         print(
             f"Metrics Performance: Recording={metrics_time:.3f}s, Stats={stats_time:.3f}s"

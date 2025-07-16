@@ -4,33 +4,26 @@ Provides metrics collection, tracing, and logging instrumentation.
 """
 
 import functools
-import json
 import logging
 import os
 import time
 from contextlib import contextmanager
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from prometheus_client import (
-    CONTENT_TYPE_LATEST,
     CollectorRegistry,
     Counter,
     Enum,
     Gauge,
     Histogram,
     Info,
-    Summary,
     generate_latest,
-    push_to_gateway,
     start_http_server,
-)
-from prometheus_client.openmetrics.exposition import (
-    CONTENT_TYPE_LATEST as OPENMETRICS_CONTENT_TYPE,
 )
 
 # OpenTelemetry imports
 try:
-    from opentelemetry import metrics, trace
+    from opentelemetry import trace
     from opentelemetry.exporter.jaeger.thrift import JaegerExporter
     from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor

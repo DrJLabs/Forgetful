@@ -183,7 +183,6 @@ async def list_app_accessed_memories(
     page_size: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-
     # Get memories with access counts
     query = (
         db.query(Memory, func.count(MemoryAccessLog.id).label("access_count"))

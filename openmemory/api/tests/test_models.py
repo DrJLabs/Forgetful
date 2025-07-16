@@ -6,7 +6,6 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 import pytest
-from app.database import Base
 from app.models import App, Category, Memory, MemoryAccessLog, MemoryState, User
 
 

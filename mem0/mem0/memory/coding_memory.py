@@ -3,23 +3,18 @@ Enhanced Memory class optimized for coding contexts and autonomous AI agents.
 This module extends the base Memory class with coding-specific optimizations.
 """
 
-import asyncio
 import hashlib
 import json
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-import pytz
 
 from mem0.configs.coding_config import CodingFactExtractor, CodingMemoryConfig
 from mem0.memory.enhanced_deduplication import (
     AutonomousDeduplicationManager,
-    EnhancedDeduplicator,
 )
 from mem0.memory.main import AsyncMemory, Memory
 from mem0.memory.utils import parse_messages, remove_code_blocks
-from mem0.utils.factory import EmbedderFactory, LlmFactory, VectorStoreFactory
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +42,7 @@ class CodingMemory(Memory):
     def _initialize_coding_optimizations(self):
         """Initialize coding-specific optimizations."""
         # Set up enhanced similarity thresholds
-        self.coding_similarity_threshold = (
-            self.coding_config.coding_similarity_threshold
-        )
+        self.coding_similarity_threshold = self.coding_config.coding_similarity_threshold
 
         # Initialize context-aware categorization
         self.coding_categories = self.coding_config.coding_categories
@@ -89,9 +82,7 @@ class CodingMemory(Memory):
 
         if coding_context:
             # Apply context-specific parameters
-            context_config = self.coding_config.autonomous_storage_config.get(
-                coding_context, {}
-            )
+            context_config = self.coding_config.autonomous_storage_config.get(coding_context, {})
             enhanced_metadata.update(
                 {
                     "coding_context": coding_context,
@@ -123,8 +114,7 @@ class CodingMemory(Memory):
 
         # Apply coding-optimized fact extraction
         system_prompt = (
-            self.coding_config.coding_fact_extraction_prompt
-            or self.fact_extractor.get_coding_fact_extraction_prompt()
+            self.coding_config.coding_fact_extraction_prompt or self.fact_extractor.get_coding_fact_extraction_prompt()
         )
         user_prompt = f"Input:\n{parsed_messages}"
 
@@ -166,9 +156,7 @@ class CodingMemory(Memory):
             coding_metadata = self.fact_extractor.extract_coding_metadata(fact)
 
             # Apply context-aware scoring
-            context_weight = self.coding_config.coding_context_weights.get(
-                category, 0.5
-            )
+            context_weight = self.coding_config.coding_context_weights.get(category, 0.5)
 
             # Enhanced metadata with coding context
             enhanced_metadata = {
@@ -182,9 +170,7 @@ class CodingMemory(Memory):
             if self._should_store_coding_fact(fact, enhanced_metadata, filters):
                 # Create memory with enhanced metadata
                 embeddings = self.embedding_model.embed(fact, "add")
-                memory_id = self._create_coding_memory(
-                    fact, embeddings, enhanced_metadata
-                )
+                memory_id = self._create_coding_memory(fact, embeddings, enhanced_metadata)
 
                 processed_memories.append(
                     {
@@ -198,9 +184,7 @@ class CodingMemory(Memory):
 
         return processed_memories
 
-    def _should_store_coding_fact(
-        self, fact: str, metadata: Dict[str, Any], filters: Dict[str, Any]
-    ) -> bool:
+    def _should_store_coding_fact(self, fact: str, metadata: Dict[str, Any], filters: Dict[str, Any]) -> bool:
         """
         Determine if a coding fact should be stored based on enhanced deduplication.
         """
@@ -225,22 +209,16 @@ class CodingMemory(Memory):
             )
 
         # Use enhanced deduplication logic
-        dedup_result = self.deduplication_manager.process_memory(
-            fact, existing_memories_formatted, metadata
-        )
+        dedup_result = self.deduplication_manager.process_memory(fact, existing_memories_formatted, metadata)
 
         # Log deduplication decision
         if dedup_result["should_deduplicate"]:
-            logger.debug(
-                f"Fact rejected by enhanced deduplication: {dedup_result['reasoning']}"
-            )
+            logger.debug(f"Fact rejected by enhanced deduplication: {dedup_result['reasoning']}")
             return False
 
         return True
 
-    def _create_coding_memory(
-        self, data: str, embeddings: List[float], metadata: Dict[str, Any]
-    ) -> str:
+    def _create_coding_memory(self, data: str, embeddings: List[float], metadata: Dict[str, Any]) -> str:
         """
         Create memory with enhanced coding-specific metadata.
 
@@ -248,9 +226,6 @@ class CodingMemory(Memory):
         dictionary key anti-pattern with potentially long data strings.
         """
         import uuid
-        from datetime import datetime
-
-        import pytz
 
         # Generate memory ID and prepare enhanced metadata
         memory_id = str(uuid.uuid4())
@@ -341,9 +316,7 @@ class CodingMemory(Memory):
 
         # Apply coding-specific result ranking
         if isinstance(results, dict) and "results" in results:
-            results["results"] = self._rank_coding_results(
-                results["results"], query, coding_context
-            )
+            results["results"] = self._rank_coding_results(results["results"], query, coding_context)
 
         return results
 
@@ -359,9 +332,7 @@ class CodingMemory(Memory):
 
             # Get category from metadata
             category = result.get("metadata", {}).get("category", "general")
-            context_weight = self.coding_config.coding_context_weights.get(
-                category, 0.5
-            )
+            context_weight = self.coding_config.coding_context_weights.get(category, 0.5)
 
             # Apply priority boost for error-related content
             priority_boost = result.get("metadata", {}).get("priority_boost", 0.0)
@@ -370,10 +341,7 @@ class CodingMemory(Memory):
             enhanced_score = base_score * context_weight + priority_boost
 
             # Boost score if it matches the requested coding context
-            if (
-                coding_context
-                and result.get("metadata", {}).get("coding_context") == coding_context
-            ):
+            if coding_context and result.get("metadata", {}).get("coding_context") == coding_context:
                 enhanced_score *= 1.2
 
             result["enhanced_score"] = enhanced_score
@@ -415,9 +383,7 @@ class CodingMemory(Memory):
             "optimization_suggestions": self._get_optimization_suggestions(categories),
         }
 
-    def _get_optimization_suggestions(
-        self, categories: Dict[str, Dict[str, Any]]
-    ) -> List[str]:
+    def _get_optimization_suggestions(self, categories: Dict[str, Dict[str, Any]]) -> List[str]:
         """
         Generate optimization suggestions based on usage patterns.
         """
@@ -430,21 +396,15 @@ class CodingMemory(Memory):
             # Check for imbalanced categories
             bug_fix_ratio = categories.get("bug_fix", {}).get("percentage", 0)
             if bug_fix_ratio > 50:
-                suggestions.append(
-                    "High bug fix ratio detected. Consider focusing on code quality and testing."
-                )
+                suggestions.append("High bug fix ratio detected. Consider focusing on code quality and testing.")
 
             architecture_ratio = categories.get("architecture", {}).get("percentage", 0)
             if architecture_ratio < 10:
-                suggestions.append(
-                    "Low architecture memory ratio. Consider documenting design decisions."
-                )
+                suggestions.append("Low architecture memory ratio. Consider documenting design decisions.")
 
             performance_ratio = categories.get("performance", {}).get("percentage", 0)
             if performance_ratio > 30:
-                suggestions.append(
-                    "High performance issue ratio. Consider systematic performance optimization."
-                )
+                suggestions.append("High performance issue ratio. Consider systematic performance optimization.")
 
         return suggestions
 
@@ -454,9 +414,7 @@ class CodingMemory(Memory):
         """
         return self.deduplication_manager.get_performance_report()
 
-    def test_deduplication_performance(
-        self, test_facts: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def test_deduplication_performance(self, test_facts: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Test deduplication performance with a set of test facts.
         """
@@ -477,9 +435,7 @@ class CodingMemory(Memory):
             expected_duplicate = test_fact.get("is_duplicate", False)
 
             # Test deduplication
-            dedup_result = self.deduplication_manager.process_memory(
-                fact_text, stored_facts, metadata
-            )
+            dedup_result = self.deduplication_manager.process_memory(fact_text, stored_facts, metadata)
 
             detected_duplicate = dedup_result["should_deduplicate"]
 
@@ -520,9 +476,7 @@ class CodingMemory(Memory):
                 results["duplicates_detected"] += 1
             else:
                 results["unique_stored"] += 1
-                stored_facts.append(
-                    {"id": f"test_{i}", "memory": fact_text, "metadata": metadata}
-                )
+                stored_facts.append({"id": f"test_{i}", "memory": fact_text, "metadata": metadata})
 
         # Calculate accuracy metrics
         if results["total_tested"] > 0:
@@ -531,12 +485,8 @@ class CodingMemory(Memory):
                 - len(results["false_positive_samples"])
                 - len(results["false_negative_samples"])
             ) / results["total_tested"]
-            results["false_positive_rate"] = (
-                len(results["false_positive_samples"]) / results["total_tested"]
-            )
-            results["false_negative_rate"] = (
-                len(results["false_negative_samples"]) / results["total_tested"]
-            )
+            results["false_positive_rate"] = len(results["false_positive_samples"]) / results["total_tested"]
+            results["false_negative_rate"] = len(results["false_negative_samples"]) / results["total_tested"]
 
         return results
 

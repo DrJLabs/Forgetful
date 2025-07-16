@@ -12,20 +12,16 @@ Author: Quinn (QA Agent) - Step 2.2.3 Security Testing Suite
 """
 
 import asyncio
-import concurrent.futures
 
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
 import time
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from fastapi import status
 from httpx import AsyncClient
 
 sys.path.append("/workspace")
-from shared.errors import ValidationError
 from shared.logging_system import get_logger
 
 logger = get_logger("security_rate_limiting_tests")
@@ -142,7 +138,7 @@ class TestAPIRateLimiting:
                 await asyncio.sleep(0.1)
 
             except Exception as e:
-                logger.info(f"Request {i+1} failed (expected): {e}")
+                logger.info(f"Request {i + 1} failed (expected): {e}")
                 responses.append(None)
 
         end_time = time.time()
@@ -186,7 +182,7 @@ class TestAPIRateLimiting:
                 await asyncio.sleep(0.1)
 
             except Exception as e:
-                logger.info(f"Memory creation request {i+1} failed: {e}")
+                logger.info(f"Memory creation request {i + 1} failed: {e}")
                 responses.append(None)
 
         # Analyze responses
@@ -282,7 +278,7 @@ class TestBruteForceProtection:
                 await asyncio.sleep(0.05)
 
             except Exception as e:
-                logger.info(f"Brute force attempt {i+1} failed: {e}")
+                logger.info(f"Brute force attempt {i + 1} failed: {e}")
                 failed_attempts.append(None)
 
         # Analyze brute force attempts

@@ -56,7 +56,7 @@ class TestBasicFunctionality:
         """Test boolean operations"""
         assert True is True
         assert False is False
-        assert not False is True
+        assert False is not True
         assert True and True is True
         assert True or False is True
         assert (False and True) is False

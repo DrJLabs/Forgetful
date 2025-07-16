@@ -14,8 +14,7 @@ Test Coverage Areas:
 6. Data Integrity & Validation
 """
 
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import pytest

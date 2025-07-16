@@ -17,12 +17,12 @@
 **Pattern**: Direct `os.environ.get()` with hardcoded defaults
 ```python
 POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "postgres")
-POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432") 
+POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
 POSTGRES_DB = os.environ.get("POSTGRES_DB", "postgres")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://neo4j:7687")
 ```
-**Issues**: 
+**Issues**:
 - No validation
 - Hardcoded defaults may not match docker-compose
 - No type conversion
@@ -60,7 +60,7 @@ NEXT_PUBLIC_USER_ID=user
 ```yaml
 # Inconsistent naming patterns
 POSTGRES_USER vs USER
-NEO4J_AUTH vs NEO4J_PASSWORD  
+NEO4J_AUTH vs NEO4J_PASSWORD
 OPENAI_API_KEY (consistent)
 NEXT_PUBLIC_API_URL vs API_URL
 ```
@@ -85,7 +85,7 @@ DATABASE_USER=drj
 DATABASE_PASSWORD=secure_password
 DATABASE_URL=postgresql://user:pass@host:port/dbname
 
-# Neo4j Configuration  
+# Neo4j Configuration
 NEO4J_HOST=neo4j-mem0
 NEO4J_PORT=7687
 NEO4J_USERNAME=neo4j
@@ -125,11 +125,11 @@ import os
 
 class BaseConfig(BaseSettings):
     """Base configuration with common validation patterns"""
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = True
-        
+
     @validator('*', pre=True)
     def empty_str_to_none(cls, v):
         if v == '':
@@ -143,13 +143,13 @@ class DatabaseConfig(BaseConfig):
     DATABASE_NAME: str = "mem0"
     DATABASE_USER: str
     DATABASE_PASSWORD: str
-    
+
     @validator('DATABASE_PASSWORD')
     def validate_password(cls, v):
         if not v or len(v) < 8:
             raise ValueError('Database password must be at least 8 characters')
         return v
-    
+
     @property
     def database_url(self) -> str:
         return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
@@ -160,7 +160,7 @@ class Neo4jConfig(BaseConfig):
     NEO4J_PORT: int = 7687
     NEO4J_USERNAME: str = "neo4j"
     NEO4J_PASSWORD: str
-    
+
     @property
     def neo4j_url(self) -> str:
         return f"neo4j://{self.NEO4J_USERNAME}:{self.NEO4J_PASSWORD}@{self.NEO4J_HOST}:{self.NEO4J_PORT}"
@@ -170,7 +170,7 @@ class OpenAIConfig(BaseConfig):
     OPENAI_API_KEY: str
     OPENAI_MODEL: str = "gpt-4o"
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
-    
+
     @validator('OPENAI_API_KEY')
     def validate_api_key(cls, v):
         if not v or not v.startswith('sk-'):
@@ -183,7 +183,7 @@ class AppConfig(BaseConfig):
     APP_DEBUG: bool = False
     APP_LOG_LEVEL: str = "INFO"
     APP_ENVIRONMENT: str = "development"
-    
+
     @validator('APP_LOG_LEVEL')
     def validate_log_level(cls, v):
         valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
@@ -245,7 +245,7 @@ DEFAULT_CONFIG = {
         },
     },
     "graph_store": {
-        "provider": "neo4j", 
+        "provider": "neo4j",
         "config": {"url": config.neo4j_url},
     },
     "llm": {
@@ -301,18 +301,18 @@ def validate_configuration():
     try:
         config = Config()
         print("✅ Configuration validation successful")
-        
+
         # Test database connection
         print(f"Database URL: {config.database_url}")
-        
-        # Test Neo4j connection  
+
+        # Test Neo4j connection
         print(f"Neo4j URL: {config.neo4j_url}")
-        
+
         # Validate OpenAI key format
         print(f"OpenAI API Key: {config.OPENAI_API_KEY[:10]}...")
-        
+
         return True
-        
+
     except Exception as e:
         print(f"❌ Configuration validation failed: {e}")
         return False
@@ -371,7 +371,7 @@ DATABASE_PASSWORD=your_secure_password_here
 # DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@${DATABASE_HOST}:${DATABASE_PORT}/${DATABASE_NAME}
 
 #===========================================
-# Graph Database Configuration (Neo4j) 
+# Graph Database Configuration (Neo4j)
 #===========================================
 NEO4J_HOST=neo4j-mem0
 NEO4J_PORT=7687
@@ -442,7 +442,7 @@ def test_database_config_validation():
     })
     config = Config()
     assert config.DATABASE_USER == 'testuser'
-    
+
     # Test invalid password
     os.environ['DATABASE_PASSWORD'] = 'short'
     with pytest.raises(ValueError):
@@ -453,7 +453,7 @@ def test_openai_config_validation():
     os.environ['OPENAI_API_KEY'] = 'sk-test123'
     config = Config()
     assert config.OPENAI_API_KEY == 'sk-test123'
-    
+
     # Test invalid API key
     os.environ['OPENAI_API_KEY'] = 'invalid-key'
     with pytest.raises(ValueError):
@@ -559,4 +559,4 @@ echo "✅ Environment integration tests complete"
 ./scripts/deploy_config_changes.sh
 ```
 
-**Expected Outcome**: Unified, validated, and maintainable environment configuration across all mem0-stack services with zero deployment configuration issues. 
+**Expected Outcome**: Unified, validated, and maintainable environment configuration across all mem0-stack services with zero deployment configuration issues.

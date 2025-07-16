@@ -14,14 +14,11 @@ Test Coverage Areas:
 6. Performance & Timeout Handling
 """
 
-import json
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 from app.utils.categorization import MemoryCategories, get_categories_for_memory
 from app.utils.prompts import MEMORY_CATEGORIZATION_PROMPT
-from openai import OpenAI
-from tenacity import RetryError
 
 
 @pytest.mark.unit

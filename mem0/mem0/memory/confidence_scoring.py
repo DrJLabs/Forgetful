@@ -5,10 +5,9 @@ This module provides advanced confidence scoring optimized for coding contexts.
 
 import logging
 import math
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, List
 
-import numpy as np
 
 from mem0.configs.coding_config import CodingMemoryConfig
 from mem0.memory.timezone_utils import (
@@ -114,10 +113,7 @@ class EnhancedConfidenceScorer:
 
         # Calculate final confidence
         final_confidence = min(
-            (base_confidence + context_boost + retrieval_boost)
-            * temporal_factor
-            * historical_factor
-            * content_quality,
+            (base_confidence + context_boost + retrieval_boost) * temporal_factor * historical_factor * content_quality,
             1.0,
         )
 
@@ -134,9 +130,7 @@ class EnhancedConfidenceScorer:
                 "temporal_factor": temporal_factor,
                 "historical_factor": historical_factor,
             },
-            "explanation": self._generate_explanation(
-                final_confidence, metadata, context
-            ),
+            "explanation": self._generate_explanation(final_confidence, metadata, context),
         }
 
     def _calculate_base_confidence(self, metadata: Dict[str, Any]) -> float:
@@ -174,10 +168,7 @@ class EnhancedConfidenceScorer:
 
         content_lower = content.lower()
         for indicator, boost in quality_indicators.items():
-            if any(
-                keyword in content_lower
-                for keyword in self._get_indicator_keywords(indicator)
-            ):
+            if any(keyword in content_lower for keyword in self._get_indicator_keywords(indicator)):
                 quality_score += boost
 
         return min(quality_score, 1.0)
@@ -235,9 +226,7 @@ class EnhancedConfidenceScorer:
         }
         return keywords.get(indicator, [])
 
-    def _calculate_context_boost(
-        self, metadata: Dict[str, Any], context: Dict[str, Any]
-    ) -> float:
+    def _calculate_context_boost(self, metadata: Dict[str, Any], context: Dict[str, Any]) -> float:
         """
         Calculate context-aware confidence boost.
         """
@@ -272,9 +261,7 @@ class EnhancedConfidenceScorer:
 
         return min(boost, 0.5)  # Cap boost at 0.5
 
-    def _calculate_retrieval_boost(
-        self, metadata: Dict[str, Any], context: Dict[str, Any]
-    ) -> float:
+    def _calculate_retrieval_boost(self, metadata: Dict[str, Any], context: Dict[str, Any]) -> float:
         """
         Calculate retrieval-specific confidence boost.
         """
@@ -304,9 +291,7 @@ class EnhancedConfidenceScorer:
         # Relevance boost from context
         relevance_score = context.get("relevance_score", 0.0)
         if relevance_score > 0:
-            relevance_boost = (
-                relevance_score * self.retrieval_factors["relevance_boost"]
-            )
+            relevance_boost = relevance_score * self.retrieval_factors["relevance_boost"]
             boost += relevance_boost
 
         return min(boost, 0.4)  # Cap boost at 0.4
@@ -317,9 +302,7 @@ class EnhancedConfidenceScorer:
         """
         try:
             last_time = datetime.fromisoformat(last_accessed.replace("Z", "+00:00"))
-            time_diff = safe_datetime_diff(
-                safe_datetime_now(last_time), last_time
-            ).total_seconds()
+            time_diff = safe_datetime_diff(safe_datetime_now(last_time), last_time).total_seconds()
 
             # Exponential decay with half-life of 1 day
             decay_factor = math.exp(-time_diff / 86400)  # 86400 seconds in a day
@@ -336,7 +319,7 @@ class EnhancedConfidenceScorer:
             return 1.0
 
         try:
-            created_time = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             age_days = get_memory_age_days(created_at)
 
             # Memories lose relevance over time, but level off
@@ -368,9 +351,7 @@ class EnhancedConfidenceScorer:
 
         return historical_accuracy
 
-    def _record_scoring(
-        self, confidence: float, metadata: Dict[str, Any], context: Dict[str, Any]
-    ):
+    def _record_scoring(self, confidence: float, metadata: Dict[str, Any], context: Dict[str, Any]):
         """
         Record confidence scoring for learning and adaptation.
         """
@@ -389,9 +370,7 @@ class EnhancedConfidenceScorer:
 
         self.accuracy_metrics["total_scores"] += 1
 
-    def _generate_explanation(
-        self, confidence: float, metadata: Dict[str, Any], context: Dict[str, Any]
-    ) -> str:
+    def _generate_explanation(self, confidence: float, metadata: Dict[str, Any], context: Dict[str, Any]) -> str:
         """
         Generate human-readable explanation for confidence score.
         """
@@ -457,8 +436,7 @@ class EnhancedConfidenceScorer:
             **self.accuracy_metrics,
             "accuracy": accuracy,
             "avg_confidence": (
-                sum(h["confidence"] for h in self.scoring_history)
-                / len(self.scoring_history)
+                sum(h["confidence"] for h in self.scoring_history) / len(self.scoring_history)
                 if self.scoring_history
                 else 0.0
             ),
@@ -486,15 +464,11 @@ class EnhancedConfidenceScorer:
         if accuracy < 0.7:
             # Lower all weights slightly
             for category in self.category_weights:
-                self.category_weights[category] = max(
-                    self.category_weights[category] * 0.95, 0.5
-                )
+                self.category_weights[category] = max(self.category_weights[category] * 0.95, 0.5)
         elif accuracy > 0.9:
             # Increase weights for high-performing categories
             for category in self.category_weights:
-                self.category_weights[category] = min(
-                    self.category_weights[category] * 1.02, 1.0
-                )
+                self.category_weights[category] = min(self.category_weights[category] * 1.02, 1.0)
 
         logger.info(f"Adapted scoring parameters based on accuracy: {accuracy:.3f}")
 
@@ -557,9 +531,7 @@ class ContextAwareConfidenceScorer:
 
         # Apply context-specific adjustments
         context_profile = self.context_profiles.get(context_type, {})
-        adjusted_confidence = self._apply_context_adjustments(
-            base_result["confidence"], metadata, context_profile
-        )
+        adjusted_confidence = self._apply_context_adjustments(base_result["confidence"], metadata, context_profile)
 
         return {
             **base_result,
@@ -597,9 +569,7 @@ class ContextAwareConfidenceScorer:
             created_at = metadata.get("created_at")
             if created_at:
                 try:
-                    created_time = datetime.fromisoformat(
-                        created_at.replace("Z", "+00:00")
-                    )
+                    datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                     age_days = get_memory_age_days(created_at)
                     if age_days > 30:
                         adjusted -= profile["penalize_outdated"]

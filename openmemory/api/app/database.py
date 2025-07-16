@@ -100,7 +100,8 @@ def create_database_engine(database_url: str) -> Engine:
     if database_url.startswith("sqlite"):
         # SQLite configuration
         engine = create_engine(
-            database_url, connect_args={"check_same_thread": False}  # Needed for SQLite
+            database_url,
+            connect_args={"check_same_thread": False},  # Needed for SQLite
         )
 
         @event.listens_for(engine, "connect")

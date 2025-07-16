@@ -9,17 +9,15 @@ This module provides comprehensive testing for database operations including:
 - Concurrent access testing
 """
 
-import asyncio
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from uuid import uuid4
 
-import psycopg2
 import pytest
 from app.database import Base
-from app.models import App, Memory, MemoryState, User
-from sqlalchemy import MetaData, create_engine, func, select, text
+from app.models import App, Memory, User
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
@@ -136,7 +134,7 @@ class TestTransactionRollback:
             # Manual rollback
             trans.rollback()
 
-        except Exception as e:
+        except Exception:
             trans.rollback()
             raise
 
@@ -183,7 +181,7 @@ class TestTransactionRollback:
 
             trans3.commit()
 
-        except Exception as e:
+        except Exception:
             trans2.rollback()
             trans3.rollback()
             raise
@@ -235,7 +233,7 @@ class TestTransactionRollback:
                 == 0
             )
 
-        except Exception as e:
+        except Exception:
             savepoint.rollback()
             raise
 
@@ -455,7 +453,7 @@ class TestConcurrentAccess:
                     session.add(user)
                     session.commit()
                     return True
-                except Exception as e:
+                except Exception:
                     session.rollback()
                     return False
                 finally:
@@ -524,7 +522,7 @@ class TestConcurrentAccess:
             trans1.commit()
             trans2.commit()
 
-        except Exception as e:
+        except Exception:
             # Deadlock should be detected and resolved
             trans1.rollback()
             trans2.rollback()

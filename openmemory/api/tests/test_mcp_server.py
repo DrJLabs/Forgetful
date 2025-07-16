@@ -4,14 +4,12 @@ Tests MCP protocol operations, context management, SSE transport, and error scen
 """
 
 import asyncio
-import contextvars
 
 # Set testing environment
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
 os.environ["TESTING"] = "true"
@@ -22,12 +20,9 @@ from app.mcp_server import (
     delete_all_memories,
     get_memory_client_safe,
     list_memories,
-    mcp,
-    mcp_router,
     search_memory,
     user_id_var,
 )
-from main import app
 
 
 @pytest.mark.unit

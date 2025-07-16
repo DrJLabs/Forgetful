@@ -3,19 +3,15 @@ Enhanced metadata tagging system for autonomous AI memory storage.
 This module provides advanced metadata tagging and semantic enrichment.
 """
 
-import hashlib
-import json
 import logging
 import re
 from collections import defaultdict
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
+from datetime import datetime
+from typing import Any, Dict, List
 
 from mem0.configs.coding_config import CodingMemoryConfig
 from mem0.memory.timezone_utils import (
     get_memory_age_hours,
-    safe_datetime_diff,
-    safe_datetime_now,
 )
 
 logger = logging.getLogger(__name__)
@@ -258,9 +254,7 @@ class SemanticTagger:
             "tags": all_tags,
             "confidence": tag_confidence,
             "tag_summary": self._generate_tag_summary(all_tags),
-            "recommended_tags": self._recommend_additional_tags(
-                all_tags, memory_content
-            ),
+            "recommended_tags": self._recommend_additional_tags(all_tags, memory_content),
         }
 
     def _extract_semantic_tags(self, content: str) -> Dict[str, Any]:
@@ -289,9 +283,7 @@ class SemanticTagger:
 
         return semantic_tags
 
-    def _extract_technology_tags(
-        self, content: str, metadata: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _extract_technology_tags(self, content: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract technology-specific tags.
         """
@@ -336,9 +328,7 @@ class SemanticTagger:
 
         return technology_tags
 
-    def _extract_context_tags(
-        self, content: str, context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _extract_context_tags(self, content: str, context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extract context-specific tags.
         """
@@ -378,9 +368,7 @@ class SemanticTagger:
 
         return context_tags
 
-    def _generate_auto_tags(
-        self, content: str, metadata: Dict[str, Any], context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_auto_tags(self, content: str, metadata: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate automatic tags based on rules.
         """
@@ -560,7 +548,7 @@ class SemanticTagger:
         created_at = metadata.get("created_at")
         if created_at:
             try:
-                created_time = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                 age_hours = get_memory_age_hours(created_at)
 
                 if age_hours < 1:
@@ -617,11 +605,7 @@ class SemanticTagger:
             r"\bnamely\b",
         ]
 
-        detail_count = sum(
-            1
-            for pattern in detail_patterns
-            if re.search(pattern, content, re.IGNORECASE)
-        )
+        detail_count = sum(1 for pattern in detail_patterns if re.search(pattern, content, re.IGNORECASE))
 
         if detail_count >= 3:
             quality_indicators["detail_level"] = "high"
@@ -640,17 +624,12 @@ class SemanticTagger:
             r"\befficient\b",
         ]
 
-        if any(
-            re.search(pattern, content, re.IGNORECASE)
-            for pattern in code_quality_patterns
-        ):
+        if any(re.search(pattern, content, re.IGNORECASE) for pattern in code_quality_patterns):
             quality_indicators["code_quality"] = "high"
 
         return quality_indicators
 
-    def _generate_quality_tags(
-        self, content: str, metadata: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_quality_tags(self, content: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate quality-related tags.
         """
@@ -664,15 +643,9 @@ class SemanticTagger:
             r"\bdone\b",
         ]
 
-        if any(
-            re.search(pattern, content, re.IGNORECASE)
-            for pattern in completeness_indicators
-        ):
+        if any(re.search(pattern, content, re.IGNORECASE) for pattern in completeness_indicators):
             quality_tags["completeness"] = "complete"
-        elif any(
-            word in content.lower()
-            for word in ["partial", "incomplete", "draft", "wip"]
-        ):
+        elif any(word in content.lower() for word in ["partial", "incomplete", "draft", "wip"]):
             quality_tags["completeness"] = "partial"
         else:
             quality_tags["completeness"] = "unknown"
@@ -685,14 +658,9 @@ class SemanticTagger:
             r"\bvalidated\b",
         ]
 
-        if any(
-            re.search(pattern, content, re.IGNORECASE)
-            for pattern in accuracy_indicators
-        ):
+        if any(re.search(pattern, content, re.IGNORECASE) for pattern in accuracy_indicators):
             quality_tags["accuracy"] = "verified"
-        elif any(
-            word in content.lower() for word in ["untested", "unverified", "uncertain"]
-        ):
+        elif any(word in content.lower() for word in ["untested", "unverified", "uncertain"]):
             quality_tags["accuracy"] = "uncertain"
         else:
             quality_tags["accuracy"] = "unknown"
@@ -705,17 +673,12 @@ class SemanticTagger:
             r"\bimportant\b",
         ]
 
-        if any(
-            re.search(pattern, content, re.IGNORECASE)
-            for pattern in usefulness_indicators
-        ):
+        if any(re.search(pattern, content, re.IGNORECASE) for pattern in usefulness_indicators):
             quality_tags["usefulness"] = "high"
 
         return quality_tags
 
-    def _generate_relationship_tags(
-        self, metadata: Dict[str, Any], context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _generate_relationship_tags(self, metadata: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generate relationship tags based on metadata and context.
         """
@@ -752,9 +715,7 @@ class SemanticTagger:
 
         return relationship_tags
 
-    def _calculate_tag_confidence(
-        self, all_tags: Dict[str, Any], content: str
-    ) -> Dict[str, float]:
+    def _calculate_tag_confidence(self, all_tags: Dict[str, Any], content: str) -> Dict[str, float]:
         """
         Calculate confidence scores for different tag categories.
         """
@@ -763,18 +724,14 @@ class SemanticTagger:
         # Semantic tags confidence
         semantic_confidence = 0.0
         if "semantic" in all_tags:
-            total_weight = sum(
-                tag_info["weight"] for tag_info in all_tags["semantic"].values()
-            )
+            total_weight = sum(tag_info["weight"] for tag_info in all_tags["semantic"].values())
             semantic_confidence = min(total_weight / 3, 1.0)
         confidence_scores["semantic"] = semantic_confidence
 
         # Technology tags confidence
         tech_confidence = 0.0
         if "technology" in all_tags:
-            tech_count = sum(
-                len(category) for category in all_tags["technology"].values()
-            )
+            tech_count = sum(len(category) for category in all_tags["technology"].values())
             tech_confidence = min(tech_count / 5, 1.0)
         confidence_scores["technology"] = tech_confidence
 
@@ -786,9 +743,7 @@ class SemanticTagger:
         confidence_scores["auto"] = auto_confidence
 
         # Overall confidence
-        confidence_scores["overall"] = sum(confidence_scores.values()) / len(
-            confidence_scores
-        )
+        confidence_scores["overall"] = sum(confidence_scores.values()) / len(confidence_scores)
 
         return confidence_scores
 
@@ -818,15 +773,11 @@ class SemanticTagger:
                     for tech_category, tech_tags in tags.items():
                         for tech_name, tech_info in tech_tags.items():
                             if tech_info.get("confidence", 0) > 0.8:
-                                summary["primary_tags"].append(
-                                    f"{tech_category}:{tech_name}"
-                                )
+                                summary["primary_tags"].append(f"{tech_category}:{tech_name}")
 
         return summary
 
-    def _recommend_additional_tags(
-        self, all_tags: Dict[str, Any], content: str
-    ) -> List[str]:
+    def _recommend_additional_tags(self, all_tags: Dict[str, Any], content: str) -> List[str]:
         """
         Recommend additional tags that might be relevant.
         """
@@ -842,17 +793,12 @@ class SemanticTagger:
                     recommendations.append("testing:unit_test")
 
         # Recommend performance tags if optimization mentioned
-        if any(
-            word in content_lower
-            for word in ["slow", "fast", "performance", "optimize"]
-        ):
+        if any(word in content_lower for word in ["slow", "fast", "performance", "optimize"]):
             if "performance" not in all_tags.get("semantic", {}):
                 recommendations.append("semantic:performance")
 
         # Recommend documentation tags if explanation is detailed
-        if len(content) > 200 and any(
-            word in content_lower for word in ["example", "how to", "guide"]
-        ):
+        if len(content) > 200 and any(word in content_lower for word in ["example", "how to", "guide"]):
             if "documentation" not in all_tags.get("semantic", {}):
                 recommendations.append("semantic:documentation")
 
@@ -913,9 +859,7 @@ class SemanticTagger:
         self.auto_tagging_rules.update(new_rules)
         logger.info(f"Updated auto-tagging rules: {new_rules}")
 
-    def add_custom_semantic_category(
-        self, category_name: str, patterns: List[str], weight: float
-    ):
+    def add_custom_semantic_category(self, category_name: str, patterns: List[str], weight: float):
         """
         Add a custom semantic category.
         """
@@ -977,9 +921,7 @@ class AutoTaggingManager:
         Automatically tag memory with confidence-based decisions.
         """
         # Generate tags
-        tagging_result = self.semantic_tagger.tag_memory(
-            memory_content, metadata, context
-        )
+        tagging_result = self.semantic_tagger.tag_memory(memory_content, metadata, context)
 
         # Apply auto-tagging logic
         auto_tagged = self._apply_auto_tagging_logic(tagging_result)
@@ -1003,9 +945,7 @@ class AutoTaggingManager:
 
         return result
 
-    def _apply_auto_tagging_logic(
-        self, tagging_result: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _apply_auto_tagging_logic(self, tagging_result: Dict[str, Any]) -> Dict[str, Any]:
         """
         Apply logic to determine which tags to auto-apply.
         """
@@ -1058,9 +998,7 @@ class AutoTaggingManager:
 
         return filtered_tags
 
-    def _filter_medium_confidence_tags(
-        self, all_tags: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _filter_medium_confidence_tags(self, all_tags: Dict[str, Any]) -> Dict[str, Any]:
         """
         Filter tags with medium confidence for suggestion.
         """
@@ -1098,9 +1036,7 @@ class AutoTaggingManager:
                     # Keep highest confidence tags
                     sorted_tags = sorted(
                         category_tags.items(),
-                        key=lambda x: (
-                            x[1].get("confidence", 0) if isinstance(x[1], dict) else 0
-                        ),
+                        key=lambda x: (x[1].get("confidence", 0) if isinstance(x[1], dict) else 0),
                         reverse=True,
                     )
                     validated_tags[category] = dict(sorted_tags[:max_tags])
@@ -1109,9 +1045,7 @@ class AutoTaggingManager:
 
         return validated_tags
 
-    def _validate_auto_decision(
-        self, decision: str, confidence: float
-    ) -> Dict[str, Any]:
+    def _validate_auto_decision(self, decision: str, confidence: float) -> Dict[str, Any]:
         """
         Validate auto-tagging decision.
         """
@@ -1122,29 +1056,17 @@ class AutoTaggingManager:
         }
 
         # Check if decision matches confidence
-        if (
-            decision == "auto_tag_all"
-            and confidence < self.auto_thresholds["high_confidence"]
-        ):
+        if decision == "auto_tag_all" and confidence < self.auto_thresholds["high_confidence"]:
             validation["decision_valid"] = False
-            validation["warnings"].append(
-                "Decision too aggressive for confidence level"
-            )
+            validation["warnings"].append("Decision too aggressive for confidence level")
 
-        if (
-            decision == "manual_tagging_required"
-            and confidence > self.auto_thresholds["medium_confidence"]
-        ):
+        if decision == "manual_tagging_required" and confidence > self.auto_thresholds["medium_confidence"]:
             validation["confidence_appropriate"] = False
-            validation["warnings"].append(
-                "Confidence level suggests auto-tagging is possible"
-            )
+            validation["warnings"].append("Confidence level suggests auto-tagging is possible")
 
         return validation
 
-    def _record_auto_tagging(
-        self, result: Dict[str, Any], content: str, metadata: Dict[str, Any]
-    ):
+    def _record_auto_tagging(self, result: Dict[str, Any], content: str, metadata: Dict[str, Any]):
         """
         Record auto-tagging decision for learning.
         """
@@ -1154,11 +1076,7 @@ class AutoTaggingManager:
             "confidence": result["confidence"]["overall"],
             "content_length": len(content),
             "category": metadata.get("category", "unknown"),
-            "tag_count": sum(
-                len(tags)
-                for tags in result["auto_tags"].values()
-                if isinstance(tags, dict)
-            ),
+            "tag_count": sum(len(tags) for tags in result["auto_tags"].values() if isinstance(tags, dict)),
         }
 
         self.feedback_history.append(record)
@@ -1167,9 +1085,7 @@ class AutoTaggingManager:
         if len(self.feedback_history) > 1000:
             self.feedback_history = self.feedback_history[-1000:]
 
-    def provide_feedback(
-        self, memory_id: str, correct_tags: List[str], incorrect_tags: List[str]
-    ):
+    def provide_feedback(self, memory_id: str, correct_tags: List[str], incorrect_tags: List[str]):
         """
         Provide feedback on auto-tagging performance.
         """
@@ -1205,18 +1121,12 @@ class AutoTaggingManager:
         # Adjust thresholds
         if accuracy > 0.9:
             # High accuracy, can be more aggressive
-            self.auto_thresholds["auto_tag_threshold"] = max(
-                self.auto_thresholds["auto_tag_threshold"] - 0.05, 0.6
-            )
+            self.auto_thresholds["auto_tag_threshold"] = max(self.auto_thresholds["auto_tag_threshold"] - 0.05, 0.6)
         elif accuracy < 0.7:
             # Low accuracy, be more conservative
-            self.auto_thresholds["auto_tag_threshold"] = min(
-                self.auto_thresholds["auto_tag_threshold"] + 0.05, 0.95
-            )
+            self.auto_thresholds["auto_tag_threshold"] = min(self.auto_thresholds["auto_tag_threshold"] + 0.05, 0.95)
 
-        logger.info(
-            f"Adapted auto-tagging thresholds based on accuracy: {accuracy:.3f}"
-        )
+        logger.info(f"Adapted auto-tagging thresholds based on accuracy: {accuracy:.3f}")
 
     def get_performance_analytics(self) -> Dict[str, Any]:
         """

@@ -104,7 +104,7 @@ CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;
 --
 -- TOC entry 3729 (class 0 OID 0)
 -- Dependencies: 2
--- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION vector; Type: COMMENT; Schema: -; Owner:
 --
 
 COMMENT ON EXTENSION vector IS 'vector data type and ivfflat and hnsw access methods';
@@ -1032,4 +1032,3 @@ ALTER TABLE ONLY public.memory_status_history
 --
 -- PostgreSQL database dump complete
 --
-

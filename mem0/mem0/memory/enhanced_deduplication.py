@@ -4,16 +4,13 @@ This module provides advanced deduplication logic optimized for coding contexts.
 """
 
 import hashlib
-import json
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
+from datetime import datetime
+from typing import Any, Dict, List, Optional, Tuple
 
-import numpy as np
 
 from mem0.configs.coding_config import CodingFactExtractor
 from mem0.memory.timezone_utils import safe_datetime_diff
-from mem0.memory.utils import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -133,9 +130,7 @@ class EnhancedDeduplicator:
 
             if similarity >= threshold:
                 # Check if this is a meaningful duplicate
-                if self._is_meaningful_duplicate(
-                    new_fact, memory, metadata, similarity
-                ):
+                if self._is_meaningful_duplicate(new_fact, memory, metadata, similarity):
                     return True, memory.get("id"), similarity
 
         return False, None, 0.0
@@ -163,9 +158,7 @@ class EnhancedDeduplicator:
         temporal_factor = self._calculate_temporal_factor(metadata1, metadata2)
 
         # Combine all factors
-        enhanced_similarity = (
-            base_similarity * 0.6 + context_boost * 0.2 + semantic_boost * 0.2
-        ) * temporal_factor
+        enhanced_similarity = (base_similarity * 0.6 + context_boost * 0.2 + semantic_boost * 0.2) * temporal_factor
 
         return min(enhanced_similarity, 1.0)
 
@@ -186,9 +179,7 @@ class EnhancedDeduplicator:
 
         return len(intersection) / len(union) if union else 0.0
 
-    def _calculate_context_similarity(
-        self, metadata1: Dict[str, Any], metadata2: Dict[str, Any]
-    ) -> float:
+    def _calculate_context_similarity(self, metadata1: Dict[str, Any], metadata2: Dict[str, Any]) -> float:
         """
         Calculate context similarity between two memories.
         """
@@ -204,9 +195,7 @@ class EnhancedDeduplicator:
         files1 = set(metadata1.get("file_references", []))
         files2 = set(metadata2.get("file_references", []))
         if files1 and files2:
-            file_similarity = len(files1.intersection(files2)) / len(
-                files1.union(files2)
-            )
+            file_similarity = len(files1.intersection(files2)) / len(files1.union(files2))
             context_score += file_similarity * 0.3
 
         # Error/solution relationship
@@ -240,9 +229,7 @@ class EnhancedDeduplicator:
 
         return min(semantic_score, 1.0)
 
-    def _calculate_temporal_factor(
-        self, metadata1: Dict[str, Any], metadata2: Dict[str, Any]
-    ) -> float:
+    def _calculate_temporal_factor(self, metadata1: Dict[str, Any], metadata2: Dict[str, Any]) -> float:
         """
         Calculate temporal relevance factor.
         """
@@ -337,15 +324,13 @@ class EnhancedDeduplicator:
         """
         Check if new fact provides complementary information to existing memory.
         """
-        existing_fact = existing_memory.get("memory", "")
+        existing_memory.get("memory", "")
 
         # Check for error-solution pairs
         new_error = metadata.get("error_related", False)
         existing_error = existing_memory.get("metadata", {}).get("error_related", False)
         new_solution = metadata.get("solution_related", False)
-        existing_solution = existing_memory.get("metadata", {}).get(
-            "solution_related", False
-        )
+        existing_solution = existing_memory.get("metadata", {}).get("solution_related", False)
 
         # If one is error and other is solution, they're complementary
         if (new_error and existing_solution) or (new_solution and existing_error):
@@ -353,9 +338,7 @@ class EnhancedDeduplicator:
 
         # Check for different file references
         new_files = set(metadata.get("file_references", []))
-        existing_files = set(
-            existing_memory.get("metadata", {}).get("file_references", [])
-        )
+        existing_files = set(existing_memory.get("metadata", {}).get("file_references", []))
 
         if new_files and existing_files and not new_files.intersection(existing_files):
             return True  # Different files = complementary
@@ -481,9 +464,7 @@ class AutonomousDeduplicationManager:
             "reasoning": self._generate_reasoning(should_dedup, similarity, metadata),
         }
 
-    def _record_evaluation(
-        self, should_dedup: bool, similarity: float, metadata: Dict[str, Any]
-    ):
+    def _record_evaluation(self, should_dedup: bool, similarity: float, metadata: Dict[str, Any]):
         """
         Record evaluation for adaptive learning.
         """
@@ -520,9 +501,7 @@ class AutonomousDeduplicationManager:
 
         logger.info(f"Adapted thresholds after {self.total_evaluations} evaluations")
 
-    def _calculate_confidence(
-        self, similarity: float, metadata: Dict[str, Any]
-    ) -> float:
+    def _calculate_confidence(self, similarity: float, metadata: Dict[str, Any]) -> float:
         """
         Calculate confidence in deduplication decision.
         """
@@ -543,9 +522,7 @@ class AutonomousDeduplicationManager:
 
         return min(base_confidence * reliability, 1.0)
 
-    def _generate_reasoning(
-        self, should_dedup: bool, similarity: float, metadata: Dict[str, Any]
-    ) -> str:
+    def _generate_reasoning(self, should_dedup: bool, similarity: float, metadata: Dict[str, Any]) -> str:
         """
         Generate human-readable reasoning for deduplication decision.
         """
@@ -636,9 +613,7 @@ def similarity_based_clustering(
                 continue
 
             # Calculate similarity (simplified)
-            similarity = calculate_simple_similarity(
-                memory.get("memory", ""), other_memory.get("memory", "")
-            )
+            similarity = calculate_simple_similarity(memory.get("memory", ""), other_memory.get("memory", ""))
 
             if similarity >= similarity_threshold:
                 cluster.append(other_memory)

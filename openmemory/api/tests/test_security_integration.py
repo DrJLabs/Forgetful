@@ -19,17 +19,11 @@ import json
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
 import time
-from unittest.mock import MagicMock, Mock, patch
-from uuid import uuid4
 
 import pytest
-from app.models import AccessControl, App, Memory, MemoryState, User
-from fastapi import status
 from httpx import AsyncClient
-from sqlalchemy.orm import Session
 
 sys.path.append("/workspace")
-from shared.errors import ExternalServiceError, NotFoundError, ValidationError
 from shared.logging_system import get_logger
 
 logger = get_logger("security_integration_tests")
@@ -220,7 +214,9 @@ class TestMultiLayerSecurity:
                     status_icon = (
                         "✓"
                         if test["result"] == "PASS"
-                        else "✗" if test["result"] == "FAIL" else "?"
+                        else "✗"
+                        if test["result"] == "FAIL"
+                        else "?"
                     )
                     logger.info(f"  {status_icon} {test['name']}: {test['result']}")
 
@@ -236,9 +232,9 @@ class TestMultiLayerSecurity:
             )
 
             # Assert minimum security score
-            assert (
-                security_score >= 70
-            ), f"Security score {security_score:.1f}% is below minimum threshold of 70%"
+            assert security_score >= 70, (
+                f"Security score {security_score:.1f}% is below minimum threshold of 70%"
+            )
 
         return security_audit
 
@@ -408,9 +404,9 @@ class TestMultiLayerSecurity:
         )
 
         # Assert minimum policy compliance
-        assert (
-            policy_compliance >= 80
-        ), f"Policy compliance {policy_compliance:.1f}% is below minimum threshold of 80%"
+        assert policy_compliance >= 80, (
+            f"Policy compliance {policy_compliance:.1f}% is below minimum threshold of 80%"
+        )
 
         return policy_results
 
@@ -722,12 +718,12 @@ class TestSecurityRegressionPrevention:
             )
 
             # Assert security thresholds
-            assert (
-                vulnerability_rate < 5
-            ), f"Vulnerability rate {vulnerability_rate:.1f}% is above acceptable threshold of 5%"
-            assert (
-                handling_rate > 90
-            ), f"Handling rate {handling_rate:.1f}% is below minimum threshold of 90%"
+            assert vulnerability_rate < 5, (
+                f"Vulnerability rate {vulnerability_rate:.1f}% is above acceptable threshold of 5%"
+            )
+            assert handling_rate > 90, (
+                f"Handling rate {handling_rate:.1f}% is below minimum threshold of 90%"
+            )
 
         return vulnerability_results
 
@@ -826,9 +822,9 @@ class TestSecurityRegressionPrevention:
         failed_configs = [
             name for name, result in config_results.items() if not result["passed"]
         ]
-        assert (
-            len(failed_configs) == 0
-        ), f"Failed security configurations: {failed_configs}"
+        assert len(failed_configs) == 0, (
+            f"Failed security configurations: {failed_configs}"
+        )
 
         return config_results
 
@@ -906,9 +902,9 @@ class TestSecurityMonitoring:
         logger.info(f"Security events handled: {handled_events}/{total_events}")
 
         # Assert security event handling
-        assert (
-            handled_events == total_events
-        ), f"Not all security events were properly handled: {handled_events}/{total_events}"
+        assert handled_events == total_events, (
+            f"Not all security events were properly handled: {handled_events}/{total_events}"
+        )
 
         return event_results
 

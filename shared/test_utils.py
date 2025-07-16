@@ -4,7 +4,6 @@ Provides comprehensive testing infrastructure, factories, and utilities
 """
 
 import asyncio
-import json
 import os
 import random
 import string
@@ -14,8 +13,8 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, Generator, List, Optional
-from unittest.mock import MagicMock, Mock, patch
+from typing import Any, Dict, List
+from unittest.mock import Mock
 
 # Database and HTTP testing
 import httpx
@@ -23,12 +22,9 @@ import httpx
 # Performance and benchmark utilities
 import psutil
 import pytest
-import pytest_benchmark
 
 # Factory and fixture utilities
-from factory import Factory, Faker, LazyFunction, SubFactory
-from factory.alchemy import SQLAlchemyModelFactory
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -313,7 +309,7 @@ class AsyncTestUtils:
         for attempt in range(max_attempts):
             try:
                 return await func()
-            except Exception as e:
+            except Exception:
                 if attempt == max_attempts - 1:
                     raise
                 await asyncio.sleep(delay * (backoff**attempt))

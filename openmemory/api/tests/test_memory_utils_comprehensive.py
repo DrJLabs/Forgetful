@@ -15,12 +15,9 @@ Test Coverage Areas:
 6. Circuit Breaker & Retry Logic
 """
 
-import hashlib
-import json
 import os
 import socket
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, Mock, mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 from app.utils.memory import (

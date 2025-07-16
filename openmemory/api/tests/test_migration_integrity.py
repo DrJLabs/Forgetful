@@ -9,9 +9,6 @@ This module provides comprehensive testing for database migration integrity incl
 - Migration dependency validation
 """
 
-import os
-import shutil
-import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -22,10 +19,8 @@ import alembic.script
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
-from alembic.runtime.environment import EnvironmentContext
-from app.database import get_db
-from app.models import App, Base, Memory, User
-from sqlalchemy import MetaData, create_engine, inspect, text
+from app.models import Base, User
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import sessionmaker
 
 # Skip all migration tests if alembic directory is not found in the current working directory
@@ -79,9 +74,9 @@ class TestMigrationIntegrity:
         expected_tables = {"users", "apps", "memories"}
 
         # Check that at least some core tables exist
-        assert any(
-            table in table_names for table in expected_tables
-        ), f"Expected tables not found. Found: {table_names}"
+        assert any(table in table_names for table in expected_tables), (
+            f"Expected tables not found. Found: {table_names}"
+        )
 
         # Run all migrations down
         alembic.command.downgrade(config, "base")
@@ -110,18 +105,18 @@ class TestMigrationIntegrity:
 
         # Test that each revision has required attributes
         for revision in revisions:
-            assert (
-                revision.revision is not None
-            ), f"Revision {revision} missing revision ID"
-            assert (
-                revision.down_revision is not None or revision.is_base
-            ), f"Revision {revision} missing down_revision"
+            assert revision.revision is not None, (
+                f"Revision {revision} missing revision ID"
+            )
+            assert revision.down_revision is not None or revision.is_base, (
+                f"Revision {revision} missing down_revision"
+            )
 
             # Test that revision file exists
             revision_file = script_dir.get_revision(revision.revision)
-            assert (
-                revision_file is not None
-            ), f"Revision file for {revision.revision} not found"
+            assert revision_file is not None, (
+                f"Revision file for {revision.revision} not found"
+            )
 
     def test_migration_idempotency(self, alembic_config):
         """Test that migrations are idempotent (can be run multiple times)."""
@@ -152,12 +147,12 @@ class TestMigrationIntegrity:
         for table in final_tables:
             final_columns[table] = {col["name"] for col in inspector.get_columns(table)}
 
-        assert (
-            initial_tables == final_tables
-        ), "Tables changed after idempotent migration"
-        assert (
-            initial_columns == final_columns
-        ), "Columns changed after idempotent migration"
+        assert initial_tables == final_tables, (
+            "Tables changed after idempotent migration"
+        )
+        assert initial_columns == final_columns, (
+            "Columns changed after idempotent migration"
+        )
 
     def test_migration_with_existing_data(self, alembic_config):
         """Test that migrations preserve existing data."""
@@ -290,16 +285,16 @@ class TestMigrationDependencies:
         for revision in revisions:
             if revision.down_revision:
                 # Check that down_revision exists
-                assert (
-                    revision.down_revision in revision_map
-                ), f"Down revision {revision.down_revision} not found for {revision.revision}"
+                assert revision.down_revision in revision_map, (
+                    f"Down revision {revision.down_revision} not found for {revision.revision}"
+                )
 
                 # Check that down_revision is older
                 down_rev = revision_map[revision.down_revision]
                 # This is a simplified check - real implementation would check timestamps
-                assert (
-                    down_rev.revision != revision.revision
-                ), "Revision cannot depend on itself"
+                assert down_rev.revision != revision.revision, (
+                    "Revision cannot depend on itself"
+                )
 
     def test_migration_branch_merging(self, alembic_config):
         """Test that migration branches can be merged properly."""
@@ -376,9 +371,9 @@ class TestMigrationDependencies:
         # Check each revision for cycles
         for revision in revisions:
             if revision.revision not in visited:
-                assert not has_cycle(
-                    revision.revision
-                ), f"Circular dependency detected involving {revision.revision}"
+                assert not has_cycle(revision.revision), (
+                    f"Circular dependency detected involving {revision.revision}"
+                )
 
 
 @pytest.mark.skipif(
@@ -465,9 +460,9 @@ class TestSchemaEvolution:
                 pk_constraints = inspector.get_pk_constraint(table_name)
 
                 # Should have at least a primary key
-                assert pk_constraints[
-                    "constrained_columns"
-                ], f"Table {table_name} missing primary key"
+                assert pk_constraints["constrained_columns"], (
+                    f"Table {table_name} missing primary key"
+                )
 
                 # Check for unique constraints
                 unique_constraints = inspector.get_unique_constraints(table_name)
@@ -504,9 +499,9 @@ class TestMigrationPerformance:
         migration_time = end_time - start_time
 
         # Migrations should complete quickly for a test database
-        assert (
-            migration_time < 30.0
-        ), f"Migration took too long: {migration_time} seconds"
+        assert migration_time < 30.0, (
+            f"Migration took too long: {migration_time} seconds"
+        )
 
     def test_migration_with_large_dataset(self, alembic_config):
         """Test migration performance with larger datasets."""
@@ -549,9 +544,9 @@ class TestMigrationPerformance:
         migration_time = end_time - start_time
 
         # Should complete in reasonable time even with data
-        assert (
-            migration_time < 60.0
-        ), f"Migration with data took too long: {migration_time} seconds"
+        assert migration_time < 60.0, (
+            f"Migration with data took too long: {migration_time} seconds"
+        )
 
 
 @pytest.mark.skipif(
@@ -634,6 +629,6 @@ class TestMigrationErrorHandling:
                     with engine.connect() as conn:
                         context = MigrationContext.configure(conn)
                         new_rev = context.get_current_revision()
-                        assert (
-                            new_rev == current_revision.down_revision
-                        ), "Rollback was not successful"
+                        assert new_rev == current_revision.down_revision, (
+                            "Rollback was not successful"
+                        )

@@ -2,8 +2,6 @@
 Unit tests for API router endpoints
 """
 
-from datetime import UTC, datetime
-from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
@@ -381,7 +379,8 @@ class TestErrorHandling:
     async def test_missing_required_fields(self, test_client: AsyncClient):
         """Test handling of missing required fields"""
         response = await test_client.post(
-            "/api/v1/memories/", json={"text": "Test"}  # Missing user_id
+            "/api/v1/memories/",
+            json={"text": "Test"},  # Missing user_id
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY

@@ -438,7 +438,7 @@ class MemoryTester:
                     return TestResult(
                         test_name="openmemory_list_memories",
                         passed=True,
-                        message=f"Listed memories (alternate format)",
+                        message="Listed memories (alternate format)",
                         response_data=result_data,
                     )
             except json.JSONDecodeError as e:
@@ -596,7 +596,7 @@ class MemoryTester:
             return TestResult(
                 test_name="openmemory_update_memory",
                 passed=True,
-                message=f"Successfully updated memory",
+                message="Successfully updated memory",
                 response_data=result_data,
             )
 
@@ -722,7 +722,7 @@ class MemoryTester:
 
         results = []
         for i, test_func in enumerate(tests):
-            print(f"Running test {i+1}/{len(tests)}: {test_func.__name__}")
+            print(f"Running test {i + 1}/{len(tests)}: {test_func.__name__}")
 
             # Add delay between tests to prevent connection exhaustion
             if i > 0:
@@ -755,7 +755,7 @@ class MemoryTester:
         print(f"Total Tests: {total_tests}")
         print(f"Passed: {passed_tests}")
         print(f"Failed: {failed_tests}")
-        print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        print(f"Success Rate: {(passed_tests / total_tests) * 100:.1f}%")
 
         if failed_tests > 0:
             print("\nFailed Tests:")

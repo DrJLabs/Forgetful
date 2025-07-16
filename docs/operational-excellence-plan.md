@@ -114,42 +114,42 @@ except Exception as e:
    from typing import Dict, Any, Optional
    from contextvars import ContextVar
    import asyncio
-   
+
    # Request correlation context
    request_id_context: ContextVar[str] = ContextVar('request_id', default='')
    user_id_context: ContextVar[str] = ContextVar('user_id', default='')
-   
+
    class StructuredLogger:
        def __init__(self, name: str, service: str):
            self.logger = logging.getLogger(name)
            self.service = service
            self.logger.setLevel(logging.INFO)
-           
+
            # Create formatter
            formatter = StructuredFormatter(service)
-           
+
            # Console handler
            console_handler = logging.StreamHandler()
            console_handler.setFormatter(formatter)
            self.logger.addHandler(console_handler)
-           
+
            # File handler for persistent logging
            file_handler = logging.FileHandler(f'/var/log/{service}.log')
            file_handler.setFormatter(formatter)
            self.logger.addHandler(file_handler)
-       
+
        def info(self, message: str, extra: Optional[Dict[str, Any]] = None):
            self._log('INFO', message, extra)
-       
+
        def warning(self, message: str, extra: Optional[Dict[str, Any]] = None):
            self._log('WARNING', message, extra)
-       
+
        def error(self, message: str, extra: Optional[Dict[str, Any]] = None):
            self._log('ERROR', message, extra)
-       
+
        def critical(self, message: str, extra: Optional[Dict[str, Any]] = None):
            self._log('CRITICAL', message, extra)
-       
+
        def _log(self, level: str, message: str, extra: Optional[Dict[str, Any]] = None):
            log_data = {
                'timestamp': datetime.utcnow().isoformat(),
@@ -159,17 +159,17 @@ except Exception as e:
                'request_id': request_id_context.get(),
                'user_id': user_id_context.get()
            }
-           
+
            if extra:
                log_data.update(extra)
-           
+
            getattr(self.logger, level.lower())(json.dumps(log_data))
-   
+
    class StructuredFormatter(logging.Formatter):
        def __init__(self, service: str):
            self.service = service
            super().__init__()
-       
+
        def format(self, record):
            log_data = {
                'timestamp': datetime.utcnow().isoformat(),
@@ -182,7 +182,7 @@ except Exception as e:
                'request_id': request_id_context.get(),
                'user_id': user_id_context.get()
            }
-           
+
            # Add exception information
            if record.exc_info:
                log_data['exception'] = {
@@ -190,23 +190,23 @@ except Exception as e:
                    'message': str(record.exc_info[1]),
                    'traceback': self.formatException(record.exc_info)
                }
-           
+
            return json.dumps(log_data)
-   
+
    # Request correlation middleware
    async def correlation_middleware(request, call_next):
        """Add request correlation ID to context"""
        request_id = request.headers.get('X-Request-ID', str(uuid.uuid4()))
        user_id = request.headers.get('X-User-ID', 'anonymous')
-       
+
        # Set context variables
        request_id_context.set(request_id)
        user_id_context.set(user_id)
-       
+
        # Add to response headers
        response = await call_next(request)
        response.headers['X-Request-ID'] = request_id
-       
+
        return response
    ```
 
@@ -218,9 +218,9 @@ except Exception as e:
    import asyncio
    from typing import Callable, Any
    from .logging_system import StructuredLogger
-   
+
    logger = StructuredLogger(__name__, 'performance')
-   
+
    def log_performance(operation: str, threshold: float = 1.0):
        """Decorator to log performance metrics"""
        def decorator(func: Callable) -> Callable:
@@ -230,7 +230,7 @@ except Exception as e:
                try:
                    result = await func(*args, **kwargs)
                    duration = time.time() - start_time
-                   
+
                    log_data = {
                        'operation': operation,
                        'duration': duration,
@@ -238,12 +238,12 @@ except Exception as e:
                        'args_count': len(args),
                        'kwargs_count': len(kwargs)
                    }
-                   
+
                    if duration > threshold:
                        logger.warning(f"Slow operation: {operation}", extra=log_data)
                    else:
                        logger.info(f"Operation completed: {operation}", extra=log_data)
-                   
+
                    return result
                except Exception as e:
                    duration = time.time() - start_time
@@ -256,25 +256,25 @@ except Exception as e:
                    }
                    logger.error(f"Operation failed: {operation}", extra=log_data)
                    raise
-           
+
            @functools.wraps(func)
            def sync_wrapper(*args, **kwargs) -> Any:
                start_time = time.time()
                try:
                    result = func(*args, **kwargs)
                    duration = time.time() - start_time
-                   
+
                    log_data = {
                        'operation': operation,
                        'duration': duration,
                        'status': 'success'
                    }
-                   
+
                    if duration > threshold:
                        logger.warning(f"Slow operation: {operation}", extra=log_data)
                    else:
                        logger.info(f"Operation completed: {operation}", extra=log_data)
-                   
+
                    return result
                except Exception as e:
                    duration = time.time() - start_time
@@ -287,9 +287,9 @@ except Exception as e:
                    }
                    logger.error(f"Operation failed: {operation}", extra=log_data)
                    raise
-           
+
            return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
-       
+
        return decorator
    ```
 
@@ -307,36 +307,36 @@ except Exception as e:
    from opentelemetry.sdk.trace import TracerProvider
    from opentelemetry.sdk.trace.export import BatchSpanProcessor
    from opentelemetry.instrumentation.auto_instrumentation import sitecustomize
-   
+
    def setup_tracing(service_name: str):
        """Setup OpenTelemetry tracing"""
        # Create tracer provider
        trace.set_tracer_provider(TracerProvider())
        tracer = trace.get_tracer(__name__)
-       
+
        # Create Jaeger exporter
        jaeger_exporter = JaegerExporter(
            agent_host_name="jaeger",
            agent_port=6831,
        )
-       
+
        # Create span processor
        span_processor = BatchSpanProcessor(jaeger_exporter)
        trace.get_tracer_provider().add_span_processor(span_processor)
-       
+
        return tracer
-   
+
    class TracingMiddleware:
        def __init__(self, app, service_name: str):
            self.app = app
            self.service_name = service_name
            self.tracer = setup_tracing(service_name)
-       
+
        async def __call__(self, scope, receive, send):
            if scope["type"] != "http":
                await self.app(scope, receive, send)
                return
-           
+
            # Extract trace context
            with self.tracer.start_as_current_span(
                f"{scope['method']} {scope['path']}",
@@ -346,7 +346,7 @@ except Exception as e:
                span.set_attribute("http.method", scope["method"])
                span.set_attribute("http.url", scope["path"])
                span.set_attribute("service.name", self.service_name)
-               
+
                await self.app(scope, receive, send)
    ```
 
@@ -361,13 +361,13 @@ except Exception as e:
    from enum import Enum
    from typing import Dict, Any, Optional
    import traceback
-   
+
    class ErrorSeverity(Enum):
        LOW = "low"
        MEDIUM = "medium"
        HIGH = "high"
        CRITICAL = "critical"
-   
+
    class ErrorCategory(Enum):
        VALIDATION = "validation"
        AUTHENTICATION = "authentication"
@@ -378,7 +378,7 @@ except Exception as e:
        EXTERNAL = "external"
        NETWORK = "network"
        DATABASE = "database"
-   
+
    class StructuredError(Exception):
        def __init__(
            self,
@@ -400,7 +400,7 @@ except Exception as e:
            self.recoverable = recoverable
            self.timestamp = datetime.utcnow().isoformat()
            self.traceback = traceback.format_exc()
-       
+
        def _generate_user_message(self) -> str:
            """Generate user-friendly error message"""
            user_messages = {
@@ -415,7 +415,7 @@ except Exception as e:
                ErrorCategory.DATABASE: "Database error occurred. Please try again later."
            }
            return user_messages.get(self.category, "An error occurred. Please try again.")
-       
+
        def to_dict(self) -> Dict[str, Any]:
            """Convert error to dictionary for JSON serialization"""
            return {
@@ -428,7 +428,7 @@ except Exception as e:
                'recoverable': self.recoverable,
                'timestamp': self.timestamp
            }
-   
+
    # Specific error types
    class ValidationError(StructuredError):
        def __init__(self, message: str, field: str = None, **kwargs):
@@ -440,7 +440,7 @@ except Exception as e:
                details={'field': field} if field else {},
                **kwargs
            )
-   
+
    class AuthenticationError(StructuredError):
        def __init__(self, message: str, **kwargs):
            super().__init__(
@@ -451,7 +451,7 @@ except Exception as e:
                recoverable=False,
                **kwargs
            )
-   
+
    class DatabaseError(StructuredError):
        def __init__(self, message: str, query: str = None, **kwargs):
            super().__init__(
@@ -471,9 +471,9 @@ except Exception as e:
    from fastapi.responses import JSONResponse
    from .errors import StructuredError, ErrorSeverity
    from .logging_system import StructuredLogger
-   
+
    logger = StructuredLogger(__name__, 'error_handler')
-   
+
    async def error_handler_middleware(request: Request, call_next):
        """Global error handling middleware"""
        try:
@@ -493,10 +493,10 @@ except Exception as e:
                    'method': request.method
                }
            )
-           
+
            # Determine HTTP status code
            status_code = _get_status_code(e)
-           
+
            return JSONResponse(
                status_code=status_code,
                content=e.to_dict()
@@ -512,7 +512,7 @@ except Exception as e:
                    'traceback': traceback.format_exc()
                }
            )
-           
+
            # Return generic error response
            return JSONResponse(
                status_code=500,
@@ -523,7 +523,7 @@ except Exception as e:
                    'recoverable': True
                }
            )
-   
+
    def _get_status_code(error: StructuredError) -> int:
        """Map error categories to HTTP status codes"""
        status_map = {
@@ -551,9 +551,9 @@ except Exception as e:
    from typing import Callable, Any, Optional
    from .logging_system import StructuredLogger
    from .errors import StructuredError, ErrorSeverity
-   
+
    logger = StructuredLogger(__name__, 'resilience')
-   
+
    class RetryConfig:
        def __init__(
            self,
@@ -568,7 +568,7 @@ except Exception as e:
            self.max_delay = max_delay
            self.backoff_factor = backoff_factor
            self.jitter = jitter
-   
+
    async def with_retry(
        operation: Callable,
        config: RetryConfig,
@@ -579,7 +579,7 @@ except Exception as e:
    ):
        """Execute operation with retry logic"""
        last_exception = None
-       
+
        for attempt in range(config.max_attempts):
            try:
                logger.info(
@@ -589,20 +589,20 @@ except Exception as e:
                        'max_attempts': config.max_attempts
                    }
                )
-               
+
                result = await operation(*args, **kwargs)
-               
+
                if attempt > 0:
                    logger.info(
                        f"Operation succeeded after retry: {operation_name}",
                        extra={'successful_attempt': attempt + 1}
                    )
-               
+
                return result
-               
+
            except retry_exceptions as e:
                last_exception = e
-               
+
                if attempt == config.max_attempts - 1:
                    logger.error(
                        f"Operation failed after all retries: {operation_name}",
@@ -612,16 +612,16 @@ except Exception as e:
                        }
                    )
                    raise
-               
+
                # Calculate delay
                delay = min(
                    config.base_delay * (config.backoff_factor ** attempt),
                    config.max_delay
                )
-               
+
                if config.jitter:
                    delay *= (0.5 + random.random() * 0.5)
-               
+
                logger.warning(
                    f"Operation failed, retrying: {operation_name}",
                    extra={
@@ -630,9 +630,9 @@ except Exception as e:
                        'error': str(e)
                    }
                )
-               
+
                await asyncio.sleep(delay)
-   
+
    class CircuitBreaker:
        def __init__(
            self,
@@ -646,7 +646,7 @@ except Exception as e:
            self.failure_count = 0
            self.last_failure_time = None
            self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
-       
+
        async def __call__(self, operation: Callable, *args, **kwargs):
            """Execute operation with circuit breaker protection"""
            if self.state == "OPEN":
@@ -659,7 +659,7 @@ except Exception as e:
                        severity=ErrorSeverity.HIGH,
                        error_code="CIRCUIT_BREAKER_OPEN"
                    )
-           
+
            try:
                result = await operation(*args, **kwargs)
                self._on_success()
@@ -667,24 +667,24 @@ except Exception as e:
            except self.expected_exception as e:
                self._on_failure()
                raise
-       
+
        def _should_attempt_reset(self) -> bool:
            """Check if circuit breaker should attempt reset"""
            return (
                self.last_failure_time and
                time.time() - self.last_failure_time >= self.recovery_timeout
            )
-       
+
        def _on_success(self):
            """Handle successful operation"""
            self.failure_count = 0
            self.state = "CLOSED"
-       
+
        def _on_failure(self):
            """Handle failed operation"""
            self.failure_count += 1
            self.last_failure_time = time.time()
-           
+
            if self.failure_count >= self.failure_threshold:
                self.state = "OPEN"
                logger.warning(
@@ -708,18 +708,18 @@ except Exception as e:
    from sqlalchemy import event
    from sqlalchemy.engine import Engine
    from .logging_system import StructuredLogger
-   
+
    logger = StructuredLogger(__name__, 'database')
-   
+
    # Query performance monitoring
    @event.listens_for(Engine, "before_cursor_execute")
    def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
        conn.info.setdefault('query_start_time', []).append(time.time())
-   
+
    @event.listens_for(Engine, "after_cursor_execute")
    def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
        total = time.time() - conn.info['query_start_time'].pop(-1)
-       
+
        # Log slow queries
        if total > 1.0:  # 1 second threshold
            logger.warning(
@@ -730,11 +730,11 @@ except Exception as e:
                    'parameters': str(parameters)[:200] if parameters else None
                }
            )
-   
+
    class DatabaseOptimizer:
        def __init__(self, session):
            self.session = session
-       
+
        async def optimize_memory_queries(self):
            """Optimize memory-related queries"""
            # Add indexes for commonly queried fields
@@ -744,19 +744,19 @@ except Exception as e:
                "CREATE INDEX IF NOT EXISTS idx_memory_category ON memories(category)",
                "CREATE INDEX IF NOT EXISTS idx_memory_vector ON memories USING gin(vector)",
            ]
-           
+
            for query in queries:
                try:
                    await self.session.execute(query)
                    logger.info(f"Index created: {query}")
                except Exception as e:
                    logger.warning(f"Index creation failed: {e}")
-   
+
    class QueryCache:
        def __init__(self, ttl: int = 300):
            self.cache = {}
            self.ttl = ttl
-       
+
        def get(self, key: str):
            """Get cached query result"""
            if key in self.cache:
@@ -766,11 +766,11 @@ except Exception as e:
                else:
                    del self.cache[key]
            return None
-       
+
        def set(self, key: str, value):
            """Cache query result"""
            self.cache[key] = (value, time.time())
-       
+
        def clear(self):
            """Clear cache"""
            self.cache.clear()
@@ -784,19 +784,19 @@ except Exception as e:
    from typing import Any, Optional
    from redis import Redis
    from .logging_system import StructuredLogger
-   
+
    logger = StructuredLogger(__name__, 'caching')
-   
+
    class CacheManager:
        def __init__(self, redis_client: Redis):
            self.redis = redis_client
-       
+
        def _generate_key(self, prefix: str, *args, **kwargs) -> str:
            """Generate cache key from arguments"""
            key_data = json.dumps([args, kwargs], sort_keys=True)
            key_hash = hashlib.md5(key_data.encode()).hexdigest()
            return f"{prefix}:{key_hash}"
-       
+
        async def get(self, key: str) -> Optional[Any]:
            """Get value from cache"""
            try:
@@ -810,7 +810,7 @@ except Exception as e:
            except Exception as e:
                logger.error(f"Cache get error: {e}")
                return None
-       
+
        async def set(self, key: str, value: Any, ttl: int = 300):
            """Set value in cache"""
            try:
@@ -819,7 +819,7 @@ except Exception as e:
                logger.info(f"Cache set: {key} (TTL: {ttl}s)")
            except Exception as e:
                logger.error(f"Cache set error: {e}")
-       
+
        async def delete(self, key: str):
            """Delete value from cache"""
            try:
@@ -827,25 +827,25 @@ except Exception as e:
                logger.info(f"Cache delete: {key}")
            except Exception as e:
                logger.error(f"Cache delete error: {e}")
-   
+
    def cache_result(cache_manager: CacheManager, prefix: str, ttl: int = 300):
        """Decorator to cache function results"""
        def decorator(func):
            async def wrapper(*args, **kwargs):
                # Generate cache key
                cache_key = cache_manager._generate_key(prefix, *args, **kwargs)
-               
+
                # Try to get from cache
                cached_result = await cache_manager.get(cache_key)
                if cached_result is not None:
                    return cached_result
-               
+
                # Execute function
                result = await func(*args, **kwargs)
-               
+
                # Cache result
                await cache_manager.set(cache_key, result, ttl)
-               
+
                return result
            return wrapper
        return decorator
@@ -862,16 +862,16 @@ except Exception as e:
    import gzip
    import json
    from typing import Dict, Any
-   
+
    class ResponseOptimizer:
        def __init__(self):
            self.compression_threshold = 1024  # 1KB
-       
+
        async def optimize_response(self, request: Request, response_data: Dict[str, Any]) -> Response:
            """Optimize API response"""
            # Serialize response
            content = json.dumps(response_data)
-           
+
            # Check if compression is beneficial
            if len(content) > self.compression_threshold:
                # Check if client accepts compression
@@ -884,15 +884,15 @@ except Exception as e:
                        media_type="application/json",
                        headers={'Content-Encoding': 'gzip'}
                    )
-           
+
            return JSONResponse(content=response_data)
-       
+
        def paginate_response(self, data: list, page: int, limit: int) -> Dict[str, Any]:
            """Paginate large response datasets"""
            total = len(data)
            start = (page - 1) * limit
            end = start + limit
-           
+
            return {
                'data': data[start:end],
                'pagination': {
@@ -908,44 +908,44 @@ except Exception as e:
    ```javascript
    // openmemory/ui/src/utils/performance.js
    import { useCallback, useMemo } from 'react'
-   
+
    // Debounce hook for search inputs
    export const useDebounce = (callback, delay) => {
      const [debounceTimer, setDebounceTimer] = useState(null)
-   
+
      const debouncedCallback = useCallback((...args) => {
        if (debounceTimer) {
          clearTimeout(debounceTimer)
        }
-       
+
        const newTimer = setTimeout(() => {
          callback(...args)
        }, delay)
-       
+
        setDebounceTimer(newTimer)
      }, [callback, delay, debounceTimer])
-   
+
      return debouncedCallback
    }
-   
+
    // Virtualized list component for large datasets
    export const VirtualizedList = ({ items, renderItem, itemHeight = 50 }) => {
      const [scrollTop, setScrollTop] = useState(0)
      const [containerHeight, setContainerHeight] = useState(400)
-   
+
      const visibleItems = useMemo(() => {
        const startIndex = Math.floor(scrollTop / itemHeight)
        const endIndex = Math.min(
          startIndex + Math.ceil(containerHeight / itemHeight),
          items.length
        )
-       
+
        return items.slice(startIndex, endIndex).map((item, index) => ({
          ...item,
          index: startIndex + index
        }))
      }, [items, scrollTop, containerHeight, itemHeight])
-   
+
      return (
        <div
          style={{ height: containerHeight, overflow: 'auto' }}
@@ -969,14 +969,14 @@ except Exception as e:
        </div>
      )
    }
-   
+
    // API response caching
    class APICache {
      constructor(ttl = 300000) { // 5 minutes
        this.cache = new Map()
        this.ttl = ttl
      }
-   
+
      get(key) {
        const item = this.cache.get(key)
        if (item && Date.now() - item.timestamp < this.ttl) {
@@ -985,19 +985,19 @@ except Exception as e:
        this.cache.delete(key)
        return null
      }
-   
+
      set(key, data) {
        this.cache.set(key, {
          data,
          timestamp: Date.now()
        })
      }
-   
+
      clear() {
        this.cache.clear()
      }
    }
-   
+
    export const apiCache = new APICache()
    ```
 
@@ -1009,63 +1009,63 @@ except Exception as e:
 1. **Create operational runbook**
    ```markdown
    # mem0-stack Operational Runbook
-   
+
    ## Service Health Checks
-   
+
    ### Daily Checks
    - [ ] All services running (docker-compose ps)
    - [ ] Health endpoints responding
    - [ ] Database connectivity
    - [ ] Log aggregation working
-   
+
    ### Weekly Checks
    - [ ] Database backup verification
    - [ ] Performance metrics review
    - [ ] Error rate analysis
    - [ ] Capacity planning review
-   
+
    ## Incident Response
-   
+
    ### Service Down
    1. Check docker-compose status
    2. Review service logs
    3. Restart affected services
    4. Monitor for stability
-   
+
    ### High Error Rate
    1. Check error logs for patterns
    2. Review recent deployments
    3. Implement circuit breaker if needed
    4. Scale resources if necessary
-   
+
    ### Performance Issues
    1. Check resource utilization
    2. Review slow query logs
    3. Analyze cache hit rates
    4. Consider scaling options
-   
+
    ## Maintenance Procedures
-   
+
    ### Database Maintenance
    ```bash
    # Backup database
    ./scripts/db_backup.sh
-   
+
    # Optimize database
    ./scripts/db_optimize.sh
-   
+
    # Update statistics
    ./scripts/db_analyze.sh
    ```
-   
+
    ### Log Management
    ```bash
    # Rotate logs
    ./scripts/rotate_logs.sh
-   
+
    # Clean old logs
    ./scripts/clean_logs.sh
-   
+
    # Archive logs
    ./scripts/archive_logs.sh
    ```
@@ -1075,34 +1075,34 @@ except Exception as e:
    ```bash
    #!/bin/bash
    # scripts/deploy_production.sh
-   
+
    set -euo pipefail
-   
+
    echo "🚀 Starting production deployment..."
-   
+
    # Pre-deployment checks
    echo "Running pre-deployment checks..."
    ./scripts/validate_config.sh
    ./scripts/run_tests.sh
    ./scripts/check_dependencies.sh
-   
+
    # Database migration
    echo "Running database migrations..."
    docker-compose exec openmemory-api alembic upgrade head
-   
+
    # Deploy services
    echo "Deploying services..."
    docker-compose up -d --remove-orphans
-   
+
    # Post-deployment checks
    echo "Running post-deployment checks..."
    sleep 30
    ./scripts/monitor_health.sh
-   
+
    # Verify deployment
    echo "Verifying deployment..."
    ./scripts/verify_deployment.sh
-   
+
    echo "✅ Production deployment completed!"
    ```
 
@@ -1164,4 +1164,4 @@ except Exception as e:
 ./scripts/generate_reports.sh
 ```
 
-**Expected Outcome**: Production-ready mem0-stack with comprehensive operational excellence, including structured logging, advanced error handling, performance optimization, and full observability. 
+**Expected Outcome**: Production-ready mem0-stack with comprehensive operational excellence, including structured logging, advanced error handling, performance optimization, and full observability.

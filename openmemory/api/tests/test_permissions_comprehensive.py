@@ -14,12 +14,11 @@ Test Coverage Areas:
 6. Permission Inheritance & Hierarchy
 """
 
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, Mock, patch
-from uuid import UUID, uuid4
+from unittest.mock import Mock, patch
+from uuid import uuid4
 
 import pytest
-from app.models import App, Memory, MemoryState, User
+from app.models import App, MemoryState
 from app.utils.permissions import check_memory_access_permissions
 
 

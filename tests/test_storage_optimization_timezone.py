@@ -10,7 +10,6 @@ This test suite covers:
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock, patch
 
 import pytest
 from freezegun import freeze_time
@@ -99,10 +98,12 @@ class TestTimezoneEdgeCases:
         # Test spring DST transition (2024-03-10 in US)
         memories = [
             self.create_test_memory(
-                created_at="2024-03-09T12:00:00Z", category="testing"  # Before DST
+                created_at="2024-03-09T12:00:00Z",
+                category="testing",  # Before DST
             ),
             self.create_test_memory(
-                created_at="2024-03-11T12:00:00Z", category="testing"  # After DST
+                created_at="2024-03-11T12:00:00Z",
+                category="testing",  # After DST
             ),
         ]
 
@@ -338,9 +339,9 @@ class TestStorageOptimizationIntegration:
 
             # Recent memory should not be purged
             recent_memory_id = memories[3]["id"]
-            assert (
-                recent_memory_id not in purged_ids
-            ), f"Recent memory was incorrectly purged with {strategy} strategy"
+            assert recent_memory_id not in purged_ids, (
+                f"Recent memory was incorrectly purged with {strategy} strategy"
+            )
 
     def test_scheduled_optimization_timing(self):
         """Test that scheduled optimization timing respects timezone consistency."""
@@ -370,9 +371,9 @@ class TestStorageOptimizationIntegration:
                 time_diff = test_time - initial_time
                 expected_due = time_diff.total_seconds() >= 24 * 3600
 
-                assert (
-                    is_due == expected_due
-                ), f"Scheduling logic failed at {test_time}: expected {expected_due}, got {is_due}"
+                assert is_due == expected_due, (
+                    f"Scheduling logic failed at {test_time}: expected {expected_due}, got {is_due}"
+                )
 
 
 class TestTimezoneRegressionTests:
@@ -462,9 +463,9 @@ class TestTimezoneRegressionTests:
             # (within small floating point tolerance)
             base_factor = recency_factors[0]
             for factor in recency_factors[1:]:
-                assert (
-                    abs(factor - base_factor) < 0.001
-                ), f"Timezone conversion inconsistency: {recency_factors}"
+                assert abs(factor - base_factor) < 0.001, (
+                    f"Timezone conversion inconsistency: {recency_factors}"
+                )
 
     def test_memory_age_calculation_accuracy_regression(self):
         """Test that memory age calculations are accurate after timezone fixes."""
@@ -485,7 +486,7 @@ class TestTimezoneRegressionTests:
                 memory_time = base_time + timedelta(days=case["days_old"])
                 memory = {
                     "id": str(uuid.uuid4()),
-                    "memory": f'Test memory {case["days_old"]} days old',
+                    "memory": f"Test memory {case['days_old']} days old",
                     "metadata": {
                         "created_at": memory_time.isoformat(),
                         "last_accessed": memory_time.isoformat(),
@@ -517,9 +518,9 @@ class TestTimezoneRegressionTests:
                         score = self.storage_manager._calculate_category_specific_score(
                             memory, policy
                         )
-                        assert (
-                            score < 0.3
-                        ), f"Memory purged with score {score} >= 0.3 and age {actual_age_days} days"
+                        assert score < 0.3, (
+                            f"Memory purged with score {score} >= 0.3 and age {actual_age_days} days"
+                        )
 
 
 class TestPerformanceRegression:

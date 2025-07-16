@@ -15,11 +15,9 @@ import hashlib
 import json
 import pickle
 import time
-from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional
 
 import msgpack
 
@@ -778,7 +776,7 @@ def query_cached(ttl: int = 3600):
                 return result
 
             # Execute query and cache result
-            with performance_logger.timer(f"query_execution"):
+            with performance_logger.timer("query_execution"):
                 if asyncio.iscoroutinefunction(func):
                     result = await func(query, params, *args, **kwargs)
                 else:
@@ -832,7 +830,7 @@ async def cache_health_check() -> Dict[str, Any]:
 if __name__ == "__main__":
     # Test in-memory cache
     config = CacheConfig(ttl=300, max_size=100)
-    cache = InMemoryCache(config)
+    cache = MemoryCache(config)
 
     # Test basic operations
     cache.set("key1", "value1")

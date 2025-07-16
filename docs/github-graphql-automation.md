@@ -426,7 +426,7 @@ python3 scripts/gh_project_advanced.py sprint-board --sprint "Sprint 1"
 ### API Roadmap
 
 - **Real-time Webhooks**: Live project updates via websockets
-- **Advanced Queries**: Complex filtering and search capabilities  
+- **Advanced Queries**: Complex filtering and search capabilities
 - **Bulk Operations**: Enhanced bulk update capabilities
 - **Version Control**: Track project configuration changes
 - **Export/Import**: Project configuration backup and restore
@@ -453,5 +453,5 @@ For issues and questions:
 
 ---
 
-**Created with GitHub GraphQL API automation suite**  
-*Leveraging the power of GitHub's GraphQL API for advanced project management* 
+**Created with GitHub GraphQL API automation suite**
+*Leveraging the power of GitHub's GraphQL API for advanced project management*

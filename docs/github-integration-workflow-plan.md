@@ -108,7 +108,7 @@ Integrate GitHub Projects functionality into the mem0-stack project to provide p
 
 1. **Integration Approach** (Step 1.2): <!-- decision-id: D1, status: pending -->
    - Trigger: Architecture review completion
-   - Options: 
+   - Options:
      - Webhook-based real-time sync
      - Polling-based periodic sync
      - Hybrid approach with webhooks + fallback polling
@@ -236,4 +236,4 @@ This integration will be successful when:
 
 ---
 *This plan can be updated as you progress through the workflow. Check off completed items to track progress.*
-*Use `*plan-status` to check current progress or `*plan-update` to modify the plan.* 
+*Use `*plan-status` to check current progress or `*plan-update` to modify the plan.*

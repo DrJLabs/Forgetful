@@ -12,16 +12,12 @@ This module provides helper functions and utilities for API contract testing:
 Based on FastAPI testing patterns from Context7 documentation.
 """
 
-import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple, Union
 from uuid import uuid4
 
 import jsonschema
-from fastapi.testclient import TestClient
 from jsonschema import ValidationError as JsonSchemaValidationError
-from jsonschema import validate
-from pydantic import BaseModel, ValidationError
 
 
 class OpenAPIValidator:
@@ -165,7 +161,7 @@ class ResponseValidator:
 
     @staticmethod
     def validate_pagination_response(
-        response_data: Dict[str, Any]
+        response_data: Dict[str, Any],
     ) -> Tuple[bool, Optional[str]]:
         """
         Validate pagination response format
@@ -224,7 +220,7 @@ class ResponseValidator:
 
     @staticmethod
     def validate_memory_response(
-        response_data: Dict[str, Any]
+        response_data: Dict[str, Any],
     ) -> Tuple[bool, Optional[str]]:
         """
         Validate memory response format
@@ -393,7 +389,7 @@ class TestDataFactory:
 
     @staticmethod
     def create_test_error_response(
-        field_errors: List[Tuple[str, str]] = None
+        field_errors: List[Tuple[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Create test error response
@@ -431,9 +427,9 @@ class ContractTestAssertions:
 
         # Validate OpenAPI version
         version = schema["openapi"]
-        assert isinstance(
-            version, str
-        ), f"{schema_name} 'openapi' field must be a string"
+        assert isinstance(version, str), (
+            f"{schema_name} 'openapi' field must be a string"
+        )
         assert version.startswith("3."), f"{schema_name} must use OpenAPI 3.x"
 
     @staticmethod
@@ -481,20 +477,20 @@ class ContractTestAssertions:
             try:
                 error_detail = response.json()
                 message_suffix = f" Response: {error_detail}"
-            except:
+            except Exception:
                 message_suffix = f" Response text: {response.text}"
 
-            assert (
-                actual_status == expected_status
-            ), f"{message} Expected status {expected_status}, got {actual_status}.{message_suffix}"
+            assert actual_status == expected_status, (
+                f"{message} Expected status {expected_status}, got {actual_status}.{message_suffix}"
+            )
 
     @staticmethod
     def assert_content_type_json(response):
         """Assert that response content type is JSON"""
         content_type = response.headers.get("content-type", "")
-        assert (
-            "application/json" in content_type
-        ), f"Expected JSON content type, got: {content_type}"
+        assert "application/json" in content_type, (
+            f"Expected JSON content type, got: {content_type}"
+        )
 
     @staticmethod
     def assert_cors_headers_present(response):

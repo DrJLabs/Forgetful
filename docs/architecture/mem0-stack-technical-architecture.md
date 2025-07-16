@@ -78,13 +78,13 @@ connection_pools:
     idle_timeout: 300s
     validation_query: "SELECT 1"
     pre_warm: true
-    
+
   neo4j:
     min_connections: 10
     max_connections: 50
     acquisition_timeout: 1s
     idle_test_time: 60s
-    
+
   redis:
     min_connections: 10
     max_connections: 50
@@ -148,12 +148,12 @@ retry_policies:
     initial_delay: 50ms
     max_delay: 500ms
     jitter: true
-    
+
   vector_searches:
     max_attempts: 2
     timeout: 80ms
     fallback_to_cache: true
-    
+
   mcp_operations:
     max_attempts: 5
     timeout: 100ms
@@ -200,12 +200,12 @@ autonomous_patterns:
     - Store conversation context automatically
     - Maintain sliding window of recent interactions
     - Preserve decision rationale and outcomes
-    
+
   proactive_retrieval:
     - Pre-fetch likely needed memories
     - Cache common query patterns
     - Predict next memory needs
-    
+
   intelligent_pruning:
     - Auto-consolidate redundant memories
     - Archive stale information
@@ -217,7 +217,7 @@ autonomous_patterns:
 #### PostgreSQL pgvector Optimization
 ```sql
 -- Optimized indexes for vector operations
-CREATE INDEX idx_memory_vector_hnsw ON memories 
+CREATE INDEX idx_memory_vector_hnsw ON memories
 USING hnsw (embedding vector_cosine_ops)
 WITH (m = 16, ef_construction = 64);
 
@@ -281,13 +281,13 @@ custom_metrics:
     - memory_operation_errors_total
     - memory_cache_hit_ratio
     - memory_batch_size_histogram
-    
+
   ai_agent_patterns:
     - agent_query_frequency
     - agent_context_size_bytes
     - agent_decision_latency
     - agent_memory_relevance_score
-    
+
   system_health:
     - connection_pool_usage
     - circuit_breaker_state
@@ -333,7 +333,7 @@ services:
       - UVICORN_WORKERS=8
       - UVICORN_LOOP=uvloop
       - CONNECTION_POOL_SIZE=50
-      
+
   openmemory-mcp:
     deploy:
       resources:
@@ -346,7 +346,7 @@ services:
     environment:
       - ASYNC_WORKERS=4
       - ENABLE_CACHING=true
-      
+
   postgres:
     deploy:
       resources:
@@ -370,7 +370,7 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
-          
+
 # Service placement for latency optimization
 services:
   mem0:
@@ -475,4 +475,4 @@ capacity_targets:
 
 ## Conclusion
 
-This architecture prioritizes optimization of existing mem0-stack components for autonomous AI agent usage. By implementing multi-layer caching, connection pooling, circuit breakers, and comprehensive monitoring, we achieve the sub-100ms performance and 99.9% reliability required for seamless autonomous operations. The phased approach ensures minimal disruption while maximizing the benefits of each optimization. 
+This architecture prioritizes optimization of existing mem0-stack components for autonomous AI agent usage. By implementing multi-layer caching, connection pooling, circuit breakers, and comprehensive monitoring, we achieve the sub-100ms performance and 99.9% reliability required for seamless autonomous operations. The phased approach ensures minimal disruption while maximizing the benefits of each optimization.

@@ -3,12 +3,11 @@ Enhanced memory categorization system for autonomous AI memory storage.
 This module provides advanced categorization logic optimized for coding contexts.
 """
 
-import json
 import logging
 import re
 from collections import defaultdict
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List
 
 from mem0.configs.coding_config import CodingMemoryConfig
 
@@ -224,22 +223,16 @@ class HierarchicalCategorizer:
         primary_category = self._detect_primary_category(memory_content, metadata)
 
         # Determine sub-categories
-        sub_categories = self._determine_sub_categories(
-            memory_content, metadata, primary_category
-        )
+        sub_categories = self._determine_sub_categories(memory_content, metadata, primary_category)
 
         # Extract technology tags
         technology_tags = self._extract_technology_tags(memory_content, metadata)
 
         # Calculate confidence
-        confidence = self._calculate_categorization_confidence(
-            memory_content, metadata, primary_category
-        )
+        confidence = self._calculate_categorization_confidence(memory_content, metadata, primary_category)
 
         # Build hierarchical path
-        hierarchical_path = self._build_hierarchical_path(
-            primary_category, sub_categories, technology_tags
-        )
+        hierarchical_path = self._build_hierarchical_path(primary_category, sub_categories, technology_tags)
 
         # Record categorization
         self._record_categorization(primary_category, sub_categories, confidence)
@@ -250,9 +243,7 @@ class HierarchicalCategorizer:
             "technology_tags": technology_tags,
             "hierarchical_path": hierarchical_path,
             "confidence": confidence,
-            "explanation": self._generate_categorization_explanation(
-                primary_category, sub_categories, confidence
-            ),
+            "explanation": self._generate_categorization_explanation(primary_category, sub_categories, confidence),
         }
 
     def _detect_primary_category(self, content: str, metadata: Dict[str, Any]) -> str:
@@ -287,26 +278,18 @@ class HierarchicalCategorizer:
                     if file_ref.endswith(ext):
                         # Boost relevant categories based on file type
                         if file_type in ["python", "javascript", "java"]:
-                            category_scores["code_implementation"] = (
-                                category_scores.get("code_implementation", 0) + 2
-                            )
+                            category_scores["code_implementation"] = category_scores.get("code_implementation", 0) + 2
                         elif file_type == "config":
-                            category_scores["configuration"] = (
-                                category_scores.get("configuration", 0) + 3
-                            )
+                            category_scores["configuration"] = category_scores.get("configuration", 0) + 3
                         elif file_type == "markdown":
-                            category_scores["documentation"] = (
-                                category_scores.get("documentation", 0) + 2
-                            )
+                            category_scores["documentation"] = category_scores.get("documentation", 0) + 2
 
         # Context-based hints
         if metadata.get("error_related", False):
             category_scores["bug_fix"] = category_scores.get("bug_fix", 0) + 3
 
         if metadata.get("solution_related", False):
-            category_scores["error_solution"] = (
-                category_scores.get("error_solution", 0) + 3
-            )
+            category_scores["error_solution"] = category_scores.get("error_solution", 0) + 3
 
         # Return category with highest score
         if category_scores:
@@ -314,9 +297,7 @@ class HierarchicalCategorizer:
 
         return "code_implementation"  # Default category
 
-    def _determine_sub_categories(
-        self, content: str, metadata: Dict[str, Any], primary_category: str
-    ) -> List[str]:
+    def _determine_sub_categories(self, content: str, metadata: Dict[str, Any], primary_category: str) -> List[str]:
         """
         Determine sub-categories based on hierarchical structure.
         """
@@ -389,9 +370,7 @@ class HierarchicalCategorizer:
 
         return patterns.get(sub_category, [sub_category.replace("_", r"\s+")])
 
-    def _extract_technology_tags(
-        self, content: str, metadata: Dict[str, Any]
-    ) -> List[str]:
+    def _extract_technology_tags(self, content: str, metadata: Dict[str, Any]) -> List[str]:
         """
         Extract technology tags from content and metadata.
         """
@@ -483,9 +462,7 @@ class HierarchicalCategorizer:
         if metadata.get("file_references"):
             base_confidence *= 1.05
 
-        if metadata.get("error_related", False) or metadata.get(
-            "solution_related", False
-        ):
+        if metadata.get("error_related", False) or metadata.get("solution_related", False):
             base_confidence *= 1.1
 
         # Adjust based on pattern strength
@@ -493,9 +470,7 @@ class HierarchicalCategorizer:
         pattern_matches = 0
         if primary_category in self.detection_patterns:
             for pattern in self.detection_patterns[primary_category]:
-                pattern_matches += len(
-                    re.findall(pattern, content_lower, re.IGNORECASE)
-                )
+                pattern_matches += len(re.findall(pattern, content_lower, re.IGNORECASE))
 
         if pattern_matches > 3:
             base_confidence *= 1.15
@@ -536,9 +511,7 @@ class HierarchicalCategorizer:
 
         return "/".join(path_parts)
 
-    def _record_categorization(
-        self, primary_category: str, sub_categories: List[str], confidence: float
-    ):
+    def _record_categorization(self, primary_category: str, sub_categories: List[str], confidence: float):
         """
         Record categorization for analytics and improvement.
         """
@@ -563,9 +536,7 @@ class HierarchicalCategorizer:
         """
         Generate human-readable explanation for categorization.
         """
-        explanation = (
-            f"Categorized as '{primary_category}' with {confidence:.2f} confidence"
-        )
+        explanation = f"Categorized as '{primary_category}' with {confidence:.2f} confidence"
 
         if sub_categories:
             explanation += f", sub-categories: {', '.join(sub_categories)}"
@@ -582,17 +553,13 @@ class HierarchicalCategorizer:
             "total_categorizations": total_categorizations,
             "category_distribution": dict(self.category_stats),
             "category_percentages": (
-                {
-                    cat: (count / total_categorizations) * 100
-                    for cat, count in self.category_stats.items()
-                }
+                {cat: (count / total_categorizations) * 100 for cat, count in self.category_stats.items()}
                 if total_categorizations > 0
                 else {}
             ),
             "hierarchy_structure": self.category_hierarchy,
             "average_confidence": (
-                sum(h["confidence"] for h in self.categorization_history)
-                / len(self.categorization_history)
+                sum(h["confidence"] for h in self.categorization_history) / len(self.categorization_history)
                 if self.categorization_history
                 else 0.0
             ),
@@ -616,8 +583,7 @@ class HierarchicalCategorizer:
                     {
                         "category": category,
                         "score": score,
-                        "confidence": self.category_confidence.get(category, 0.8)
-                        * (score / 10),
+                        "confidence": self.category_confidence.get(category, 0.8) * (score / 10),
                     }
                 )
 
@@ -676,9 +642,7 @@ class AutoCategorizer:
         Automatically categorize memory with confidence-based decisions.
         """
         # Get categorization result
-        result = self.hierarchical_categorizer.categorize_memory(
-            memory_content, metadata, context
-        )
+        result = self.hierarchical_categorizer.categorize_memory(memory_content, metadata, context)
 
         # Make auto-categorization decision
         confidence = result["confidence"]
@@ -695,9 +659,7 @@ class AutoCategorizer:
             action = "manual_categorization"
             result["auto_action"] = action
             result["requires_review"] = True
-            result["suggestions"] = self.hierarchical_categorizer.suggest_categories(
-                memory_content
-            )
+            result["suggestions"] = self.hierarchical_categorizer.suggest_categories(memory_content)
 
         # Record decision
         self._record_auto_decision(result, context)
@@ -723,9 +685,7 @@ class AutoCategorizer:
             if len(self.feedback_history) > 1000:
                 self.feedback_history = self.feedback_history[-1000:]
 
-    def provide_feedback(
-        self, memory_id: str, correct_category: str, was_correct: bool
-    ):
+    def provide_feedback(self, memory_id: str, correct_category: str, was_correct: bool):
         """
         Provide feedback for learning and improvement.
         """
@@ -738,9 +698,7 @@ class AutoCategorizer:
         if self.learning_enabled:
             self._adjust_thresholds_based_on_feedback()
 
-        logger.info(
-            f"Feedback recorded for memory {memory_id}: {'correct' if was_correct else 'incorrect'}"
-        )
+        logger.info(f"Feedback recorded for memory {memory_id}: {'correct' if was_correct else 'incorrect'}")
 
     def _adjust_thresholds_based_on_feedback(self):
         """
@@ -751,26 +709,18 @@ class AutoCategorizer:
         if total_feedback < 10:  # Need minimum feedback
             return
 
-        positive_feedback = sum(
-            acc for acc in self.category_accuracy.values() if acc > 0
-        )
+        positive_feedback = sum(acc for acc in self.category_accuracy.values() if acc > 0)
         accuracy_rate = positive_feedback / total_feedback
 
         # Adjust thresholds
         if accuracy_rate > 0.9:
             # High accuracy, can be more aggressive
-            self.auto_rules["auto_categorize_above"] = max(
-                self.auto_rules["auto_categorize_above"] - 0.05, 0.7
-            )
+            self.auto_rules["auto_categorize_above"] = max(self.auto_rules["auto_categorize_above"] - 0.05, 0.7)
         elif accuracy_rate < 0.7:
             # Low accuracy, be more conservative
-            self.auto_rules["auto_categorize_above"] = min(
-                self.auto_rules["auto_categorize_above"] + 0.05, 0.95
-            )
+            self.auto_rules["auto_categorize_above"] = min(self.auto_rules["auto_categorize_above"] + 0.05, 0.95)
 
-        logger.info(
-            f"Adjusted auto-categorization thresholds based on accuracy: {accuracy_rate:.3f}"
-        )
+        logger.info(f"Adjusted auto-categorization thresholds based on accuracy: {accuracy_rate:.3f}")
 
     def get_learning_statistics(self) -> Dict[str, Any]:
         """
@@ -781,9 +731,7 @@ class AutoCategorizer:
             "feedback_count": len(self.feedback_history),
             "category_accuracy": dict(self.category_accuracy),
             "current_thresholds": self.auto_rules,
-            "recent_decisions": (
-                self.feedback_history[-10:] if self.feedback_history else []
-            ),
+            "recent_decisions": (self.feedback_history[-10:] if self.feedback_history else []),
         }
 
     def reset_learning_data(self):

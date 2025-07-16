@@ -12,11 +12,9 @@ Author: Quinn (QA Agent) - Step 2.2.1 Security Testing Suite
 """
 
 import asyncio
-import datetime
 
 # Agent 4 Integration - Structured Logging for Security Events
 import sys
-from unittest.mock import MagicMock, Mock, patch
 from uuid import uuid4
 
 import pytest
@@ -24,10 +22,8 @@ from app.models import AccessControl, App, Memory, MemoryState, User
 from app.utils.permissions import check_memory_access_permissions
 from fastapi import status
 from httpx import AsyncClient
-from sqlalchemy.orm import Session
 
 sys.path.append("/workspace")
-from shared.errors import ExternalServiceError, NotFoundError, ValidationError
 from shared.logging_system import get_logger
 
 logger = get_logger("security_auth_tests")
@@ -266,9 +262,9 @@ class TestAuthenticationSecurity:
                 # Should not return sensitive data
                 if response.status_code == 200:
                     data = response.json()
-                    assert (
-                        len(data.get("items", [])) == 0
-                    ), "No data should be returned for invalid auth"
+                    assert len(data.get("items", [])) == 0, (
+                        "No data should be returned for invalid auth"
+                    )
 
             except Exception as e:
                 # Exceptions during malicious requests are acceptable

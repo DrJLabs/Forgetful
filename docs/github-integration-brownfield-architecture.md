@@ -179,7 +179,7 @@ CREATE TABLE sync_state (
 
 ### Data Flow Architecture
 ```
-GitHub API (Forgetful repo) 
+GitHub API (Forgetful repo)
     ↕ (Webhooks + Polling)
 GitHub Tracker Service
     ↕ (Database writes)
@@ -262,7 +262,7 @@ services:
 ```bash
 # GitHub Integration
 GITHUB_TOKEN=ghp_xxx                    # Personal Access Token or GitHub App token
-GITHUB_WEBHOOK_SECRET=webhook_secret    # Webhook verification secret  
+GITHUB_WEBHOOK_SECRET=webhook_secret    # Webhook verification secret
 GITHUB_REPO_OWNER=your-username         # Repository owner
 GITHUB_REPO_NAME=Forgetful              # Repository name
 
@@ -386,4 +386,4 @@ MAX_RETRIES=3                           # Webhook retry attempts
 4. Performance optimization
 
 ---
-*This document reflects the actual state of the mem0-stack system and provides a roadmap for GitHub project tracking integration without impacting the existing OpenMemory functionality.* 
+*This document reflects the actual state of the mem0-stack system and provides a roadmap for GitHub project tracking integration without impacting the existing OpenMemory functionality.*

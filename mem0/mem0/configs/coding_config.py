@@ -3,10 +3,9 @@ Coding-specific memory configuration optimizations for autonomous AI agents.
 This module extends the base MemoryConfig with parameters tuned for coding contexts.
 """
 
-import os
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from mem0.configs.base import MemoryConfig
 
@@ -142,40 +141,19 @@ class CodingFactExtractor:
         fact_lower = fact.lower()
 
         # Pattern matching for automatic categorization
-        if any(
-            keyword in fact_lower
-            for keyword in ["error", "bug", "fix", "crash", "exception"]
-        ):
+        if any(keyword in fact_lower for keyword in ["error", "bug", "fix", "crash", "exception"]):
             return "bug_fix"
-        elif any(
-            keyword in fact_lower
-            for keyword in ["architecture", "design", "pattern", "structure"]
-        ):
+        elif any(keyword in fact_lower for keyword in ["architecture", "design", "pattern", "structure"]):
             return "architecture"
-        elif any(
-            keyword in fact_lower
-            for keyword in ["config", "setup", "environment", "deploy"]
-        ):
+        elif any(keyword in fact_lower for keyword in ["config", "setup", "environment", "deploy"]):
             return "configuration"
-        elif any(
-            keyword in fact_lower
-            for keyword in ["performance", "optimize", "speed", "memory"]
-        ):
+        elif any(keyword in fact_lower for keyword in ["performance", "optimize", "speed", "memory"]):
             return "performance"
-        elif any(
-            keyword in fact_lower
-            for keyword in ["test", "testing", "validation", "verify"]
-        ):
+        elif any(keyword in fact_lower for keyword in ["test", "testing", "validation", "verify"]):
             return "testing"
-        elif any(
-            keyword in fact_lower
-            for keyword in ["debug", "trace", "log", "investigate"]
-        ):
+        elif any(keyword in fact_lower for keyword in ["debug", "trace", "log", "investigate"]):
             return "debugging"
-        elif any(
-            keyword in fact_lower
-            for keyword in ["refactor", "cleanup", "improve", "restructure"]
-        ):
+        elif any(keyword in fact_lower for keyword in ["refactor", "cleanup", "improve", "restructure"]):
             return "refactoring"
         else:
             return "code_implementation"
@@ -207,27 +185,19 @@ class CodingFactExtractor:
             metadata["contains_code"] = True
 
         # Extract error indicators
-        if any(
-            keyword in fact.lower()
-            for keyword in ["error", "exception", "failed", "crash"]
-        ):
+        if any(keyword in fact.lower() for keyword in ["error", "exception", "failed", "crash"]):
             metadata["error_related"] = True
             metadata["priority_boost"] = 0.2
 
         # Extract solution indicators
-        if any(
-            keyword in fact.lower()
-            for keyword in ["solution", "fix", "resolved", "works"]
-        ):
+        if any(keyword in fact.lower() for keyword in ["solution", "fix", "resolved", "works"]):
             metadata["solution_related"] = True
             metadata["priority_boost"] = 0.1
 
         return metadata
 
 
-def create_coding_optimized_config(
-    base_config: Optional[Dict[str, Any]] = None
-) -> CodingMemoryConfig:
+def create_coding_optimized_config(base_config: Optional[Dict[str, Any]] = None) -> CodingMemoryConfig:
     """
     Create a coding-optimized memory configuration.
 

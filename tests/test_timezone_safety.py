@@ -7,7 +7,6 @@ This test suite ensures proper timezone handling across all modules.
 import os
 import sys
 from datetime import datetime, timedelta
-from typing import Any, Dict, List
 
 import pytest
 
@@ -165,9 +164,9 @@ class TestTimezoneSafety:
                 dt.tzinfo is not None
                 for dt in [conf_now, tag_now, dedup_now, storage_now]
             ]
-            assert all(awareness) or not any(
-                awareness
-            ), f"Inconsistent timezone awareness for {test_dt}"
+            assert all(awareness) or not any(awareness), (
+                f"Inconsistent timezone awareness for {test_dt}"
+            )
 
 
 class TestRegression:

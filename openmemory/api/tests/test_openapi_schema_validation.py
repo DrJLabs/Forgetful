@@ -11,14 +11,10 @@ This module provides comprehensive OpenAPI schema validation tests to ensure:
 Based on OpenAPI Specification and JSON Schema standards from Context7 documentation.
 """
 
-import json
-from typing import Any, Dict, List, Optional
-
 import jsonschema
 import pytest
 from fastapi.testclient import TestClient
 from jsonschema import ValidationError as JsonSchemaValidationError
-from jsonschema import validate
 from main import app
 
 
@@ -178,9 +174,9 @@ class TestOpenAPISpecificationCompliance:
         for ref in refs:
             if ref.startswith("#/components/schemas/"):
                 schema_name = ref.split("/")[-1]
-                assert (
-                    schema_name in schemas
-                ), f"Referenced schema not found: {schema_name}"
+                assert schema_name in schemas, (
+                    f"Referenced schema not found: {schema_name}"
+                )
 
     def _find_refs(self, obj, refs=None):
         """Recursively find all $ref references"""
@@ -498,9 +494,9 @@ class TestSchemaConsistency:
             if "properties" in schema_def:
                 properties = schema_def["properties"]
                 for field in required_pagination_fields:
-                    assert (
-                        field in properties
-                    ), f"Missing pagination field '{field}' in {schema_name}"
+                    assert field in properties, (
+                        f"Missing pagination field '{field}' in {schema_name}"
+                    )
 
 
 @pytest.mark.openapi
@@ -546,9 +542,9 @@ class TestAPIContractStability:
                 if "properties" in schema:
                     properties = schema["properties"]
                     for field in required_fields:
-                        assert (
-                            field in properties
-                        ), f"Missing required field '{field}' in {schema_name}"
+                        assert field in properties, (
+                            f"Missing required field '{field}' in {schema_name}"
+                        )
 
     def test_endpoint_stability(self, openapi_schema):
         """Test that critical endpoints are stable"""
@@ -580,9 +576,9 @@ class TestAPIContractStability:
 
         for endpoint, method in critical_operations:
             if endpoint in paths:
-                assert (
-                    method in paths[endpoint]
-                ), f"Missing method {method} for {endpoint}"
+                assert method in paths[endpoint], (
+                    f"Missing method {method} for {endpoint}"
+                )
 
     def test_response_schema_stability(self, openapi_schema):
         """Test that response schemas maintain backward compatibility"""

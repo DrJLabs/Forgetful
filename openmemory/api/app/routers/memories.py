@@ -1,39 +1,29 @@
 import logging
-import os
 from datetime import UTC, datetime
 from typing import List, Optional, Set
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from app.database import get_db
 from app.models import AccessControl, App, Category
-from app.models import Config as ConfigModel
 from app.models import Memory, MemoryAccessLog, MemoryState, MemoryStatusHistory, User
-from app.schemas import MemoryResponse, PaginatedMemoryResponse
+from app.schemas import MemoryResponse
 from app.utils.memory import get_memory_client
 from app.utils.permissions import check_memory_access_permissions
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 from pydantic import BaseModel, validator
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from shared.caching import cache_manager, cached
 from shared.errors import (
-    ExternalServiceError,
     NotFoundError,
-    ValidationError,
-    create_error_response,
-    handle_error,
 )
 
 # Agent 4 Integration - Structured Logging and Error Handling
 from shared.logging_system import (
-    CorrelationContextManager,
     api_logger,
-    performance_logger,
 )
-from shared.resilience import RetryPolicy, retry
 
 router = APIRouter(prefix="/api/v1/memories", tags=["memories"])
 
@@ -41,7 +31,7 @@ router = APIRouter(prefix="/api/v1/memories", tags=["memories"])
 def get_memory_or_404(db: Session, memory_id: UUID) -> Memory:
     memory = db.query(Memory).filter(Memory.id == memory_id).first()
     if not memory:
-        api_logger.warning(f"Memory not found", memory_id=str(memory_id))
+        api_logger.warning("Memory not found", memory_id=str(memory_id))
         raise NotFoundError(
             f"Memory with ID {memory_id} not found",
             resource_type="memory",
@@ -512,7 +502,6 @@ class PauseMemoriesRequest(BaseModel):
 # Pause access to memories
 @router.post("/actions/pause")
 async def pause_memories(request: PauseMemoriesRequest, db: Session = Depends(get_db)):
-
     global_pause = request.global_pause
     all_for_app = request.all_for_app
     app_id = request.app_id
@@ -569,7 +558,7 @@ async def pause_memories(request: PauseMemoriesRequest, db: Session = Depends(ge
         )
         for memory in memories:
             update_memory_state(db, memory.id, state, user_id)
-        return {"message": f"Successfully paused all memories"}
+        return {"message": "Successfully paused all memories"}
 
     if memory_ids:
         # Pause specific memories

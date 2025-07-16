@@ -1,5 +1,3 @@
-import json
-import os
 from typing import Any, Dict, Optional
 
 from app.database import get_db

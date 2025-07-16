@@ -2,7 +2,7 @@ groups:
   # =======================================================================
   # CRITICAL SERVICE AVAILABILITY ALERTS
   # =======================================================================
-  
+
   - name: mem0-stack-critical
     rules:
       - alert: ServiceDown
@@ -46,7 +46,7 @@ groups:
   # =======================================================================
   # PERFORMANCE DEGRADATION ALERTS
   # =======================================================================
-  
+
   - name: mem0-stack-performance
     rules:
       - alert: HighResponseTime
@@ -108,7 +108,7 @@ groups:
   # =======================================================================
   # RESOURCE UTILIZATION ALERTS
   # =======================================================================
-  
+
   - name: mem0-stack-resources
     rules:
       - alert: HighCPUUsage
@@ -174,7 +174,7 @@ groups:
   # =======================================================================
   # DATABASE PERFORMANCE ALERTS
   # =======================================================================
-  
+
   - name: mem0-stack-database
     rules:
       - alert: PostgreSQLConnectionsHigh
@@ -240,7 +240,7 @@ groups:
   # =======================================================================
   # BUSINESS METRICS ALERTS
   # =======================================================================
-  
+
   - name: mem0-stack-business
     rules:
       - alert: MemoryCreationFailures
@@ -285,7 +285,7 @@ groups:
   # =======================================================================
   # MONITORING STACK HEALTH
   # =======================================================================
-  
+
   - name: mem0-stack-monitoring
     rules:
       - alert: PrometheusConfigReloadFailed

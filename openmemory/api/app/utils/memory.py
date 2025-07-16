@@ -30,14 +30,12 @@ Example configuration that will be automatically adjusted:
 import hashlib
 import json
 import os
-import platform
 import socket
 
 from app.database import SessionLocal
 from app.models import Config as ConfigModel
 
 from mem0 import Memory
-from shared.caching import cache_manager, cached
 from shared.errors import ExternalServiceError, handle_error
 
 # Agent 4 Integration - Structured Logging and Error Handling

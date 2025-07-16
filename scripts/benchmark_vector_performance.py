@@ -14,9 +14,8 @@ import os
 import random
 import sys
 import time
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
-import numpy as np
 import psycopg2
 
 # Add the project root to the Python path
@@ -153,7 +152,7 @@ def benchmark_vector_operations(
             """
             )
 
-        results_fetched = cur.fetchall()
+        cur.fetchall()
         search_time = time.time() - start_time
         search_times.append(search_time)
 
@@ -162,7 +161,7 @@ def benchmark_vector_operations(
     results["search_rate"] = 1 / avg_search_time
 
     print(
-        f"✅ Search: {avg_search_time*1000:.2f}ms avg ({results['search_rate']:.1f} searches/sec)"
+        f"✅ Search: {avg_search_time * 1000:.2f}ms avg ({results['search_rate']:.1f} searches/sec)"
     )
 
     # Benchmark 3: Batch operations
@@ -184,7 +183,7 @@ def benchmark_vector_operations(
     cur.execute(
         f"""
         INSERT INTO {table_name} (vector, metadata)
-        VALUES {','.join(query_parts)}
+        VALUES {",".join(query_parts)}
     """,
         params,
     )
@@ -285,11 +284,11 @@ def main():
                 )
 
                 if improvement > 30:
-                    print(f"  ✅ Exceeds 30% performance target")
+                    print("  ✅ Exceeds 30% performance target")
                 elif improvement > 0:
-                    print(f"  ⚠️  Below 30% target but still improved")
+                    print("  ⚠️  Below 30% target but still improved")
                 else:
-                    print(f"  ❌ Performance regression detected")
+                    print("  ❌ Performance regression detected")
 
     print("\n🎉 Benchmark completed!")
 

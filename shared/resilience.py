@@ -8,15 +8,13 @@ This module provides comprehensive resilience patterns including:
 - Recovery strategies
 """
 
-import asyncio
 import random
 import threading
 import time
-from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict
 
 from .errors import ErrorCategory, ErrorRecovery, ErrorSeverity, StructuredError
 from .logging_system import get_logger
@@ -86,9 +84,9 @@ class CircuitBreaker:
             if self.state == CircuitState.OPEN:
                 if self._should_attempt_reset():
                     self.state = CircuitState.HALF_OPEN
-                    logger.info(f"Circuit breaker entering HALF_OPEN state")
+                    logger.info("Circuit breaker entering HALF_OPEN state")
                 else:
-                    logger.warning(f"Circuit breaker OPEN - call rejected")
+                    logger.warning("Circuit breaker OPEN - call rejected")
                     raise StructuredError(
                         message="Service temporarily unavailable",
                         error_code="CIRCUIT_BREAKER_OPEN",
@@ -101,7 +99,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception:
             self._on_failure()
             raise
 
@@ -118,7 +116,7 @@ class CircuitBreaker:
             self.failure_count = 0
             if self.state == CircuitState.HALF_OPEN:
                 self.state = CircuitState.CLOSED
-                logger.info(f"Circuit breaker CLOSED - service recovered")
+                logger.info("Circuit breaker CLOSED - service recovered")
 
     def _on_failure(self):
         """Handle failed call."""
@@ -128,7 +126,7 @@ class CircuitBreaker:
 
             if self.failure_count >= self.config.failure_threshold:
                 self.state = CircuitState.OPEN
-                logger.error(f"Circuit breaker OPEN - failure threshold exceeded")
+                logger.error("Circuit breaker OPEN - failure threshold exceeded")
 
 
 class RetryHandler:
@@ -318,7 +316,7 @@ class ResilienceManager:
             self.metrics["successful_calls"] += 1
             return result
 
-        except Exception as e:
+        except Exception:
             self.metrics["failed_calls"] += 1
             raise
 

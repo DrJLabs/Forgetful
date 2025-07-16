@@ -41,7 +41,7 @@ env:
   APP_DEBUG: false
   APP_LOG_LEVEL: INFO
   APP_USER_ID: test_user
-  
+
   # Database Configuration
   DATABASE_HOST: localhost
   DATABASE_PORT: 5432
@@ -49,7 +49,7 @@ env:
   DATABASE_USER: postgres
   DATABASE_PASSWORD: testpass
   DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
-  
+
   # Neo4j Configuration
   NEO4J_HOST: localhost
   NEO4J_PORT: 7687
@@ -57,18 +57,18 @@ env:
   NEO4J_PASSWORD: testpass
   NEO4J_URI: bolt://localhost:7687
   NEO4J_AUTH: neo4j/testpass
-  
+
   # OpenAI Configuration
   OPENAI_API_KEY: sk-test-key-for-mocking-only
   OPENAI_MODEL: gpt-4o-mini
   OPENAI_EMBEDDING_MODEL: text-embedding-3-small
-  
+
   # Testing Configuration
   TESTING: true
   CI: true
   GITHUB_ACTIONS: true
   COVERAGE_THRESHOLD: 80
-  
+
   # Legacy Variables (for backward compatibility)
   POSTGRES_HOST: localhost
   POSTGRES_DB: test_db
@@ -76,7 +76,7 @@ env:
   POSTGRES_PASSWORD: testpass
   USER: test_user
   API_KEY: sk-test-key-for-mocking-only
-  
+
   # Merge Queue Configuration
   MERGE_QUEUE_ENABLED: true
   PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
@@ -182,7 +182,7 @@ jobs:
             echo "Waiting for PostgreSQL..."
             sleep 2
           done
-          
+
           until nc -z localhost 7687; do
             echo "Waiting for Neo4j..."
             sleep 2
@@ -191,14 +191,14 @@ jobs:
       - name: Run Merge Queue Tests
         run: |
           echo "🧪 Running merge queue validation tests..."
-          
+
           # Run critical tests for merge queue
           python -m pytest tests/ -v -m "not slow" --cov=shared --cov-report=term-missing
-          
+
           # Run OpenMemory API critical tests
           cd openmemory/api
           python -m pytest tests/ -v -m "not slow" --cov=app --cov-report=term-missing
-          
+
           echo "✅ Merge queue validation completed"
 
       - name: Upload Merge Queue Test Results
@@ -229,16 +229,16 @@ jobs:
           script: |
             const { context } = github;
             const pr = context.payload.pull_request;
-            
+
             // Add labels based on files changed
             const files = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: pr.number
             });
-            
+
             const labels = new Set();
-            
+
             files.data.forEach(file => {
               if (file.filename.includes('openmemory/api/')) {
                 labels.add('api');
@@ -259,10 +259,10 @@ jobs:
                 labels.add('ci');
               }
             });
-            
+
             // Add environment-specific labels
             labels.add('merge-queue-eligible');
-            
+
             if (labels.size > 0) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
@@ -278,18 +278,18 @@ jobs:
           script: |
             const { context } = github;
             const pr = context.payload.pull_request;
-            
+
             // Check if PR is ready for merge queue
             const checks = await github.rest.checks.listForRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: pr.head.sha
             });
-            
-            const allChecksPassed = checks.data.check_runs.every(check => 
+
+            const allChecksPassed = checks.data.check_runs.every(check =>
               check.conclusion === 'success' || check.conclusion === 'neutral'
             );
-            
+
             if (allChecksPassed) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
@@ -323,7 +323,7 @@ jobs:
         with:
           script: |
             const { context } = github;
-            
+
             // Get merge queue status
             const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -331,15 +331,15 @@ jobs:
               state: 'open',
               base: 'main'
             });
-            
-            const queueEligible = prs.data.filter(pr => 
+
+            const queueEligible = prs.data.filter(pr =>
               pr.labels.some(label => label.name === 'ready-for-merge-queue')
             );
-            
+
             console.log(`📊 Merge Queue Status:`);
             console.log(`- Total open PRs: ${prs.data.length}`);
             console.log(`- Ready for merge queue: ${queueEligible.length}`);
-            
+
             if (queueEligible.length > 0) {
               console.log(`\n🔄 PRs in merge queue:`);
               queueEligible.forEach(pr => {
@@ -351,37 +351,37 @@ jobs:
         if: always()
         run: |
           echo "📊 Generating merge queue status report..."
-          
+
           cat > merge-queue-report.md << EOF
           # Merge Queue Status Report
-          
+
           **Generated:** $(date)
           **Repository:** ${{ github.repository }}
           **Workflow:** ${{ github.workflow }}
-          
+
           ## Configuration
-          
+
           - Environment: ${{ env.APP_ENVIRONMENT }}
           - Database URL: ${{ env.DATABASE_URL }}
           - Neo4j URI: ${{ env.NEO4J_URI }}
           - Merge Queue Enabled: ${{ env.MERGE_QUEUE_ENABLED }}
-          
+
           ## Queue Management
-          
+
           This workflow automatically manages PRs in the merge queue by:
           1. Running quality gates on merge groups
           2. Auto-labeling PRs based on changed files
           3. Tracking PR readiness for merge queue
           4. Providing status reports
-          
+
           ## Next Steps
-          
+
           - Monitor merge queue for conflicts
           - Review failed quality gates
           - Ensure all agents coordinate properly
-          
+
           EOF
-          
+
           cat merge-queue-report.md
 
       - name: Upload Merge Queue Report
@@ -413,16 +413,16 @@ jobs:
         with:
           script: |
             const { context } = github;
-            
+
             // Get all open PRs
             const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open'
             });
-            
+
             let clearedCount = 0;
-            
+
             for (const pr of prs.data) {
               try {
                 await github.rest.issues.removeLabel({
@@ -431,14 +431,14 @@ jobs:
                   issue_number: pr.number,
                   name: 'ready-for-merge-queue'
                 });
-                
+
                 await github.rest.issues.removeLabel({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: pr.number,
                   name: 'merge-queue-eligible'
                 });
-                
+
                 clearedCount++;
                 console.log(`🧹 Cleared merge queue labels from PR #${pr.number}`);
               } catch (error) {
@@ -446,41 +446,41 @@ jobs:
                 console.log(`⚠️ Could not clear labels from PR #${pr.number}: ${error.message}`);
               }
             }
-            
+
             console.log(`✅ Cleared merge queue labels from ${clearedCount} PRs`);
 
       - name: Generate Clear Queue Report
         run: |
           echo "🧹 Generating clear queue report..."
-          
+
           cat > clear-queue-report.md << EOF
           # Merge Queue Clear Report
-          
+
           **Generated:** $(date)
           **Repository:** ${{ github.repository }}
           **Action:** Clear merge queue
-          
+
           ## Results
-          
+
           - Successfully cleared merge queue labels
           - All PRs removed from merge queue eligibility
           - Queue can now be rebuilt as needed
-          
+
           ## Environment Configuration
-          
+
           - App Environment: ${{ env.APP_ENVIRONMENT }}
           - Database URL: ${{ env.DATABASE_URL }}
           - Neo4j URI: ${{ env.NEO4J_URI }}
           - Merge Queue Enabled: ${{ env.MERGE_QUEUE_ENABLED }}
-          
+
           ## Next Steps
-          
+
           1. Review PR status manually
           2. Re-enable merge queue as needed
           3. Monitor for any issues
-          
+
           EOF
-          
+
           cat clear-queue-report.md
 
       - name: Upload Clear Queue Report

@@ -64,14 +64,6 @@ class ProjectWorkflowManager:
 
         # Example: Create a workflow that automatically moves items to "In Progress"
         # when a linked PR is opened
-        workflow_mutation = """
-        mutation($projectId: ID!, $name: String!, $enabled: Boolean!) {
-            createProjectV2Workflow(
-                input: {
-                    projectId: $projectId
-                    name: $name
-                    enabled: $enabled
-                    workflowFile: """
 
         # Since we can't actually create workflows via GraphQL (they're configured in the UI),
         # let's demonstrate by creating comprehensive automation scripts instead
@@ -167,7 +159,7 @@ class ProjectWorkflowManager:
         """Process a new PR and determine automation actions"""
         actions = []
 
-        title = pr_data.get("title", "").lower()
+        pr_data.get("title", "").lower()
         body = pr_data.get("body", "").lower()
 
         # Try to link to existing project items based on keywords
@@ -242,15 +234,6 @@ class ProjectWorkflowManager:
 
     def estimate_effort(self, title: str, body: str) -> str:
         """Estimate effort based on content complexity"""
-
-        effort_indicators = {
-            "xs": ["typo", "comment", "small", "quick"],
-            "s": ["minor", "simple", "fix"],
-            "m": ["feature", "enhancement", "update"],
-            "l": ["complex", "major", "integration", "refactor"],
-            "xl": ["epic", "architecture", "migration", "redesign"],
-            "xxl": ["platform", "complete rewrite", "major overhaul"],
-        }
 
         text = f"{title} {body}".lower()
 
@@ -400,7 +383,7 @@ def main():
             for i, test_case in enumerate(test_cases):
                 test_result = manager.simulate_webhook_processing(test_case)
                 result["test_results"].append(
-                    {f"test_case_{i+1}": test_case, "automation_result": test_result}
+                    {f"test_case_{i + 1}": test_case, "automation_result": test_result}
                 )
 
         # Output results
@@ -425,14 +408,14 @@ def print_workflow_report(data: Dict, command: str):
         print(f"📊 Available Workflows: {summary.get('available_workflows', 0)}")
         print(f"🎯 Supported Events: {len(summary.get('supported_events', []))}")
 
-        print(f"\n🔧 WORKFLOW TEMPLATES")
+        print("\n🔧 WORKFLOW TEMPLATES")
         print("-" * 30)
         for name, template in data.get("workflow_templates", {}).items():
             print(f"• {template['name']}")
             print(f"  Description: {template['description']}")
             print(f"  Trigger: {template['trigger']}")
 
-        print(f"\n🔗 GRAPHQL CAPABILITIES")
+        print("\n🔗 GRAPHQL CAPABILITIES")
         print("-" * 30)
         capabilities = data.get("graphql_capabilities", {})
         print("Mutations:")
@@ -462,10 +445,10 @@ def print_workflow_report(data: Dict, command: str):
         print("=" * 40)
 
         for i, test_result in enumerate(data.get("test_results", [])):
-            print(f"\n🔬 Test Case {i+1}")
+            print(f"\n🔬 Test Case {i + 1}")
             print("-" * 20)
 
-            test_case = test_result[f"test_case_{i+1}"]
+            test_case = test_result[f"test_case_{i + 1}"]
             automation_result = test_result["automation_result"]
 
             print(f"Event: {test_case.get('action')}")

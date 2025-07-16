@@ -1,8 +1,8 @@
 # GitHub Merge Queue for Multiple Background Agents
 
-**Author:** Quinn - Senior Developer & QA Architect 🧪  
-**Date:** July 11, 2025  
-**Version:** 1.0  
+**Author:** Quinn - Senior Developer & QA Architect 🧪
+**Date:** July 11, 2025
+**Version:** 1.0
 **Purpose:** Coordinate multiple background agents working concurrently using GitHub merge queues
 
 ## 🎯 Overview
@@ -29,15 +29,15 @@ graph TB
     A[Background Agent 1] --> B[Pull Request]
     C[Background Agent 2] --> D[Pull Request]
     E[Background Agent 3] --> F[Pull Request]
-    
+
     B --> G[Merge Queue]
     D --> G
     F --> G
-    
+
     G --> H[Quality Gates]
     H --> I[Sequential Merging]
     I --> J[Main Branch]
-    
+
     K[Merge Queue Coordinator] --> G
     L[Agent Detection] --> K
     M[Status Reporting] --> K
@@ -111,15 +111,15 @@ sequenceDiagram
     A->>MQ: Submit PR #1
     B->>MQ: Submit PR #2
     C->>MQ: Submit PR #3
-    
+
     MQ->>QG: Test PR #1 (first in queue)
     QG->>MQ: ✅ PR #1 passes
     MQ->>M: Merge PR #1
-    
+
     MQ->>QG: Test PR #2 (against updated main)
     QG->>MQ: ✅ PR #2 passes
     MQ->>M: Merge PR #2
-    
+
     MQ->>QG: Test PR #3 (against updated main)
     QG->>MQ: ✅ PR #3 passes
     MQ->>M: Merge PR #3
@@ -168,7 +168,7 @@ sequenceDiagram
    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
    sudo apt update
    sudo apt install gh
-   
+
    # Authenticate
    gh auth login
    ```
@@ -377,7 +377,7 @@ gh pr list --label "agent-pr" --json number,title,labels
    ```bash
    # Good: Single concern
    [AGENT] Fix import error in shared/caching.py
-   
+
    # Bad: Multiple unrelated changes
    [AGENT] Fix imports, update deps, refactor tests
    ```
@@ -388,7 +388,7 @@ gh pr list --label "agent-pr" --json number,title,labels
    ```bash
    # Daily queue status
    ./scripts/setup_merge_queue.sh --status
-   
+
    # Weekly configuration test
    ./scripts/setup_merge_queue.sh --test
    ```
@@ -411,7 +411,7 @@ gh pr list --label "agent-pr" --json number,title,labels
    ```bash
    # Weekly maintenance
    ./scripts/setup_merge_queue.sh --setup
-   
+
    # Monthly cleanup
    ./scripts/setup_merge_queue.sh --action=clear-queue
    ```
@@ -426,7 +426,7 @@ gh pr list --label "agent-pr" --json number,title,labels
    ```bash
    # Update branch protection
    ./scripts/setup_merge_queue.sh --protection
-   
+
    # Update labels
    ./scripts/setup_merge_queue.sh --labels
    ```
@@ -514,7 +514,7 @@ gh run list --workflow="test.yml" --limit=50 --json status,conclusion
 
 ---
 
-**Questions or Issues?** 
+**Questions or Issues?**
 - Create an issue in the repository
 - Contact the development team
 - Review the troubleshooting section
@@ -528,4 +528,4 @@ gh run list --workflow="test.yml" --limit=50 --json status,conclusion
 
 ---
 
-*This documentation is part of the mem0-stack quality assurance and development workflow system.* 
+*This documentation is part of the mem0-stack quality assurance and development workflow system.*

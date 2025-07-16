@@ -15,7 +15,7 @@ This document defines the mandatory timezone handling standards for the mem0 mem
 # ❌ DANGEROUS - Fails when tzinfo is None
 datetime.now(some_datetime.tzinfo)
 
-# ❌ DANGEROUS - Inconsistent behavior 
+# ❌ DANGEROUS - Inconsistent behavior
 datetime.now().replace(tzinfo=some_datetime.tzinfo)
 
 # ❌ DANGEROUS - Creates mixed naive/aware types
@@ -63,22 +63,22 @@ def _safe_datetime_now(reference_time: Optional[datetime] = None) -> datetime:
     """Safely get current datetime with proper timezone handling."""
     if reference_time is None:
         return datetime.now()
-    
+
     if reference_time.tzinfo is not None:
         return datetime.now(reference_time.tzinfo)
-    
+
     return datetime.now()
 
 def _safe_datetime_diff(dt1: datetime, dt2: datetime) -> timedelta:
     """Safely calculate difference between datetimes."""
     if (dt1.tzinfo is None) == (dt2.tzinfo is None):
         return dt1 - dt2
-    
+
     if dt1.tzinfo is None:
         dt1 = dt1.replace(tzinfo=dt2.tzinfo)
     elif dt2.tzinfo is None:
         dt2 = dt2.replace(tzinfo=dt1.tzinfo)
-    
+
     return dt1 - dt2
 ```
 
@@ -111,18 +111,18 @@ Every module with datetime operations must include:
 ```python
 def test_timezone_safety():
     """Test timezone safety for this module."""
-    
+
     # Test 1: Naive datetime handling
     naive_dt = datetime.fromisoformat('2024-01-01T12:00:00')
     result = module_function_using_datetime(naive_dt)
     # Should not raise TypeError
-    
+
     # Test 2: Mixed timezone handling
     naive_dt = datetime.fromisoformat('2024-01-01T12:00:00')
     aware_dt = datetime.fromisoformat('2024-01-01T12:00:00+00:00')
     result = _safe_datetime_diff(aware_dt, naive_dt)
     # Should return timedelta without error
-    
+
     # Test 3: Metadata simulation
     metadata = {'created_at': '2024-01-01T12:00:00'}  # No timezone
     result = module_function_with_metadata(metadata)
@@ -160,7 +160,7 @@ datetime\.now\(\)\.replace\(tzinfo=
 
 - `confidence_scoring.py` - All patterns fixed
 - `metadata_tagging.py` - Safe utility functions implemented
-- `enhanced_deduplication.py` - Safe utility functions implemented  
+- `enhanced_deduplication.py` - Safe utility functions implemented
 - `storage_optimization.py` - Safe utility functions implemented
 
 ### Module Status
@@ -191,6 +191,6 @@ If timezone-related `TypeError` is encountered:
 
 ---
 
-**Maintainer**: Quinn (Senior Developer & QA Architect)  
-**Last Updated**: 2025-07-11  
-**Version**: 1.0 
+**Maintainer**: Quinn (Senior Developer & QA Architect)
+**Last Updated**: 2025-07-11
+**Version**: 1.0

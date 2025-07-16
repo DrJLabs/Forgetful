@@ -3,12 +3,11 @@ Enhanced storage optimization system for autonomous AI memory storage.
 This module provides advanced storage limits and intelligent purging logic.
 """
 
-import json
 import logging
 import math
 from collections import defaultdict
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List
 
 from mem0.configs.coding_config import CodingMemoryConfig
 from mem0.memory.timezone_utils import (
@@ -34,14 +33,10 @@ class IntelligentStorageManager:
             "max_memories_total": config.get("max_memories_total", 10000),
             "max_memories_per_category": config.get("max_memories_per_category", 2000),
             "max_memories_per_session": config.get("max_memories_per_session", 50),
-            "max_memory_size_bytes": config.get(
-                "max_memory_size_bytes", 10240
-            ),  # 10KB per memory
+            "max_memory_size_bytes": config.get("max_memory_size_bytes", 10240),  # 10KB per memory
             "max_total_size_mb": config.get("max_total_size_mb", 100),  # 100MB total
             "warning_threshold": config.get("warning_threshold", 0.8),  # 80% capacity
-            "critical_threshold": config.get(
-                "critical_threshold", 0.95
-            ),  # 95% capacity
+            "critical_threshold": config.get("critical_threshold", 0.95),  # 95% capacity
         }
 
         # Retention policies by category
@@ -176,9 +171,7 @@ class IntelligentStorageManager:
         }
 
         # Total size
-        size_limit = (
-            self.storage_limits["max_total_size_mb"] * 1024 * 1024
-        )  # Convert to bytes
+        size_limit = self.storage_limits["max_total_size_mb"] * 1024 * 1024  # Convert to bytes
         size_usage = current_stats["total_size_bytes"] / size_limit
         limits_status["total_size"] = {
             "current_mb": current_stats["total_size_bytes"] / (1024 * 1024),
@@ -206,9 +199,7 @@ class IntelligentStorageManager:
         overall_status = self._get_status_level(max_usage)
 
         # Recommendations
-        recommendations = self._generate_storage_recommendations(
-            limits_status, overall_status, current_stats
-        )
+        recommendations = self._generate_storage_recommendations(limits_status, overall_status, current_stats)
 
         return {
             "overall_status": overall_status,
@@ -217,9 +208,7 @@ class IntelligentStorageManager:
             "recommendations": recommendations,
         }
 
-    def _calculate_storage_stats(
-        self, memories: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def _calculate_storage_stats(self, memories: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Calculate detailed storage statistics.
         """
@@ -255,9 +244,7 @@ class IntelligentStorageManager:
             created_at = memory.get("metadata", {}).get("created_at")
             if created_at:
                 try:
-                    created_time = datetime.fromisoformat(
-                        created_at.replace("Z", "+00:00")
-                    )
+                    created_time = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                     if oldest_time is None or created_time < oldest_time:
                         oldest_time = created_time
                         stats["oldest_memory"] = memory.get("id")
@@ -327,20 +314,15 @@ class IntelligentStorageManager:
                 recommendations.append(
                     {
                         "type": "category_optimization",
-                        "priority": (
-                            "medium" if status["status"] == "warning" else "high"
-                        ),
+                        "priority": ("medium" if status["status"] == "warning" else "high"),
                         "action": f"purge_category_{category}",
                         "description": f'Category "{category}" is at {status["usage_percent"]:.1f}% capacity.',
-                        "estimated_savings": f'{status["current"] * 0.1:.0f} memories',
+                        "estimated_savings": f"{status['current'] * 0.1:.0f} memories",
                     }
                 )
 
         # Performance recommendations
-        if (
-            current_stats["avg_memory_size"]
-            > self.storage_limits["max_memory_size_bytes"]
-        ):
+        if current_stats["avg_memory_size"] > self.storage_limits["max_memory_size_bytes"]:
             recommendations.append(
                 {
                     "type": "performance_optimization",
@@ -393,9 +375,7 @@ class IntelligentStorageManager:
         memories_to_purge = purge_function(memories, memories_to_remove)
 
         # Calculate savings
-        size_saved = sum(
-            len(str(memory).encode("utf-8")) for memory in memories_to_purge
-        )
+        size_saved = sum(len(str(memory).encode("utf-8")) for memory in memories_to_purge)
         size_saved_mb = size_saved / (1024 * 1024)
 
         # Update statistics
@@ -404,9 +384,7 @@ class IntelligentStorageManager:
         self.storage_stats["memories_purged"] += len(memories_to_purge)
 
         # Calculate performance impact
-        performance_impact = self._calculate_performance_impact(
-            initial_stats, memories_to_purge
-        )
+        performance_impact = self._calculate_performance_impact(initial_stats, memories_to_purge)
 
         return {
             "status": "optimization_completed",
@@ -414,30 +392,22 @@ class IntelligentStorageManager:
             "size_saved_mb": size_saved_mb,
             "strategy_used": strategy,
             "performance_impact": performance_impact,
-            "purged_memory_ids": [
-                mem.get("id") for mem in memories_to_purge if mem.get("id")
-            ],
+            "purged_memory_ids": [mem.get("id") for mem in memories_to_purge if mem.get("id")],
         }
 
-    def _lru_purge(
-        self, memories: List[Dict[str, Any]], count: int
-    ) -> List[Dict[str, Any]]:
+    def _lru_purge(self, memories: List[Dict[str, Any]], count: int) -> List[Dict[str, Any]]:
         """
         Purge memories using Least Recently Used strategy.
         """
         # Sort by last access time
         sorted_memories = sorted(
             memories,
-            key=lambda m: m.get("metadata", {}).get(
-                "last_accessed", "1970-01-01T00:00:00Z"
-            ),
+            key=lambda m: m.get("metadata", {}).get("last_accessed", "1970-01-01T00:00:00Z"),
         )
 
         return sorted_memories[:count]
 
-    def _priority_based_purge(
-        self, memories: List[Dict[str, Any]], count: int
-    ) -> List[Dict[str, Any]]:
+    def _priority_based_purge(self, memories: List[Dict[str, Any]], count: int) -> List[Dict[str, Any]]:
         """
         Purge memories using priority-based strategy.
         """
@@ -452,9 +422,7 @@ class IntelligentStorageManager:
 
         return [memory for _, memory in scored_memories[:count]]
 
-    def _context_aware_purge(
-        self, memories: List[Dict[str, Any]], count: int
-    ) -> List[Dict[str, Any]]:
+    def _context_aware_purge(self, memories: List[Dict[str, Any]], count: int) -> List[Dict[str, Any]]:
         """
         Purge memories using context-aware strategy.
         """
@@ -472,9 +440,7 @@ class IntelligentStorageManager:
             if remaining_count <= 0:
                 break
 
-            policy = self.retention_policies.get(
-                category, self.retention_policies["general"]
-            )
+            policy = self.retention_policies.get(category, self.retention_policies["general"])
 
             # Determine how many to purge from this category
             category_purge_count = min(
@@ -484,9 +450,7 @@ class IntelligentStorageManager:
 
             if category_purge_count > 0:
                 # Apply category-specific purging
-                category_purged = self._purge_category_memories(
-                    category_memories, category_purge_count, policy
-                )
+                category_purged = self._purge_category_memories(category_memories, category_purge_count, policy)
                 memories_to_purge.extend(category_purged)
                 remaining_count -= len(category_purged)
 
@@ -498,9 +462,7 @@ class IntelligentStorageManager:
 
         return memories_to_purge
 
-    def _hybrid_purge(
-        self, memories: List[Dict[str, Any]], count: int
-    ) -> List[Dict[str, Any]]:
+    def _hybrid_purge(self, memories: List[Dict[str, Any]], count: int) -> List[Dict[str, Any]]:
         """
         Purge memories using hybrid strategy (combination of methods).
         """
@@ -513,9 +475,7 @@ class IntelligentStorageManager:
         remaining_count = count - len(context_purged)
 
         if remaining_count > 0:
-            priority_purged = self._priority_based_purge(
-                remaining_memories, remaining_count
-            )
+            priority_purged = self._priority_based_purge(remaining_memories, remaining_count)
             context_purged.extend(priority_purged)
 
         return context_purged
@@ -551,9 +511,7 @@ class IntelligentStorageManager:
             created_at = memory.get("metadata", {}).get("created_at")
             if created_at:
                 try:
-                    created_time = datetime.fromisoformat(
-                        created_at.replace("Z", "+00:00")
-                    )
+                    created_time = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                     if safe_datetime_diff(current_time, created_time) > max_age:
                         purged.append(memory)
                     elif score < 0.3:  # Very low score, purge regardless of age
@@ -575,9 +533,7 @@ class IntelligentStorageManager:
 
         # Base priority from category
         category = metadata.get("category", "general")
-        policy = self.retention_policies.get(
-            category, self.retention_policies["general"]
-        )
+        policy = self.retention_policies.get(category, self.retention_policies["general"])
         base_priority = policy["priority_weight"]
 
         # Access frequency factor
@@ -605,9 +561,7 @@ class IntelligentStorageManager:
 
         return priority
 
-    def _calculate_category_specific_score(
-        self, memory: Dict[str, Any], policy: Dict[str, Any]
-    ) -> float:
+    def _calculate_category_specific_score(self, memory: Dict[str, Any], policy: Dict[str, Any]) -> float:
         """
         Calculate category-specific score for purging decisions.
         """
@@ -618,9 +572,7 @@ class IntelligentStorageManager:
 
         # Access weight
         access_count = metadata.get("access_count", 0)
-        access_score = (
-            min(math.log(access_count + 1) / 10, 1.0) * policy["access_weight"]
-        )
+        access_score = min(math.log(access_count + 1) / 10, 1.0) * policy["access_weight"]
 
         # Recency score
         recency_score = self._calculate_recency_factor(metadata) * 0.3
@@ -650,9 +602,7 @@ class IntelligentStorageManager:
 
         try:
             last_time = datetime.fromisoformat(last_accessed.replace("Z", "+00:00"))
-            time_diff = safe_datetime_diff(
-                safe_datetime_now(), last_time
-            ).total_seconds()
+            time_diff = safe_datetime_diff(safe_datetime_now(), last_time).total_seconds()
 
             # Exponential decay with half-life of 7 days
             decay_factor = math.exp(-time_diff / (7 * 24 * 3600))
@@ -674,16 +624,12 @@ class IntelligentStorageManager:
 
         # Calculate access pattern impact
         high_access_purged = sum(
-            1
-            for memory in purged_memories
-            if memory.get("metadata", {}).get("access_count", 0) > 10
+            1 for memory in purged_memories if memory.get("metadata", {}).get("access_count", 0) > 10
         )
 
         # Calculate recency impact
         recent_purged = sum(
-            1
-            for memory in purged_memories
-            if self._calculate_recency_factor(memory.get("metadata", {})) > 0.8
+            1 for memory in purged_memories if self._calculate_recency_factor(memory.get("metadata", {})) > 0.8
         )
 
         return {
@@ -693,9 +639,7 @@ class IntelligentStorageManager:
             "estimated_retrieval_improvement": f"{len(purged_memories) * 0.1:.1f}%",
         }
 
-    def get_storage_recommendations(
-        self, memories: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def get_storage_recommendations(self, memories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Get storage optimization recommendations.
         """
@@ -714,7 +658,7 @@ class IntelligentStorageManager:
                         "type": "balance_optimization",
                         "priority": "low",
                         "action": f"review_category_{category}",
-                        "description": f'Category "{category}" has {count} memories ({count/total_memories*100:.1f}% of total).',
+                        "description": f'Category "{category}" has {count} memories ({count / total_memories * 100:.1f}% of total).',
                         "estimated_savings": f"{count * 0.1:.0f} memories",
                     }
                 )
@@ -738,9 +682,7 @@ class IntelligentStorageManager:
         Update retention policy for a category.
         """
         if category not in self.retention_policies:
-            self.retention_policies[category] = self.retention_policies[
-                "general"
-            ].copy()
+            self.retention_policies[category] = self.retention_policies["general"].copy()
 
         self.retention_policies[category].update(policy_updates)
         logger.info(f"Updated retention policy for category '{category}'")
@@ -785,9 +727,7 @@ class AutonomousStorageManager:
         # Autonomous settings
         self.autonomous_settings = {
             "auto_optimize_enabled": config.get("auto_optimize_enabled", True),
-            "optimization_interval_hours": config.get(
-                "optimization_interval_hours", 24
-            ),
+            "optimization_interval_hours": config.get("optimization_interval_hours", 24),
             "emergency_purge_threshold": config.get("emergency_purge_threshold", 0.95),
             "auto_purge_threshold": config.get("auto_purge_threshold", 0.85),
             "max_auto_purge_percent": config.get("max_auto_purge_percent", 0.15),
@@ -820,10 +760,7 @@ class AutonomousStorageManager:
         if overall_status == "critical":
             optimization_needed = True
             optimization_urgency = "emergency"
-        elif (
-            overall_status == "warning"
-            and self.autonomous_settings["auto_optimize_enabled"]
-        ):
+        elif overall_status == "warning" and self.autonomous_settings["auto_optimize_enabled"]:
             optimization_needed = True
             optimization_urgency = "scheduled"
         elif self._is_scheduled_optimization_due():
@@ -839,9 +776,7 @@ class AutonomousStorageManager:
 
         # Perform optimization if needed
         if optimization_needed:
-            optimization_result = self._perform_autonomous_optimization(
-                memories, optimization_urgency
-            )
+            optimization_result = self._perform_autonomous_optimization(memories, optimization_urgency)
             result.update(optimization_result)
             result["optimization_performed"] = True
 
@@ -856,38 +791,28 @@ class AutonomousStorageManager:
 
         try:
             last_opt_time = datetime.fromisoformat(self.last_optimization)
-            interval = timedelta(
-                hours=self.autonomous_settings["optimization_interval_hours"]
-            )
+            interval = timedelta(hours=self.autonomous_settings["optimization_interval_hours"])
             return safe_datetime_now() - last_opt_time >= interval
         except Exception:
             return True
 
-    def _perform_autonomous_optimization(
-        self, memories: List[Dict[str, Any]], urgency: str
-    ) -> Dict[str, Any]:
+    def _perform_autonomous_optimization(self, memories: List[Dict[str, Any]], urgency: str) -> Dict[str, Any]:
         """
         Perform autonomous optimization based on urgency.
         """
         # Determine optimization parameters
         if urgency == "emergency":
             strategy = "hybrid"
-            target_reduction = min(
-                self.autonomous_settings["max_auto_purge_percent"], 0.2
-            )
+            target_reduction = min(self.autonomous_settings["max_auto_purge_percent"], 0.2)
         elif urgency == "scheduled":
             strategy = "context_aware"
-            target_reduction = min(
-                self.autonomous_settings["max_auto_purge_percent"], 0.1
-            )
+            target_reduction = min(self.autonomous_settings["max_auto_purge_percent"], 0.1)
         else:  # maintenance
             strategy = "priority_based"
             target_reduction = 0.05
 
         # Perform optimization
-        optimization_result = self.storage_manager.optimize_storage(
-            memories, strategy, target_reduction
-        )
+        optimization_result = self.storage_manager.optimize_storage(memories, strategy, target_reduction)
 
         # Record optimization
         self._record_optimization(optimization_result, urgency)
@@ -960,9 +885,7 @@ class AutonomousStorageManager:
         if self.learning_enabled:
             self._adapt_based_on_feedback(satisfaction_score)
 
-        logger.info(
-            f"Feedback received for optimization {optimization_id}: {satisfaction_score}"
-        )
+        logger.info(f"Feedback received for optimization {optimization_id}: {satisfaction_score}")
 
     def _adapt_based_on_feedback(self, satisfaction_score: float):
         """
@@ -979,9 +902,7 @@ class AutonomousStorageManager:
                 self.autonomous_settings["max_auto_purge_percent"] * 1.1, 0.3
             )
 
-        logger.info(
-            f"Adapted purge parameters based on feedback: {satisfaction_score:.2f}"
-        )
+        logger.info(f"Adapted purge parameters based on feedback: {satisfaction_score:.2f}")
 
     def get_optimization_analytics(self) -> Dict[str, Any]:
         """
@@ -990,9 +911,7 @@ class AutonomousStorageManager:
         return {
             "autonomous_settings": self.autonomous_settings,
             "performance_tracking": self.performance_tracking,
-            "optimization_history": self.optimization_history[
-                -10:
-            ],  # Last 10 optimizations
+            "optimization_history": self.optimization_history[-10:],  # Last 10 optimizations
             "learning_enabled": self.learning_enabled,
             "last_optimization": self.last_optimization,
         }

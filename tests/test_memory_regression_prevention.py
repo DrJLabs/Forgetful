@@ -19,8 +19,7 @@ import os
 import sys
 import time
 import unittest
-from typing import Any, Dict, List
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 # Add the mem0 directory to Python path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../mem0"))
@@ -276,7 +275,9 @@ const DataComponent = ({ apiUrl }) => {
 
                 # Hash creation should be fast even for large content
                 self.assertLess(
-                    hash_time, 0.1, f"Hash creation too slow for {size//1000}KB content"
+                    hash_time,
+                    0.1,
+                    f"Hash creation too slow for {size // 1000}KB content",
                 )
 
                 # Measure metadata creation time
@@ -288,7 +289,7 @@ const DataComponent = ({ apiUrl }) => {
                 self.assertLess(
                     metadata_time,
                     0.01,
-                    f"Metadata creation too slow for {size//1000}KB content",
+                    f"Metadata creation too slow for {size // 1000}KB content",
                 )
 
     def test_embedding_pattern_safety(self):

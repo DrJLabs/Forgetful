@@ -18,8 +18,6 @@ import string
 # Add the workspace to the path dynamically
 import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import Mock, patch
 
 import psutil
 import pytest
@@ -27,7 +25,6 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from shared.caching import (
-    CacheConfig,
     MultiLayerCache,
     MultiLayerCacheConfig,
     OptimizedL1Cache,
@@ -119,17 +116,17 @@ class TestCachePerformance:
         assert total_time < 10.0, f"L1 cache total time too slow: {total_time:.3f}s"
 
         # Hit rate assertions
-        assert hit_count == len(
-            test_data
-        ), f"L1 cache hit count mismatch: {hit_count}/{len(test_data)}"
-        assert (
-            stats["hit_rate"] > 0.98
-        ), f"L1 cache hit rate too low: {stats['hit_rate']:.3f}"
+        assert hit_count == len(test_data), (
+            f"L1 cache hit count mismatch: {hit_count}/{len(test_data)}"
+        )
+        assert stats["hit_rate"] > 0.98, (
+            f"L1 cache hit rate too low: {stats['hit_rate']:.3f}"
+        )
 
         # Memory usage assertions
-        assert (
-            stats["memory_usage_mb"] < 100
-        ), f"L1 cache memory usage too high: {stats['memory_usage_mb']:.1f}MB"
+        assert stats["memory_usage_mb"] < 100, (
+            f"L1 cache memory usage too high: {stats['memory_usage_mb']:.1f}MB"
+        )
 
         print(
             f"L1 Cache Performance: Write={write_time:.3f}s, Read={read_time:.3f}s, Hit Rate={stats['hit_rate']:.3f}"
@@ -169,9 +166,9 @@ class TestCachePerformance:
         assert total_time < 20.0, f"L2 cache total time too slow: {total_time:.3f}s"
 
         # Hit rate assertions (account for Redis connectivity issues)
-        assert (
-            hit_count >= len(test_data) * 0.8
-        ), f"L2 cache hit count too low: {hit_count}/{len(test_data)}"
+        assert hit_count >= len(test_data) * 0.8, (
+            f"L2 cache hit count too low: {hit_count}/{len(test_data)}"
+        )
 
         print(
             f"L2 Cache Performance: Write={write_time:.3f}s, Read={read_time:.3f}s, Hits={hit_count}/{len(test_data)}"
@@ -211,12 +208,12 @@ class TestCachePerformance:
         assert total_time < 10.0, f"L3 cache total time too slow: {total_time:.3f}s"
 
         # Hit rate assertions
-        assert hit_count == len(
-            test_data
-        ), f"L3 cache hit count mismatch: {hit_count}/{len(test_data)}"
-        assert (
-            stats["hit_rate"] > 0.98
-        ), f"L3 cache hit rate too low: {stats['hit_rate']:.3f}"
+        assert hit_count == len(test_data), (
+            f"L3 cache hit count mismatch: {hit_count}/{len(test_data)}"
+        )
+        assert stats["hit_rate"] > 0.98, (
+            f"L3 cache hit rate too low: {stats['hit_rate']:.3f}"
+        )
 
         print(
             f"L3 Cache Performance: Write={write_time:.3f}s, Read={read_time:.3f}s, Hit Rate={stats['hit_rate']:.3f}"
@@ -251,23 +248,23 @@ class TestCachePerformance:
         stats = multi_layer_cache.get_comprehensive_stats()
 
         # Performance assertions
-        assert (
-            write_time < 10.0
-        ), f"Multi-layer cache write time too slow: {write_time:.3f}s"
-        assert (
-            read_time < 3.0
-        ), f"Multi-layer cache read time too slow: {read_time:.3f}s"
-        assert (
-            total_time < 15.0
-        ), f"Multi-layer cache total time too slow: {total_time:.3f}s"
+        assert write_time < 10.0, (
+            f"Multi-layer cache write time too slow: {write_time:.3f}s"
+        )
+        assert read_time < 3.0, (
+            f"Multi-layer cache read time too slow: {read_time:.3f}s"
+        )
+        assert total_time < 15.0, (
+            f"Multi-layer cache total time too slow: {total_time:.3f}s"
+        )
 
         # Hit rate assertions
-        assert (
-            hit_count >= len(test_data) * 0.9
-        ), f"Multi-layer cache hit count too low: {hit_count}/{len(test_data)}"
-        assert (
-            stats["overall_hit_rate"] > 0.85
-        ), f"Multi-layer cache hit rate too low: {stats['overall_hit_rate']:.3f}"
+        assert hit_count >= len(test_data) * 0.9, (
+            f"Multi-layer cache hit count too low: {hit_count}/{len(test_data)}"
+        )
+        assert stats["overall_hit_rate"] > 0.85, (
+            f"Multi-layer cache hit rate too low: {stats['overall_hit_rate']:.3f}"
+        )
 
         print(
             f"Multi-layer Cache Performance: Write={write_time:.3f}s, Read={read_time:.3f}s, Hit Rate={stats['overall_hit_rate']:.3f}"
@@ -308,12 +305,12 @@ class TestCachePerformance:
         total_reads = hit_count + miss_count
         read_hit_rate = hit_count / max(total_reads, 1)
 
-        assert (
-            read_hit_rate > 0.8
-        ), f"Cache hit rate too low under load: {read_hit_rate:.3f}"
-        assert (
-            stats["hit_rate"] > 0.7
-        ), f"Overall hit rate too low: {stats['hit_rate']:.3f}"
+        assert read_hit_rate > 0.8, (
+            f"Cache hit rate too low under load: {read_hit_rate:.3f}"
+        )
+        assert stats["hit_rate"] > 0.7, (
+            f"Overall hit rate too low: {stats['hit_rate']:.3f}"
+        )
 
         print(
             f"Load Test: Read Hit Rate={read_hit_rate:.3f}, Overall Hit Rate={stats['hit_rate']:.3f}"
@@ -419,16 +416,16 @@ class TestCachePerformance:
 
         # Performance assertions
         assert write_time < 5.0, f"Large data write time too slow: {write_time:.3f}s"
-        assert (
-            memory_increase < 200
-        ), f"Memory increase too high: {memory_increase:.1f}MB"
+        assert memory_increase < 200, (
+            f"Memory increase too high: {memory_increase:.1f}MB"
+        )
         assert stats["memory_usage_mb"] > 0, "Cache should report memory usage"
 
         # Cleanup should prevent unlimited growth
         memory_growth = final_memory - mid_memory
-        assert (
-            memory_growth < 100
-        ), f"Memory growth after cleanup too high: {memory_growth:.1f}MB"
+        assert memory_growth < 100, (
+            f"Memory growth after cleanup too high: {memory_growth:.1f}MB"
+        )
 
         print(
             f"Memory Test: Write={write_time:.3f}s, Memory Increase={memory_increase:.1f}MB, Growth={memory_growth:.1f}MB"
@@ -465,15 +462,15 @@ class TestCachePerformance:
                     remaining_count += 1
 
         # Performance assertions
-        assert (
-            invalidation_time < 2.0
-        ), f"Invalidation time too slow: {invalidation_time:.3f}s"
+        assert invalidation_time < 2.0, (
+            f"Invalidation time too slow: {invalidation_time:.3f}s"
+        )
 
         # Correctness assertions
         user_5_items = len([item for item in test_data if item["user_id"] == "user_5"])
-        assert (
-            invalidated_count >= user_5_items * 0.8
-        ), f"Invalidation incomplete: {invalidated_count}/{user_5_items}"
+        assert invalidated_count >= user_5_items * 0.8, (
+            f"Invalidation incomplete: {invalidated_count}/{user_5_items}"
+        )
 
         print(
             f"Invalidation Performance: Time={invalidation_time:.3f}s, Invalidated={invalidated_count}/{user_5_items}"

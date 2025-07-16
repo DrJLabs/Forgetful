@@ -8,14 +8,12 @@ This module provides caching specifically for memory operations including:
 - Cache warming for hot memories
 """
 
-import asyncio
 import hashlib
 import json
 import time
 from functools import wraps
 from typing import Any, Dict, List, Optional
 
-import msgpack
 import numpy as np
 
 from shared.caching import MultiLayerCache, MultiLayerCacheConfig
@@ -36,9 +34,7 @@ class MemoryCacheLayer:
     - Performance monitoring and metrics
     """
 
-    def __init__(
-        self, cache: MultiLayerCache = None, config: MultiLayerCacheConfig = None
-    ):
+    def __init__(self, cache: MultiLayerCache = None, config: MultiLayerCacheConfig = None):
         self.cache = cache or MultiLayerCache(config)
         self.config = config or MultiLayerCacheConfig()
         self.embedding_cache = {}  # Hot embeddings in memory
@@ -55,22 +51,16 @@ class MemoryCacheLayer:
         """Generate hash for embedding to use as cache key."""
         return hashlib.sha256(query_embedding.tobytes()).hexdigest()[:16]
 
-    def _generate_memory_key(
-        self, user_id: str, memory_id: str = None, operation: str = "get"
-    ) -> str:
+    def _generate_memory_key(self, user_id: str, memory_id: str = None, operation: str = "get") -> str:
         """Generate cache key for memory operations."""
         if memory_id:
             return f"memory:{operation}:user:{user_id}:id:{memory_id}"
         else:
             return f"memory:{operation}:user:{user_id}"
 
-    def _generate_search_key(
-        self, user_id: str, query_hash: str, limit: int = 10, filters: Dict = None
-    ) -> str:
+    def _generate_search_key(self, user_id: str, query_hash: str, limit: int = 10, filters: Dict = None) -> str:
         """Generate cache key for search operations."""
-        filter_hash = hashlib.sha256(
-            json.dumps(filters or {}, sort_keys=True).encode()
-        ).hexdigest()[:8]
+        filter_hash = hashlib.sha256(json.dumps(filters or {}, sort_keys=True).encode()).hexdigest()[:8]
         return f"search:user:{user_id}:query:{query_hash}:limit:{limit}:filters:{filter_hash}"
 
     async def get_memory_cached(self, user_id: str, memory_id: str) -> Optional[Dict]:
@@ -87,9 +77,7 @@ class MemoryCacheLayer:
         logger.debug(f"Memory cache MISS for user: {user_id}, memory: {memory_id}")
         return None
 
-    async def cache_memory(
-        self, user_id: str, memory_id: str, memory_data: Dict, ttl: int = None
-    ):
+    async def cache_memory(self, user_id: str, memory_id: str, memory_data: Dict, ttl: int = None):
         """Cache single memory data."""
         cache_key = self._generate_memory_key(user_id, memory_id, "get")
         await self.cache.set(cache_key, memory_data, ttl)
@@ -103,9 +91,7 @@ class MemoryCacheLayer:
 
         # Add filters to cache key if present
         if filters:
-            filter_hash = hashlib.sha256(
-                json.dumps(filters, sort_keys=True).encode()
-            ).hexdigest()[:8]
+            filter_hash = hashlib.sha256(json.dumps(filters, sort_keys=True).encode()).hexdigest()[:8]
             cache_key += f":filters:{filter_hash}"
 
         result = await self.cache.get(cache_key)
@@ -132,9 +118,7 @@ class MemoryCacheLayer:
 
         # Add filters to cache key if present
         if filters:
-            filter_hash = hashlib.sha256(
-                json.dumps(filters, sort_keys=True).encode()
-            ).hexdigest()[:8]
+            filter_hash = hashlib.sha256(json.dumps(filters, sort_keys=True).encode()).hexdigest()[:8]
             cache_key += f":filters:{filter_hash}"
 
         await self.cache.set(cache_key, memories, ttl)
@@ -218,9 +202,7 @@ class MemoryCacheLayer:
         await self.cache.warm_cache(user_id, hot_memories)
 
         self.metrics["warmings"] += 1
-        logger.info(
-            f"Cache warmed with {len(hot_memories)} hot memories for user: {user_id}"
-        )
+        logger.info(f"Cache warmed with {len(hot_memories)} hot memories for user: {user_id}")
 
     async def invalidate_user_cache(self, user_id: str):
         """Invalidate all cache entries for a specific user."""
@@ -245,24 +227,18 @@ class MemoryCacheLayer:
     async def invalidate_memory_cache(self, user_id: str, memory_id: str):
         """Invalidate cache for a specific memory."""
         # Invalidate specific memory
-        memory_key = self._generate_memory_key(user_id, memory_id, "get")
+        self._generate_memory_key(user_id, memory_id, "get")
         # Would need to implement individual key invalidation in multi-layer cache
 
         # For now, invalidate all user cache to ensure consistency
         await self.invalidate_user_cache(user_id)
 
-        logger.debug(
-            f"Memory cache invalidated for user: {user_id}, memory: {memory_id}"
-        )
+        logger.debug(f"Memory cache invalidated for user: {user_id}, memory: {memory_id}")
 
     def get_cache_stats(self) -> Dict[str, Any]:
         """Get comprehensive cache statistics."""
-        total_memory_requests = (
-            self.metrics["memory_hits"] + self.metrics["memory_misses"]
-        )
-        total_search_requests = (
-            self.metrics["search_hits"] + self.metrics["search_misses"]
-        )
+        total_memory_requests = self.metrics["memory_hits"] + self.metrics["memory_misses"]
+        total_search_requests = self.metrics["search_hits"] + self.metrics["search_misses"]
 
         memory_hit_rate = self.metrics["memory_hits"] / max(total_memory_requests, 1)
         search_hit_rate = self.metrics["search_hits"] / max(total_search_requests, 1)
@@ -290,9 +266,7 @@ class MemoryCacheLayer:
 
 
 # Cache warming functions for hot memories
-async def warm_memory_cache(
-    cache_layer: MemoryCacheLayer, user_id: str, memory_service
-) -> int:
+async def warm_memory_cache(cache_layer: MemoryCacheLayer, user_id: str, memory_service) -> int:
     """Warm cache with hot memories for a user."""
     try:
         # Get recently accessed memories (hot memories)
@@ -338,9 +312,7 @@ def memory_cached(ttl: int = 300, operation: str = "get"):
                 wrapper.cache_layer = MemoryCacheLayer()
 
             # Generate cache key
-            cache_key = (
-                f"memory:{operation}:{user_id}:{hash(str(args[1:]) + str(kwargs))}"
-            )
+            cache_key = f"memory:{operation}:{user_id}:{hash(str(args[1:]) + str(kwargs))}"
 
             # Try cache first
             result = await wrapper.cache_layer.cache.get(cache_key)
