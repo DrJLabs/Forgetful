@@ -7,9 +7,15 @@ WORKDIR /usr/src/openmemory
 # Copy shared module first (build context is now project root)
 COPY ./shared /usr/src/shared
 
+# Copy local mem0 library
+COPY ./mem0 /usr/src/mem0
+
 # Install dependencies
 COPY ./openmemory/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Install local mem0 library (this will override the PyPI version)
+RUN pip install -e /usr/src/mem0
 
 # Copy application
 COPY ./openmemory/api .
@@ -17,8 +23,8 @@ COPY ./openmemory/api .
 # Create symlink to shared module for proper import resolution
 RUN ln -sf /usr/src/shared shared
 
-# Set Python path to include shared module
-ENV PYTHONPATH=/usr/src/shared:/usr/src/openmemory
+# Set Python path to include shared module and mem0
+ENV PYTHONPATH=/usr/src:/usr/src/openmemory:/usr/src/mem0
 
 EXPOSE 8765
 

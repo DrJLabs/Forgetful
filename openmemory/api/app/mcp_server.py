@@ -11,7 +11,6 @@ This module implements an MCP (Model Context Protocol) server with:
 import contextvars
 import datetime
 import json
-import logging
 import uuid
 
 from app.database import SessionLocal
@@ -65,7 +64,7 @@ def get_memory_client_safe():
         return None
 
 
-# Context variables for user_id and client_name
+# Context variables for backward compatibility (kept for non-MCP usage)
 user_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("user_id")
 client_name_var: contextvars.ContextVar[str] = contextvars.ContextVar("client_name")
 
@@ -79,21 +78,35 @@ sse = SseServerTransport("/mcp/messages/")
 @mcp.tool(
     description="Add a new memory. This method is called everytime the user informs anything about themselves, their preferences, or anything that has any relevant information which can be useful in the future conversation. This can also be called when the user asks you to remember something."
 )
-async def add_memories(text: str) -> str:
-    uid = user_id_var.get(None)
-    client_name = client_name_var.get(None)
+async def add_memories(
+    text: str, user_id: str = "drj", agent_id: str = "default"
+) -> str:
+    """
+    Add a new memory with proper MCP parameter handling
 
-    if not uid:
-        return "Error: user_id not provided"
-    if not client_name:
-        return "Error: client_name not provided"
-
-    # Get memory client safely
-    memory_client = get_memory_client_safe()
-    if not memory_client:
-        return "Error: Memory system is currently unavailable. Please try again later."
-
+    Args:
+        text: The content to remember
+        user_id: User identifier (defaults to "drj" for backward compatibility)
+        agent_id: Agent/client identifier (defaults to "default")
+    """
     try:
+        # Validate and sanitize inputs
+        text = validate_text_input(text)
+        uid = validate_user_id(user_id)
+        client_name = validate_agent_id(agent_id)
+
+        logger.info(
+            "MCP add_memories called",
+            extra={"user_id": uid, "agent_id": client_name, "text_length": len(text)},
+        )
+
+        # Get memory client safely
+        memory_client = get_memory_client_safe()
+        if not memory_client:
+            return (
+                "Error: Memory system is currently unavailable. Please try again later."
+            )
+
         db = SessionLocal()
         try:
             # Get or create user and app
@@ -156,31 +169,57 @@ async def add_memories(text: str) -> str:
 
                 db.commit()
 
-            return response
+            logger.info(
+                "Memory added successfully",
+                extra={
+                    "user_id": uid,
+                    "agent_id": client_name,
+                    "response_type": type(response).__name__,
+                },
+            )
+            return json.dumps(response, indent=2, default=str)
         finally:
             db.close()
+    except ValueError as e:
+        logger.warning(f"Input validation error in add_memories: {e}")
+        return f"Input validation error: {e}"
     except Exception as e:
-        logging.exception(f"Error adding to memory: {e}")
+        logger.exception(f"Error adding to memory: {e}")
         return f"Error adding to memory: {e}"
 
 
 @mcp.tool(
     description="Search through stored memories. This method is called EVERYTIME the user asks anything."
 )
-async def search_memory(query: str) -> str:
-    uid = user_id_var.get(None)
-    client_name = client_name_var.get(None)
-    if not uid:
-        return "Error: user_id not provided"
-    if not client_name:
-        return "Error: client_name not provided"
+async def search_memory(
+    query: str, user_id: str = "drj", agent_id: str = "default"
+) -> str:
+    """
+    Search through stored memories with proper MCP parameter handling
 
-    # Get memory client safely
-    memory_client = get_memory_client_safe()
-    if not memory_client:
-        return "Error: Memory system is currently unavailable. Please try again later."
-
+    Args:
+        query: The search query
+        user_id: User identifier (defaults to "drj" for backward compatibility)
+        agent_id: Agent/client identifier (defaults to "default")
+    """
     try:
+        # Validate and sanitize inputs
+        query = validate_query_input(query)
+        uid = validate_user_id(user_id)
+        client_name = validate_agent_id(agent_id)
+
+        logger.info(
+            "MCP search_memory called",
+            extra={"user_id": uid, "agent_id": client_name, "query": query},
+        )
+
+        # Get memory client safely
+        memory_client = get_memory_client_safe()
+        if not memory_client:
+            return (
+                "Error: Memory system is currently unavailable. Please try again later."
+            )
+
         db = SessionLocal()
         try:
             # Get or create user and app
@@ -232,63 +271,67 @@ async def search_memory(query: str) -> str:
                             )
 
             # Log memory access for each memory found
-            if isinstance(memories, dict) and "results" in memories:
-                print(f"Memories: {memories}")
-                for memory_data in memories["results"]:
-                    if "id" in memory_data:
-                        memory_id = uuid.UUID(memory_data["id"])
-                        # Create access log entry
-                        access_log = MemoryAccessLog(
-                            memory_id=memory_id,
-                            app_id=app.id,
-                            access_type="search",
-                            metadata_={
-                                "query": query,
-                                "score": memory_data.get("score"),
-                                "hash": memory_data.get("hash"),
-                            },
-                        )
-                        db.add(access_log)
-                db.commit()
-            else:
-                for memory in memories:
-                    memory_id = uuid.UUID(memory["id"])
-                    # Create access log entry
-                    access_log = MemoryAccessLog(
-                        memory_id=memory_id,
-                        app_id=app.id,
-                        access_type="search",
-                        metadata_={
-                            "query": query,
-                            "score": memory.get("score"),
-                            "hash": memory.get("hash"),
-                        },
-                    )
-                    db.add(access_log)
-                db.commit()
-            return json.dumps(memories, indent=2)
+            for memory in memories:
+                memory_id = uuid.UUID(memory["id"])
+                # Create access log entry
+                access_log = MemoryAccessLog(
+                    memory_id=memory_id,
+                    app_id=app.id,
+                    access_type="search",
+                    metadata_={
+                        "query": query,
+                        "score": memory.get("score"),
+                        "hash": memory.get("hash"),
+                    },
+                )
+                db.add(access_log)
+            db.commit()
+
+            logger.info(
+                "Memory search completed",
+                extra={
+                    "user_id": uid,
+                    "agent_id": client_name,
+                    "query": query,
+                    "results_count": len(memories),
+                },
+            )
+            return json.dumps(memories, indent=2, default=str)
         finally:
             db.close()
+    except ValueError as e:
+        logger.warning(f"Input validation error in search_memory: {e}")
+        return f"Input validation error: {e}"
     except Exception as e:
-        logging.exception(e)
+        logger.exception(e)
         return f"Error searching memory: {e}"
 
 
 @mcp.tool(description="List all memories in the user's memory")
-async def list_memories() -> str:
-    uid = user_id_var.get(None)
-    client_name = client_name_var.get(None)
-    if not uid:
-        return "Error: user_id not provided"
-    if not client_name:
-        return "Error: client_name not provided"
+async def list_memories(user_id: str = "drj", agent_id: str = "default") -> str:
+    """
+    List all memories with proper MCP parameter handling
 
-    # Get memory client safely
-    memory_client = get_memory_client_safe()
-    if not memory_client:
-        return "Error: Memory system is currently unavailable. Please try again later."
-
+    Args:
+        user_id: User identifier (defaults to "drj" for backward compatibility)
+        agent_id: Agent/client identifier (defaults to "default")
+    """
     try:
+        # Validate and sanitize inputs
+        uid = validate_user_id(user_id)
+        client_name = validate_agent_id(agent_id)
+
+        logger.info(
+            "MCP list_memories called", extra={"user_id": uid, "agent_id": client_name}
+        )
+
+        # Get memory client safely
+        memory_client = get_memory_client_safe()
+        if not memory_client:
+            return (
+                "Error: Memory system is currently unavailable. Please try again later."
+            )
+
         db = SessionLocal()
         try:
             # Get or create user and app
@@ -337,29 +380,49 @@ async def list_memories() -> str:
                         db.add(access_log)
                         filtered_memories.append(memory)
                 db.commit()
-            return json.dumps(filtered_memories, indent=2)
+
+            logger.info(
+                "Memory list completed",
+                extra={
+                    "user_id": uid,
+                    "agent_id": client_name,
+                    "results_count": len(filtered_memories),
+                },
+            )
+            return json.dumps(filtered_memories, indent=2, default=str)
         finally:
             db.close()
     except Exception as e:
-        logging.exception(f"Error getting memories: {e}")
+        logger.exception(f"Error getting memories: {e}")
         return f"Error getting memories: {e}"
 
 
 @mcp.tool(description="Delete all memories in the user's memory")
-async def delete_all_memories() -> str:
-    uid = user_id_var.get(None)
-    client_name = client_name_var.get(None)
-    if not uid:
-        return "Error: user_id not provided"
-    if not client_name:
-        return "Error: client_name not provided"
+async def delete_all_memories(user_id: str = "drj", agent_id: str = "default") -> str:
+    """
+    Delete all memories with proper MCP parameter handling
 
-    # Get memory client safely
-    memory_client = get_memory_client_safe()
-    if not memory_client:
-        return "Error: Memory system is currently unavailable. Please try again later."
-
+    Args:
+        user_id: User identifier (defaults to "drj" for backward compatibility)
+        agent_id: Agent/client identifier (defaults to "default")
+    """
     try:
+        # Validate and sanitize inputs
+        uid = validate_user_id(user_id)
+        client_name = validate_agent_id(agent_id)
+
+        logger.info(
+            "MCP delete_all_memories called",
+            extra={"user_id": uid, "agent_id": client_name},
+        )
+
+        # Get memory client safely
+        memory_client = get_memory_client_safe()
+        if not memory_client:
+            return (
+                "Error: Memory system is currently unavailable. Please try again later."
+            )
+
         db = SessionLocal()
         try:
             # Get or create user and app
@@ -377,7 +440,7 @@ async def delete_all_memories() -> str:
                 try:
                     memory_client.delete(memory_id)
                 except Exception as delete_error:
-                    logging.warning(
+                    logger.warning(
                         f"Failed to delete memory {memory_id} from vector store: {delete_error}"
                     )
 
@@ -408,17 +471,27 @@ async def delete_all_memories() -> str:
                 db.add(access_log)
 
             db.commit()
-            return "Successfully deleted all memories"
+
+            logger.info(
+                "Memory deletion completed",
+                extra={
+                    "user_id": uid,
+                    "agent_id": client_name,
+                    "deleted_count": len(accessible_memory_ids),
+                },
+            )
+            return f"Successfully deleted {len(accessible_memory_ids)} memories"
         finally:
             db.close()
     except Exception as e:
-        logging.exception(f"Error deleting memories: {e}")
+        logger.exception(f"Error deleting memories: {e}")
         return f"Error deleting memories: {e}"
 
 
+# Legacy endpoint handlers (keep for backward compatibility)
 @mcp_router.get("/{client_name}/sse/{user_id}")
 async def handle_sse(request: Request):
-    """Handle SSE connections for a specific user and client"""
+    """Handle SSE connections for a specific user and client - LEGACY"""
     # Extract user_id and client_name from path parameters
     uid = request.path_params.get("user_id")
     user_token = user_id_var.set(uid or "")
@@ -443,6 +516,165 @@ async def handle_sse(request: Request):
         client_name_var.reset(client_token)
 
 
+# Standard MCP SSE endpoint following MCP protocol specifications
+@mcp_router.get("/sse")
+async def handle_mcp_sse(request: Request):
+    """Standard MCP SSE endpoint following protocol specifications"""
+    try:
+        # Create FastMCP SSE app
+        sse_app = mcp.sse_app()
+
+        # Handle the SSE connection using FastMCP's built-in SSE support
+        return await sse_app(request.scope, request.receive, request._send)
+    except Exception as e:
+        logger.error(f"Error in MCP SSE endpoint: {e}")
+        return {"error": "SSE connection failed", "detail": str(e)}
+
+
+# MCP Health and Debugging Endpoints
+@mcp_router.get("/health")
+async def mcp_health_check():
+    """Health check endpoint for MCP server debugging"""
+    try:
+        # Test memory client connection
+        memory_client = get_memory_client_safe()
+        memory_client_status = "healthy" if memory_client else "unhealthy"
+
+        # Check database connection
+        db_status = "healthy"
+        try:
+            db = SessionLocal()
+            db.execute("SELECT 1")
+            db.close()
+        except Exception as e:
+            db_status = f"unhealthy: {str(e)}"
+
+        # Get available tools
+        tools = []
+        for tool_name in [
+            "add_memories",
+            "search_memory",
+            "list_memories",
+            "delete_all_memories",
+        ]:
+            tools.append({"name": tool_name, "available": True})
+
+        health_data = {
+            "status": "healthy",
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+            "services": {
+                "memory_client": memory_client_status,
+                "database": db_status,
+            },
+            "tools": tools,
+            "version": "1.0.0",
+        }
+
+        logger.info("MCP health check completed", extra=health_data)
+        return health_data
+    except Exception as e:
+        logger.error(f"MCP health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+            "error": str(e),
+        }
+
+
+@mcp_router.get("/tools")
+async def list_mcp_tools():
+    """List available MCP tools for debugging"""
+    try:
+        tools = [
+            {
+                "name": "add_memories",
+                "description": "Add a new memory to the system",
+                "parameters": ["text", "user_id", "agent_id"],
+                "required": ["text"],
+            },
+            {
+                "name": "search_memory",
+                "description": "Search through stored memories",
+                "parameters": ["query", "user_id", "agent_id"],
+                "required": ["query"],
+            },
+            {
+                "name": "list_memories",
+                "description": "List all memories for a user",
+                "parameters": ["user_id", "agent_id"],
+                "required": [],
+            },
+            {
+                "name": "delete_all_memories",
+                "description": "Delete all memories for a user",
+                "parameters": ["user_id", "agent_id"],
+                "required": [],
+            },
+        ]
+
+        return {
+            "tools": tools,
+            "count": len(tools),
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat(),
+        }
+    except Exception as e:
+        logger.error(f"Error listing MCP tools: {e}")
+        return {"error": "Failed to list tools", "detail": str(e)}
+
+
+# Input validation functions
+def validate_user_id(user_id: str) -> str:
+    """Validate and sanitize user_id"""
+    if not user_id or not user_id.strip():
+        return "drj"  # Default fallback
+
+    # Basic sanitization
+    sanitized = user_id.strip()
+    if len(sanitized) > 100:  # Reasonable limit
+        sanitized = sanitized[:100]
+
+    return sanitized
+
+
+def validate_agent_id(agent_id: str) -> str:
+    """Validate and sanitize agent_id"""
+    if not agent_id or not agent_id.strip():
+        return "default"  # Default fallback
+
+    # Basic sanitization
+    sanitized = agent_id.strip()
+    if len(sanitized) > 100:  # Reasonable limit
+        sanitized = sanitized[:100]
+
+    return sanitized
+
+
+def validate_text_input(text: str) -> str:
+    """Validate and sanitize text input"""
+    if not text or not text.strip():
+        raise ValueError("Text input cannot be empty")
+
+    # Basic sanitization while preserving meaningful content
+    sanitized = text.strip()
+    if len(sanitized) > 10000:  # Reasonable limit for memory content
+        raise ValueError("Text input too long (max 10000 characters)")
+
+    return sanitized
+
+
+def validate_query_input(query: str) -> str:
+    """Validate and sanitize search query"""
+    if not query or not query.strip():
+        raise ValueError("Search query cannot be empty")
+
+    # Basic sanitization
+    sanitized = query.strip()
+    if len(sanitized) > 1000:  # Reasonable limit for queries
+        sanitized = sanitized[:1000]
+
+    return sanitized
+
+
 @mcp_router.post("/messages/")
 async def handle_get_message(request: Request):
     return await handle_post_message(request)
@@ -451,6 +683,21 @@ async def handle_get_message(request: Request):
 @mcp_router.post("/{client_name}/sse/{user_id}/messages/")
 async def handle_post_message(request: Request):
     return await handle_post_message(request)
+
+
+# Standard MCP POST endpoint for SSE messages
+@mcp_router.post("/sse")
+async def handle_mcp_sse_post(request: Request):
+    """Standard MCP POST endpoint for SSE messages"""
+    try:
+        # Create FastMCP SSE app
+        sse_app = mcp.sse_app()
+
+        # Handle the POST message using FastMCP's built-in SSE support
+        return await sse_app(request.scope, request.receive, request._send)
+    except Exception as e:
+        logger.error(f"Error in MCP SSE POST endpoint: {e}")
+        return {"error": "SSE POST failed", "detail": str(e)}
 
 
 async def handle_sse_post_message(request: Request):
@@ -473,8 +720,97 @@ async def handle_sse_post_message(request: Request):
         return {"status": "ok"}
     finally:
         pass
-        # Clean up context variable
-        # client_name_var.reset(client_token)
+
+
+# MCP Memory Operation Endpoints
+@mcp_router.post("/memories")
+async def mcp_add_memories(request: Request):
+    """MCP endpoint for adding memories"""
+    try:
+        body = await request.json()
+        text = validate_text_input(body.get("text", ""))
+        user_id = validate_user_id(body.get("user_id", "drj"))
+        agent_id = validate_agent_id(
+            body.get("app_id") or body.get("agent_id", "default")
+        )
+
+        correlation_id = str(uuid.uuid4())
+        user_id_var.set(user_id)
+        client_name_var.set(agent_id)
+
+        result = await add_memories(text, user_id, agent_id)
+        return {"status": "success", "result": result, "correlation_id": correlation_id}
+
+    except Exception as e:
+        logger.error(f"MCP add_memories failed: {e}")
+        return {"error": "add_memories failed", "detail": str(e)}
+
+
+@mcp_router.post("/search")
+async def mcp_search_memory(request: Request):
+    """MCP endpoint for searching memories"""
+    try:
+        body = await request.json()
+        query = validate_query_input(body.get("query", ""))
+        user_id = validate_user_id(body.get("user_id", "drj"))
+        agent_id = validate_agent_id(
+            body.get("app_id") or body.get("agent_id", "default")
+        )
+
+        correlation_id = str(uuid.uuid4())
+        user_id_var.set(user_id)
+        client_name_var.set(agent_id)
+
+        result = await search_memory(query, user_id, agent_id)
+        return {"status": "success", "result": result, "correlation_id": correlation_id}
+
+    except Exception as e:
+        logger.error(f"MCP search_memory failed: {e}")
+        return {"error": "search_memory failed", "detail": str(e)}
+
+
+@mcp_router.get("/memories")
+async def mcp_list_memories(request: Request):
+    """MCP endpoint for listing memories"""
+    try:
+        params = request.query_params
+        user_id = validate_user_id(params.get("user_id", "drj"))
+        agent_id = validate_agent_id(
+            params.get("app_id") or params.get("agent_id", "default")
+        )
+
+        correlation_id = str(uuid.uuid4())
+        user_id_var.set(user_id)
+        client_name_var.set(agent_id)
+
+        result = await list_memories(user_id, agent_id)
+        return {"status": "success", "result": result, "correlation_id": correlation_id}
+
+    except Exception as e:
+        logger.error(f"MCP list_memories failed: {e}")
+        return {"error": "list_memories failed", "detail": str(e)}
+
+
+@mcp_router.delete("/memories")
+async def mcp_delete_all_memories(request: Request):
+    """MCP endpoint for deleting all memories"""
+    try:
+        params = request.query_params
+        user_id = validate_user_id(params.get("user_id", "drj"))
+        agent_id = validate_agent_id(
+            params.get("app_id") or params.get("agent_id", "default")
+        )
+
+        correlation_id = str(uuid.uuid4())
+        user_id_var.set(user_id)
+        client_name_var.set(agent_id)
+
+        result = await delete_all_memories(user_id, agent_id)
+        return {"status": "success", "result": result, "correlation_id": correlation_id}
+
+    except Exception as e:
+        logger.error(f"MCP delete_all_memories failed: {e}")
+        return {"error": "delete_all_memories failed", "detail": str(e)}
 
 
 def setup_mcp_server(app: FastAPI):

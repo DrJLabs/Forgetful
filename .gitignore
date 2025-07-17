@@ -90,6 +90,10 @@ virtualenv/
 # Archive directories
 archive/
 
+# Migration and backup directories
+backups/
+migration_*/
+
 # Backup files
 *.backup
 *.bak
@@ -194,3 +198,10 @@ nohup.out
 MCP_SECURITY_COMPLIANCE_REPORT.md
 MEM0_PROJECT_CONTEXT_IMPLEMENTATION_REPORT.md
 system_repair_report.md
+
+# Diagnostic and temporary reports (may contain secrets)
+MEMORY_SYSTEM_DIAGNOSTIC_REPORT.md
+MCP_502_RESOLUTION_SUMMARY.md
+CHATGPT_SETUP_GUIDE.md
+*_DIAGNOSTIC_REPORT.md
+*_SETUP_GUIDE.md

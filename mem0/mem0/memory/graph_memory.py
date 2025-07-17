@@ -353,11 +353,22 @@ class MemoryGraph:
             if agent_id:
                 params["agent_id"] = agent_id
 
+            # Build node properties for filtering
+            node_props = ["name: $source_name", "user_id: $user_id"]
+            dest_props = ["name: $dest_name", "user_id: $user_id"]
+
+            if agent_id:
+                node_props.append("agent_id: $agent_id")
+                dest_props.append("agent_id: $agent_id")
+
+            node_props_str = ", ".join(node_props)
+            dest_props_str = ", ".join(dest_props)
+
             # Delete the specific relationship between nodes
             cypher = f"""
-            MATCH (n {self.node_label} {{name: $source_name, user_id: $user_id}})
+            MATCH (n {self.node_label} {{{node_props_str}}})
             -[r:{relationship}]->
-            (m {self.node_label} {{name: $dest_name, user_id: $user_id}})
+            (m {self.node_label} {{{dest_props_str}}})
 
             DELETE r
             RETURN

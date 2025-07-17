@@ -1,0 +1,36 @@
+# Replace the existing mcp-bridge service in docker-compose.yml with this configuration
+
+  gpt-actions-bridge:
+    build:
+      context: ./gpt-actions-bridge
+      dockerfile: Dockerfile
+    container_name: gpt-actions-bridge
+    restart: unless-stopped
+    networks: [traefik]
+    environment:
+      # API Keys (generate securely in production)
+      - GPT_API_KEYS=${GPT_API_KEYS:-}
+      # Backend service URLs (using Docker internal networking)
+      - MEM0_API_BASE=http://mem0:8000
+      - OPENMEMORY_API_BASE=http://openmemory-mcp:8765
+    depends_on:
+      - mem0
+      - openmemory-mcp
+      - postgres-mem0
+      - neo4j-mem0
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.gpt-bridge.rule=Host(`mem-mcp.onemainarmy.com`)'
+      - 'traefik.http.routers.gpt-bridge.entrypoints=websecure'
+      - 'traefik.http.routers.gpt-bridge.tls=true'
+      - 'traefik.http.services.gpt-bridge.loadbalancer.server.port=8080'
+      - 'traefik.http.middlewares.gpt-ratelimit.ratelimit.burst=150'
+      - 'traefik.http.middlewares.gpt-ratelimit.ratelimit.average=300'
+      - 'traefik.http.routers.gpt-bridge.middlewares=gpt-ratelimit'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

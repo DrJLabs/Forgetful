@@ -1,0 +1,454 @@
+openapi: 3.1.0
+info:
+  title: Mem0 Memory System - GPT Actions API
+  version: 1.0.0
+  description: |
+    Secure API bridge for ChatGPT to interact with the mem0 memory system.
+    Provides core memory operations: create, search, retrieve, update, and delete memories.
+
+    This API consolidates functionality from both the main mem0 API (localhost:8000)
+    and OpenMemory API (localhost:8765) into a streamlined interface optimized for GPT interactions.
+
+servers:
+  - url: https://mem-mcp.onemainarmy.com
+    description: Production GPT Actions Bridge (existing infrastructure)
+
+paths:
+  /memories:
+    get:
+      operationId: listMemories
+      summary: List all memories for a user
+      description: Retrieve all stored memories with optional filtering and pagination
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          description: User identifier (defaults to authenticated user)
+          schema:
+            type: string
+            default: chatgpt_user
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of memories to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: category
+          in: query
+          required: false
+          description: Filter by memory category
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of memories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  total:
+                    type: integer
+                    description: Total number of memories
+                  memories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Memory'
+                  relations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Relation'
+
+    post:
+      operationId: createMemory
+      summary: Create new memories from messages
+      description: |
+        Process messages through the mem0 system to extract and store meaningful information.
+        Automatically generates embeddings and creates relationships in the knowledge graph.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - messages
+              properties:
+                messages:
+                  type: array
+                  description: Conversation messages to process
+                  items:
+                    type: object
+                    required:
+                      - role
+                      - content
+                    properties:
+                      role:
+                        type: string
+                        enum: [user, assistant, system]
+                      content:
+                        type: string
+                user_id:
+                  type: string
+                  description: User identifier (defaults to authenticated user)
+                  default: chatgpt_user
+                metadata:
+                  type: object
+                  description: Additional metadata to store with the memory
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Memory created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Memories created successfully"
+                  memory_ids:
+                    type: array
+                    items:
+                      type: string
+                  relations:
+                    type: object
+                    description: Knowledge graph relationships created
+
+  /memories/search:
+    post:
+      operationId: searchMemories
+      summary: Search memories using semantic similarity
+      description: |
+        Perform vector-based semantic search to find relevant memories.
+        Uses embeddings to find contextually similar content rather than exact text matches.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: Search query to find relevant memories
+                  example: "What are my preferences for Italian food?"
+                user_id:
+                  type: string
+                  description: User identifier (defaults to authenticated user)
+                  default: chatgpt_user
+                limit:
+                  type: integer
+                  description: Maximum number of results to return
+                  minimum: 1
+                  maximum: 50
+                  default: 10
+                threshold:
+                  type: number
+                  description: Minimum similarity score (0.0 to 1.0)
+                  minimum: 0.0
+                  maximum: 1.0
+                  default: 0.1
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  query:
+                    type: string
+                    description: Original search query
+                  results:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Memory'
+                        - type: object
+                          properties:
+                            score:
+                              type: number
+                              description: Similarity score (0.0 to 1.0)
+                  relations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Relation'
+
+  /memories/{memory_id}:
+    get:
+      operationId: getMemory
+      summary: Retrieve a specific memory by ID
+      description: Get detailed information about a specific memory including its content and metadata
+      parameters:
+        - name: memory_id
+          in: path
+          required: true
+          description: Unique identifier of the memory
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Memory retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  memory:
+                    $ref: '#/components/schemas/Memory'
+        '404':
+          description: Memory not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      operationId: updateMemory
+      summary: Update an existing memory
+      description: |
+        Update the content of an existing memory. The system will regenerate
+        embeddings and update relationships in the knowledge graph.
+      parameters:
+        - name: memory_id
+          in: path
+          required: true
+          description: Unique identifier of the memory to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: New content for the memory
+                metadata:
+                  type: object
+                  description: Updated metadata
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Memory updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Memory updated successfully"
+
+    delete:
+      operationId: deleteMemory
+      summary: Delete a specific memory
+      description: Permanently remove a memory and its associated relationships
+      parameters:
+        - name: memory_id
+          in: path
+          required: true
+          description: Unique identifier of the memory to delete
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Memory deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Memory deleted successfully"
+
+  /memories/stats:
+    get:
+      operationId: getMemoryStats
+      summary: Get memory statistics for a user
+      description: Retrieve statistics about stored memories including counts, categories, and usage metrics
+      parameters:
+        - name: user_id
+          in: query
+          required: false
+          description: User identifier (defaults to authenticated user)
+          schema:
+            type: string
+            default: chatgpt_user
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  stats:
+                    type: object
+                    properties:
+                      total_memories:
+                        type: integer
+                        description: Total number of memories
+                      categories:
+                        type: array
+                        description: Available memory categories
+                        items:
+                          type: string
+                      recent_activity:
+                        type: object
+                        description: Recent memory activity
+                        properties:
+                          last_created:
+                            type: string
+                            format: date-time
+                          last_accessed:
+                            type: string
+                            format: date-time
+
+  /health:
+    get:
+      operationId: healthCheck
+      summary: Health check endpoint
+      description: Check the health status of the memory system
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  services:
+                    type: object
+                    properties:
+                      mem0_api:
+                        type: string
+                        enum: [healthy, unhealthy]
+                      postgres:
+                        type: string
+                        enum: [healthy, unhealthy]
+                      neo4j:
+                        type: string
+                        enum: [healthy, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Use a valid API key as the bearer token.
+        Get your API key from the system administrator.
+
+  schemas:
+    Memory:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the memory
+          example: "4b22b161-363f-4b4f-a367-32797f8c0f9b"
+        memory:
+          type: string
+          description: The stored memory content
+          example: "User prefers Italian food, especially pasta carbonara"
+        hash:
+          type: string
+          description: Content hash for deduplication
+          example: "079458c2eaee3718423675db0acda3ba"
+        metadata:
+          type: object
+          description: Additional metadata associated with the memory
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+          description: When the memory was created
+          example: "2025-07-14T17:12:38.249007-07:00"
+        updated_at:
+          type: string
+          format: date-time
+          description: When the memory was last updated
+          nullable: true
+        user_id:
+          type: string
+          description: User who owns this memory
+          example: "chatgpt_user"
+        category:
+          type: string
+          description: Memory category
+          example: "preferences"
+
+    Relation:
+      type: object
+      properties:
+        source:
+          type: string
+          description: Source entity in the relationship
+          example: "user"
+        relationship:
+          type: string
+          description: Type of relationship
+          example: "prefers"
+        target:
+          type: string
+          description: Target entity in the relationship
+          example: "italian_food"
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+
+security:
+  - BearerAuth: []
