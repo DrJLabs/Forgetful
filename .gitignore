@@ -218,3 +218,8 @@ CHATGPT_SETUP_GUIDE.md
 COMPREHENSIVE_*.md
 CORS_*.md
 MCP_*.md
+
+# Specific working files and integration directories
+MEMORY_SYSTEM_COMPREHENSIVE_GUIDE.md
+NEO4J_ISSUE_RESOLUTION_REPORT.md
+mcp-api-integration/
