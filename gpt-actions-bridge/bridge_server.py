@@ -56,7 +56,7 @@ class UpdateMemoryRequest(BaseModel):
 app = FastAPI(
     servers=[
         {
-            "url": "https://mem-mcp.onemainarny.com",
+            "url": "https://mem-mcp.onemainarmy.com",
             "description": "Production API Server",
         }
     ],
