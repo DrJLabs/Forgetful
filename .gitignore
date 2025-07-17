@@ -1,3 +1,96 @@
+# ===============================================
+# CLOUD AGENT OPTIMIZATIONS
+# ===============================================
+
+# Large files that can slow down cloud agents
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.parquet
+*.feather
+*.npz
+*.npy
+*.joblib
+*.model
+*.bin
+*.safetensors
+*.onnx
+*.pt
+*.pth
+*.tar.xz
+*.bz2
+*.7z
+*.dmg
+*.iso
+*.img
+
+# Media files (can be very large)
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.mpg
+*.mpeg
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.wma
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.svg
+*.ico
+*.webp
+*.raw
+*.eps
+*.ai
+*.psd
+*.sketch
+
+# Package manager caches (performance optimization)
+.npm/
+.yarn/
+yarn-error.log
+.pnpm-store/
+.pnpm-debug.log*
+pip-cache/
+pip-tmp/
+.cache/
+.parcel-cache/
+
+# Cloud deployment and infrastructure files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraformrc
+terraform.rc
+.pulumi/
+.serverless/
+serverless.yml
+sam.yaml
+template.yaml
+cloudformation.json
+cloudformation.yaml
+
+# Container registries and large container files
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tgz
+
 # Data directories (databases, cache, etc.)
 data/
 

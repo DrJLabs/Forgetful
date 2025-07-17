@@ -1,0 +1,192 @@
+# ===============================================
+# DOCKER BUILD OPTIMIZATION FOR CLOUD AGENTS
+# ===============================================
+
+# Git and version control
+.git/
+.github/
+.gitignore
+.gitattributes
+.gitmodules
+
+# Documentation and non-essential files
+README.md
+*.md
+docs/
+LICENSE
+CHANGELOG.md
+CONTRIBUTING.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Virtual environments and package managers
+venv/
+.venv/
+env/
+.env/
+ENV/
+.ENV/
+env.bak/
+venv.bak/
+virtualenv/
+.virtualenv/
+*_env/
+*-env/
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.ruff_cache/
+
+# Test artifacts and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+test-reports/
+test-results/
+*.log
+
+# Build and distribution
+build/
+dist/
+*.egg-info/
+.installed.cfg
+*.egg
+target/
+
+# Environment and config files with secrets
+.env
+.env.*
+*.secret
+*.key
+*api_key*
+*token*
+*_config.json
+config.secret.*
+mcp_credentials.json
+auth_tokens.json
+
+# SSL/TLS certificates
+*.pem
+*.crt
+*.p12
+*.pfx
+ssl_certificates/
+certificates/
+
+# Large data files and models
+data/
+backups/
+archive/
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.parquet
+*.model
+*.bin
+*.safetensors
+*.onnx
+*.pt
+*.pth
+
+# Media files
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.mp3
+*.wav
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.svg
+*.ico
+
+# Archive files
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tgz
+*.zip
+*.rar
+*.7z
+*.dmg
+*.iso
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.dump
+*.dmp
+
+# Lock files (include selectively if needed)
+package-lock.json
+yarn.lock
+Pipfile.lock
+
+# Docker files (prevent recursion)
+Dockerfile*
+docker-compose*.yml
+.docker/
+.dockerignore
+
+# Cloud deployment files
+.terraform/
+*.tfstate
+*.tfvars
+.pulumi/
+.serverless/
+
+# MCP specific files that shouldn't be in containers
+mcp_server.log
+mcp_server.pid
+mcp_*.log
+secure_mcp_server.log
+
+# Process and runtime files
+*.pid
+nohup.out
+
+# Working directories and temporary reports
+*_DIAGNOSTIC_REPORT.md
+*_SETUP_GUIDE.md
+*_COMPLETION_REPORT.md
+*_IMPLEMENTATION_PLAN.md
+*_ANALYSIS.md
+mcp-api-integration/
+
+# Cache directories
+.cache/
+.parcel-cache/
+pip-cache/
+pip-tmp/
+
+# Monitoring and logs
+monitoring/data/
+*.log
+
+# Testing environments
+test_env/
+test_validation_env/
