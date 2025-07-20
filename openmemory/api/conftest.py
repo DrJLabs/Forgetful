@@ -41,6 +41,7 @@ os.environ["NEO4J_AUTH"] = "neo4j/test_password"
 
 from app.database import Base, get_db  # noqa: E402
 from app.models import App, Memory, MemoryState, User  # noqa: E402
+from app.utils.auth import JWTPayload  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 
 # Import app components after setting environment
@@ -539,6 +540,44 @@ def performance_monitor():
 # ============================================================================
 # MOCK FIXTURES
 # ============================================================================
+
+
+@pytest.fixture
+def mock_memory_client():
+    """Mock memory client for testing connector endpoints."""
+    with patch("app.routers.connector.get_memory_client") as mock_get_client:
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        yield mock_client
+
+
+@pytest.fixture
+async def authenticated_client(test_client):
+    """Create an authenticated test client with mocked JWT token."""
+    # Mock JWT authentication to bypass OIDC for testing
+    mock_jwt_payload = JWTPayload(
+        sub="test-user-123",
+        email="test@example.com", 
+        name="Test User"
+    )
+    
+    with patch("app.utils.auth.get_current_user", return_value=mock_jwt_payload):
+        with patch("app.utils.auth.require_authentication", return_value=mock_jwt_payload):
+            yield test_client
+
+
+# Use test_client as alias for client for backward compatibility
+@pytest.fixture
+async def client(test_client):
+    """Alias for test_client fixture."""
+    yield test_client
+
+
+# Alias for test_db_session for backward compatibility
+@pytest.fixture
+def db_session(test_db_session):
+    """Alias for test_db_session fixture."""
+    return test_db_session
 
 
 @pytest.fixture

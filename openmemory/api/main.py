@@ -13,7 +13,7 @@ from app.config import DEFAULT_APP_ID, USER_ID
 from app.database import Base, SessionLocal, engine
 from app.mcp_server import setup_mcp_server
 from app.models import App, User
-from app.routers import apps_router, config_router, memories_router, stats_router
+from app.routers import apps_router, config_router, connector_router, memories_router, stats_router
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -220,6 +220,29 @@ app.include_router(memories_router)
 app.include_router(apps_router)
 app.include_router(stats_router)
 app.include_router(config_router)
+
+# Create ChatGPT connector sub-application with specific CORS
+connector_app = FastAPI(
+    title="OpenMemory ChatGPT Connector",
+    docs_url=None,  # Disable docs for security
+    redoc_url=None,  # Disable redoc for security
+    openapi_url=None  # Disable OpenAPI for security
+)
+
+# ChatGPT-specific CORS configuration
+connector_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://chat.openai.com", "https://chatgpt.com"],
+    allow_credentials=False,  # Bearer tokens don't need credentials
+    allow_methods=["POST", "OPTIONS"],  # Only allow POST requests
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+# Include connector router in sub-application
+connector_app.include_router(connector_router)
+
+# Mount connector sub-application
+app.mount("/mcp/connector", connector_app)
 
 # Add pagination support
 add_pagination(app)
