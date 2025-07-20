@@ -64,7 +64,9 @@ async def health_check():
         try:
             from sqlalchemy import text
 
-            db.execute(text("SELECT 1"))
+            # Execute a simple query to test connection
+            result = db.execute(text("SELECT 1 as health_check"))
+            result.fetchone()  # Consume the result
             db_status = "healthy"
             db.close()
         except Exception as e:
@@ -121,64 +123,71 @@ app.add_middleware(
     allow_headers=["Content-Type", "Authorization"],  # Only necessary headers
 )
 
-# Only create tables and default data if not in testing mode
-if os.getenv("TESTING") != "true":
-    # Create all tables
-    Base.metadata.create_all(bind=engine)
 
-    # Check for USER_ID and create default user if needed
-    def create_default_user():
-        """Create default user if it doesn't exist."""
-        db = SessionLocal()
-        try:
-            # Check if user exists
-            user = db.query(User).filter(User.user_id == USER_ID).first()
-            if not user:
-                # Create default user
-                user = User(
-                    id=uuid4(),
-                    user_id=USER_ID,
-                    name="Default User",
-                    created_at=datetime.datetime.now(datetime.UTC),
-                )
-                db.add(user)
-                db.commit()
-        finally:
-            db.close()
-
-    def create_default_app():
-        """Create default application if it doesn't exist."""
-        db = SessionLocal()
-        try:
-            user = db.query(User).filter(User.user_id == USER_ID).first()
-            if not user:
-                return
-
-            # Check if app already exists
-            existing_app = (
-                db.query(App)
-                .filter(App.name == DEFAULT_APP_ID, App.owner_id == user.id)
-                .first()
-            )
-
-            if existing_app:
-                return
-
-            app = App(
+def create_default_user():
+    """Create default user if it doesn't exist."""
+    db = SessionLocal()
+    try:
+        # Check if user exists
+        user = db.query(User).filter(User.user_id == USER_ID).first()
+        if not user:
+            # Create default user
+            user = User(
                 id=uuid4(),
-                name=DEFAULT_APP_ID,
-                owner_id=user.id,
+                user_id=USER_ID,
+                name="Default User",
                 created_at=datetime.datetime.now(datetime.UTC),
-                updated_at=datetime.datetime.now(datetime.UTC),
             )
-            db.add(app)
+            db.add(user)
             db.commit()
-        finally:
-            db.close()
+    finally:
+        db.close()
 
-    # Create default user on startup
-    create_default_user()
-    create_default_app()
+
+def create_default_app():
+    """Create default application if it doesn't exist."""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.user_id == USER_ID).first()
+        if not user:
+            return
+
+        # Check if app already exists
+        existing_app = (
+            db.query(App)
+            .filter(App.name == DEFAULT_APP_ID, App.owner_id == user.id)
+            .first()
+        )
+
+        if existing_app:
+            return
+
+        app = App(
+            id=uuid4(),
+            name=DEFAULT_APP_ID,
+            owner_id=user.id,
+            created_at=datetime.datetime.now(datetime.UTC),
+            updated_at=datetime.datetime.now(datetime.UTC),
+        )
+        db.add(app)
+        db.commit()
+    finally:
+        db.close()
+
+
+# Database initialization startup event
+@app.on_event("startup")
+async def init_database():
+    """Initialize database tables and default data on startup."""
+    # Only create tables and default data if not in testing mode
+    if os.getenv("TESTING") != "true":
+        # Create all tables
+        Base.metadata.create_all(bind=engine)
+
+        # Create default user and app
+        create_default_user()
+        create_default_app()
+
 
 # OIDC Discovery: OpenAPI schema points directly to oidc.drjlabs.com/.well-known/openid-configuration
 # This follows best practice: resource server publishes schema, auth server publishes discovery

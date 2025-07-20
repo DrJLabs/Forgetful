@@ -314,6 +314,9 @@ services:
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://oidc.drjlabs.com/auth/callback}
       # OIDC Server Configuration
       - OIDC_BASE_URL=${OIDC_BASE_URL:-https://oidc.drjlabs.com}
+      - OIDC_JWKS_URL=${OIDC_JWKS_URL:-https://oidc.drjlabs.com/auth/jwks}
+      - RSA_PRIVATE_KEY_PEM=${RSA_PRIVATE_KEY_PEM}
+      - JWT_KEY_ID=${JWT_KEY_ID:-key1}
       - ENVIRONMENT=${APP_ENVIRONMENT:-production}
     env_file:
       - ./oidc-auth-server/.env
