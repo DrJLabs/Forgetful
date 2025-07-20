@@ -21,8 +21,8 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
-    prefix="/mcp/connector", 
-    tags=["connector"], 
+    prefix="/mcp/connector",
+    tags=["connector"],
     include_in_schema=True,
     responses={
         401: {"description": "Authentication required"},
@@ -48,7 +48,7 @@ class SearchResult(BaseModel):
 class FetchRequest(BaseModel):
     """Request model for fetching memories by IDs"""
     ids: List[str] = Field(..., description="List of memory UUIDs to fetch", min_items=1, max_items=50)
-    
+
     @validator('ids')
     def validate_uuids(cls, v):
         """Validate that all IDs are valid UUIDs"""
@@ -92,33 +92,33 @@ async def fetch_by_ids(db: Session, ids: List[str], app_id: Optional[UUID]) -> L
     """
     results = []
     memory_client = get_memory_client()
-    
+
     if not memory_client:
         logger.warning("Memory client not available for fetch operation")
         return results
-    
+
     for id_str in ids:
         try:
             # Validate and convert to UUID
             memory_uuid = UUID(id_str)
-            
+
             # Load memory record from database
             memory = db.query(Memory).filter(Memory.id == memory_uuid).first()
-            
+
             if not memory:
                 logger.warning(f"Memory not found: {id_str}")
                 continue
-                
+
             # Check access permissions
             if not check_memory_access_permissions(db, memory, app_id):
                 logger.warning(f"Access denied for memory: {id_str}")
                 continue
-                
+
             # Memory must be active
             if memory.state != MemoryState.active:
                 logger.warning(f"Memory not active: {id_str} (state: {memory.state})")
                 continue
-            
+
             # Get memory text from mem0 client
             try:
                 mem0_result = memory_client.get(id_str)
@@ -140,16 +140,16 @@ async def fetch_by_ids(db: Session, ids: List[str], app_id: Optional[UUID]) -> L
                     "id": id_str,
                     "text": memory.content
                 })
-                
+
         except Exception as e:
             logger.error(f"Error processing memory ID {id_str}: {e}")
             continue
-    
+
     return results
 
 
-@router.post("/search", 
-    summary="Search memories", 
+@router.post("/search",
+    summary="Search memories",
     description="Search memories and return only IDs and relevance scores",
     response_model=List[SearchResult]
 )
@@ -166,17 +166,17 @@ async def search_memories(
         memory_client = get_memory_client()
         if not memory_client:
             raise HTTPException(
-                status_code=503, 
+                status_code=503,
                 detail="Memory service temporarily unavailable"
             )
-        
+
         # Use mem0's search method
         search_results = memory_client.search(
-            request.query, 
-            user_id=current_user_id, 
+            request.query,
+            user_id=current_user_id,
             limit=request.limit
         )
-        
+
         # Extract only IDs and scores
         results = []
         if search_results and 'results' in search_results:
@@ -186,14 +186,14 @@ async def search_memories(
                         id=str(result['id']),
                         score=float(result['score'])
                     ))
-        
+
         logger.info(f"Search completed: query='{request.query}', results={len(results)}, user={current_user_id}")
         return results
-        
+
     except Exception as e:
         logger.error(f"Search failed: {e}")
         raise HTTPException(
-            status_code=500, 
+            status_code=500,
             detail="Search operation failed"
         )
 
@@ -216,19 +216,19 @@ async def fetch_memories(
     try:
         # Fetch memories with access control
         accessible_memories = await fetch_by_ids(db, request.ids, app_id)
-        
+
         # Convert to response format
         results = [
-            FetchResult(id=mem["id"], text=mem["text"]) 
+            FetchResult(id=mem["id"], text=mem["text"])
             for mem in accessible_memories
         ]
-        
+
         logger.info(f"Fetch completed: requested={len(request.ids)}, accessible={len(results)}, user={current_user.sub}")
         return results
-        
+
     except Exception as e:
         logger.error(f"Fetch failed: {e}")
         raise HTTPException(
             status_code=500,
             detail="Fetch operation failed"
-        ) 
+        )

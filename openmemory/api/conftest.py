@@ -557,10 +557,10 @@ async def authenticated_client(test_client):
     # Mock JWT authentication to bypass OIDC for testing
     mock_jwt_payload = JWTPayload(
         sub="test-user-123",
-        email="test@example.com", 
+        email="test@example.com",
         name="Test User"
     )
-    
+
     with patch("app.utils.auth.get_current_user", return_value=mock_jwt_payload):
         with patch("app.utils.auth.require_authentication", return_value=mock_jwt_payload):
             yield test_client
