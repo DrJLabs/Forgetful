@@ -10,6 +10,7 @@ import secrets
 import jwt
 import httpx
 import hashlib
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import FastAPI, Request, HTTPException, Depends, Response
@@ -27,6 +28,7 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 BASE_URL = os.getenv("OIDC_BASE_URL", "https://oidc.drjlabs.com")
 JWT_EXPIRE_MINUTES = 15
+REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 # Generate RSA key pair for JWT signing (use external key management in production)
 def load_or_generate_rsa_keypair():
@@ -74,6 +76,7 @@ KEY_ID = os.getenv("JWT_KEY_ID", "key1")  # Key identifier for JWKS
 # In-memory storage for demo (use Redis in production)
 auth_codes = {}
 access_tokens = {}
+refresh_tokens = {}  # New: Storage for refresh tokens
 
 # CORS for ChatGPT - tightened security
 app.add_middleware(
@@ -89,10 +92,11 @@ app.add_middleware(
 
 class TokenRequest(BaseModel):
     grant_type: str
-    code: str
-    redirect_uri: str
+    code: Optional[str] = None
+    redirect_uri: Optional[str] = None
     client_id: Optional[str] = None
     code_verifier: Optional[str] = None  # PKCE verification
+    refresh_token: Optional[str] = None  # For refresh token flow
 
 @app.get("/health")
 async def health():
@@ -111,12 +115,12 @@ async def openid_configuration():
         "userinfo_endpoint": f"{BASE_URL}/auth/userinfo",
         "jwks_uri": f"{BASE_URL}/auth/jwks",
         "response_types_supported": ["code"],
-        "grant_types_supported": ["authorization_code"],
+        "grant_types_supported": ["authorization_code", "refresh_token"],
         "scopes_supported": ["openid", "profile", "email"],
         "subject_types_supported": ["public"],
         "id_token_signing_alg_values_supported": ["RS256"],
         "token_endpoint_auth_methods_supported": ["client_secret_post", "client_secret_basic", "none"],
-        "code_challenge_methods_supported": ["S256"]  # PKCE support
+        "code_challenge_methods_supported": ["S256", "plain"]  # Advertise both supported methods
     }
 
 @app.get("/auth/authorize")
@@ -135,6 +139,29 @@ async def authorize(
     """
     if response_type != "code":
         raise HTTPException(400, "Only 'code' response_type supported")
+
+    # PKCE validation (optional)
+    code_challenge = request.query_params.get("code_challenge")
+    code_challenge_method = request.query_params.get("code_challenge_method")
+
+    # RFC 7636 edge case: code_challenge_method without code_challenge should be rejected
+    if code_challenge_method and not code_challenge:
+        raise HTTPException(
+            status_code=400,
+            detail="code_challenge required when code_challenge_method is supplied"
+        )
+
+    if code_challenge:
+        # Default to S256 if method not specified (recommended by RFC 7636)
+        if not code_challenge_method:
+            code_challenge_method = "S256"
+
+        # Validate code_challenge_method
+        if code_challenge_method not in ["S256", "plain"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unsupported code_challenge_method: {code_challenge_method}. Supported methods: S256, plain"
+            )
 
     # Store request info for later callback
     auth_state = secrets.token_urlsafe(32)
@@ -224,13 +251,32 @@ async def google_callback(code: str, state: str):
 async def token_endpoint(token_request: TokenRequest):
     """
     OAuth2 Token endpoint
-    Exchange authorization code for JWT access token
+    Exchange authorization code or refresh token for JWT access token
     """
-    if token_request.grant_type != "authorization_code":
-        raise HTTPException(400, "Only 'authorization_code' grant_type supported")
+    if token_request.grant_type == "authorization_code":
+        return await handle_authorization_code_grant(token_request)
+    elif token_request.grant_type == "refresh_token":
+        return await handle_refresh_token_grant(token_request)
+    else:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "unsupported_grant_type",
+                "error_description": "Only 'authorization_code' and 'refresh_token' grant_types are supported"
+            }
+        )
 
-    if token_request.code not in auth_codes:
-        raise HTTPException(400, "Invalid authorization code")
+async def handle_authorization_code_grant(token_request: TokenRequest):
+    """Handle authorization code grant flow"""
+
+    if not token_request.code or token_request.code not in auth_codes:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "invalid_grant",
+                "error_description": "The provided authorization code is invalid"
+            }
+        )
 
     code_data = auth_codes[token_request.code]
     user_info = code_data["user_info"]
@@ -239,10 +285,26 @@ async def token_endpoint(token_request: TokenRequest):
     original_request = code_data["original_request"]
     if original_request.get("code_challenge"):
         if not token_request.code_verifier:
-            raise HTTPException(400, "code_verifier required for PKCE")
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "invalid_grant",
+                    "error_description": "Code verifier is required for PKCE"
+                }
+            )
+
+        # Validate code_verifier length per RFC 7636 §4.1 (43-128 characters)
+        if len(token_request.code_verifier) < 43 or len(token_request.code_verifier) > 128:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "invalid_grant",
+                    "error_description": "Code verifier must be between 43 and 128 characters"
+                }
+            )
 
         # Verify code_challenge
-        challenge_method = original_request.get("code_challenge_method", "plain")
+        challenge_method = original_request.get("code_challenge_method", "S256")
         if challenge_method == "S256":
             # SHA256 hash of code_verifier, base64url encoded
             verifier_hash = hashlib.sha256(token_request.code_verifier.encode()).digest()
@@ -250,17 +312,45 @@ async def token_endpoint(token_request: TokenRequest):
         elif challenge_method == "plain":
             computed_challenge = token_request.code_verifier
         else:
-            raise HTTPException(400, f"Unsupported code_challenge_method: {challenge_method}")
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "invalid_grant",
+                    "error_description": f"Unsupported code_challenge_method: {challenge_method}"
+                }
+            )
 
         if computed_challenge != original_request["code_challenge"]:
-            raise HTTPException(400, "PKCE verification failed")
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "error": "invalid_grant",
+                    "error_description": "Code verifier does not match code challenge"
+                }
+            )
 
     # Create JWT token with RSA signing
     now = datetime.utcnow()
 
-    # Validate audience (client_id)
+    # Validate audience (client_id) and bind to original authorization request
     if not token_request.client_id:
-        raise HTTPException(400, "client_id is required")
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "invalid_request",
+                "error_description": "client_id is required"
+            }
+        )
+
+    # Bind client_id: prevent client-ID substitution attacks per RFC best practices
+    if token_request.client_id != original_request["client_id"]:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "invalid_grant",
+                "error_description": "Client ID does not match original authorization request"
+            }
+        )
 
     payload = {
         "sub": user_info["sub"],  # Google user ID
@@ -288,6 +378,17 @@ async def token_endpoint(token_request: TokenRequest):
         headers={"kid": KEY_ID}
     )
 
+    # Generate a refresh token
+    refresh_token = str(uuid.uuid4())
+    refresh_tokens[refresh_token] = {
+        "sub": user_info["sub"],
+        "client_id": token_request.client_id,
+        "scope": code_data["original_request"]["scope"],
+        "user_info": user_info,
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    }
+
     # Store token info
     access_tokens[access_token] = {
         "user_info": user_info,
@@ -303,7 +404,105 @@ async def token_endpoint(token_request: TokenRequest):
         "token_type": "bearer",
         "expires_in": JWT_EXPIRE_MINUTES * 60,
         "scope": code_data["original_request"]["scope"],
-        "id_token": access_token  # Same as access token for simplicity
+        "id_token": access_token,  # Same as access token for simplicity
+        "refresh_token": refresh_token
+    }
+
+async def handle_refresh_token_grant(token_request: TokenRequest):
+    """Handle refresh token grant flow"""
+    if not token_request.refresh_token:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "invalid_request",
+                "error_description": "refresh_token is required for refresh_token grant"
+            }
+        )
+
+    if token_request.refresh_token not in refresh_tokens:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "invalid_grant",
+                "error_description": "The provided refresh token is invalid"
+            }
+        )
+
+    refresh_token_data = refresh_tokens[token_request.refresh_token]
+
+    # Check if refresh token is expired
+    if refresh_token_data["expires_at"] < datetime.utcnow():
+        # Remove expired refresh token
+        del refresh_tokens[token_request.refresh_token]
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": "invalid_grant",
+                "error_description": "The refresh token has expired"
+            }
+        )
+
+    # Generate a new access token
+    now = datetime.utcnow()
+    user_info = refresh_token_data["user_info"]
+
+    payload = {
+        "sub": user_info["sub"],
+        "email": user_info["email"],
+        "name": user_info["name"],
+        "picture": user_info.get("picture"),
+        "iss": BASE_URL,
+        "aud": refresh_token_data["client_id"],
+        "iat": now,
+        "exp": now + timedelta(minutes=JWT_EXPIRE_MINUTES),
+        "scope": refresh_token_data["scope"]
+    }
+
+    # Sign with RSA private key
+    private_key_pem = RSA_PRIVATE_KEY.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
+    new_access_token = jwt.encode(
+        payload,
+        private_key_pem,
+        algorithm=JWT_ALGORITHM,
+        headers={"kid": KEY_ID}
+    )
+
+    # Implement refresh token rotation: invalidate old token and create new one
+    old_refresh_token = token_request.refresh_token
+    new_refresh_token = str(uuid.uuid4())
+
+    # Remove old refresh token
+    del refresh_tokens[old_refresh_token]
+
+    # Create new refresh token
+    refresh_tokens[new_refresh_token] = {
+        "sub": user_info["sub"],
+        "client_id": refresh_token_data["client_id"],
+        "scope": refresh_token_data["scope"],
+        "user_info": user_info,
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    }
+
+    # Store new access token info
+    access_tokens[new_access_token] = {
+        "user_info": user_info,
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES)
+    }
+
+    return {
+        "access_token": new_access_token,
+        "token_type": "bearer",
+        "expires_in": JWT_EXPIRE_MINUTES * 60,
+        "scope": refresh_token_data["scope"],
+        "id_token": new_access_token,
+        "refresh_token": new_refresh_token
     }
 
 @app.get("/auth/userinfo")
