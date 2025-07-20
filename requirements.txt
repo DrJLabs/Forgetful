@@ -12,6 +12,7 @@ python-dotenv>=0.21.0
 # Authentication & Security
 PyJWT>=2.8.0
 cryptography>=42.0.0
+slowapi>=0.1.9
 
 # Database & ORM
 sqlalchemy>=2.0.0
