@@ -258,6 +258,14 @@ def get_memory_client(custom_instructions: str = None):
                     if "mem0" in json_config:
                         mem0_config = json_config["mem0"]
 
+                        # Update vector_store configuration if available
+                        if "vector_store" in mem0_config and mem0_config["vector_store"] is not None:
+                            config["vector_store"] = mem0_config["vector_store"]
+                            print(f"Loaded vector_store config from database: {config['vector_store']['provider']}")
+                        else:
+                            # Ensure we're using pgvector as default, not qdrant
+                            print(f"No vector_store config in database, using pgvector default: {config['vector_store']['provider']}")
+
                         # Update LLM configuration if available
                         if "llm" in mem0_config and mem0_config["llm"] is not None:
                             config["llm"] = mem0_config["llm"]
@@ -297,6 +305,10 @@ def get_memory_client(custom_instructions: str = None):
             # This ensures that even default config values like "env:OPENAI_API_KEY" get parsed
             print("Parsing environment variables in final config...")
             config = _parse_environment_variables(config)
+
+            # Debug: Show the final vector store configuration being used
+            print(f"Final vector_store configuration: provider={config['vector_store']['provider']}")
+            print(f"Vector store config details: {config['vector_store']['config']}")
 
             # Check if config has changed by comparing hashes
             current_config_hash = _get_config_hash(config)

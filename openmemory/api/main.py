@@ -21,7 +21,16 @@ from fastapi_pagination import add_pagination
 
 from shared.errors import ExternalServiceError, NotFoundError, ValidationError
 
-app = FastAPI(title="OpenMemory API")
+app = FastAPI(
+    title="OpenMemory API",
+    description="Memory storage and retrieval API with ChatGPT integration",
+    version="1.0.0",
+    # OpenAPI 3.1.0 security scheme for ChatGPT OIDC integration
+    servers=[
+        {"url": "https://mcp.drjlabs.com", "description": "Production server"},
+        {"url": "http://localhost:8765", "description": "Development server"}
+    ]
+)
 
 
 # Exception handlers for custom errors
@@ -102,12 +111,14 @@ async def health_check():
 
 app.add_middleware(
     CORSMiddleware,
-    # Specific origins instead of wildcard
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=True,
-    # Specific methods instead of wildcard
+    # Tightened CORS for production security
+    allow_origins=[
+        "http://localhost:3000",           # Local UI development
+        "https://chat.openai.com",         # ChatGPT origin
+    ],
+    allow_credentials=False,  # Bearer tokens don't need credentials
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Authorization"],  # Only necessary headers
 )
 
 # Only create tables and default data if not in testing mode
@@ -168,6 +179,38 @@ if os.getenv("TESTING") != "true":
     # Create default user on startup
     create_default_user()
     create_default_app()
+
+# OIDC Discovery: OpenAPI schema points directly to oidc.drjlabs.com/.well-known/openid-configuration
+# This follows best practice: resource server publishes schema, auth server publishes discovery
+
+# Add OpenAPI security scheme for ChatGPT integration
+@app.on_event("startup")
+def configure_openapi_security():
+    """Configure OpenAPI security scheme for OIDC authentication"""
+    if not hasattr(app, 'openapi_schema') or app.openapi_schema is None:
+        from fastapi.openapi.utils import get_openapi
+        
+        # Generate base OpenAPI schema
+        openapi_schema = get_openapi(
+            title=app.title,
+            version=app.version,
+            description=app.description,
+            routes=app.routes,
+            servers=app.servers
+        )
+        
+        # Add OIDC security scheme
+        openapi_schema["components"]["securitySchemes"] = {
+            "oidc": {
+                "type": "openIdConnect",
+                "openIdConnectUrl": "https://oidc.drjlabs.com/.well-known/openid-configuration"
+            }
+        }
+        
+        # Apply security globally  
+        openapi_schema["security"] = [{"oidc": ["openid", "email", "profile"]}]
+        
+        app.openapi_schema = openapi_schema
 
 # Setup MCP server
 setup_mcp_server(app)

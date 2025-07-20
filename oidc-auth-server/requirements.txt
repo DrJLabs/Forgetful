@@ -1,0 +1,2 @@
+# OIDC Auth Server Requirements - use consolidated requirements from project root
+-r ../requirements.txt 

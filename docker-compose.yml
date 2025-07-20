@@ -212,6 +212,9 @@ services:
       - API_PORT=${OPENMEMORY_API_PORT:-8765}
       - API_WORKERS=${API_WORKERS:-4}
       - API_TIMEOUT=${API_TIMEOUT:-30}
+      # OIDC Authentication Configuration
+      - OIDC_JWKS_URL=${OIDC_JWKS_URL:-https://oidc.drjlabs.com/auth/jwks}
+      - OIDC_ISSUER=${OIDC_ISSUER:-https://oidc.drjlabs.com}
       # Legacy Variables (for backward compatibility)
       - USER=${APP_USER_ID}
       - API_KEY=${OPENAI_API_KEY}
@@ -229,6 +232,13 @@ services:
     command: >
       sh -c "uvicorn main:app --host 0.0.0.0 --port 8765 --workers ${API_WORKERS:-4}"
     networks: [traefik]
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.openmemory-mcp.rule=Host(`mcp.drjlabs.com`)'
+      - 'traefik.http.routers.openmemory-mcp.entrypoints=websecure'
+      - 'traefik.http.routers.openmemory-mcp.tls=true'
+      - 'traefik.http.services.openmemory-mcp.loadbalancer.server.port=8765'
     depends_on:
       postgres:
         condition: service_healthy
@@ -288,6 +298,77 @@ services:
         reservations:
           cpus: '0.5'
           memory: 256MB
+
+  # OIDC Authentication Server for ChatGPT Integration
+  oidc-auth-server:
+    build:
+      context: ./oidc-auth-server
+      dockerfile: Dockerfile
+    container_name: oidc-auth-server
+    restart: unless-stopped
+    environment:
+      # Google OAuth Configuration
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-https://oidc.drjlabs.com/auth/callback}
+      # OIDC Server Configuration
+      - OIDC_BASE_URL=${OIDC_BASE_URL:-https://oidc.drjlabs.com}
+      - ENVIRONMENT=${APP_ENVIRONMENT:-production}
+    env_file:
+      - ./oidc-auth-server/.env
+    ports:
+      - '127.0.0.1:${OIDC_PORT:-8766}:8766'
+    networks: [traefik]
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=traefik'
+      - 'traefik.http.routers.oidc-auth.rule=Host(`oidc.drjlabs.com`)'
+      - 'traefik.http.routers.oidc-auth.entrypoints=websecure'
+      - 'traefik.http.routers.oidc-auth.tls=true'
+      - 'traefik.http.services.oidc-auth.loadbalancer.server.port=8766'
+      # Security middleware
+      - 'traefik.http.middlewares.oidc-ratelimit.ratelimit.burst=50'
+      - 'traefik.http.middlewares.oidc-ratelimit.ratelimit.average=100'
+      - 'traefik.http.routers.oidc-auth.middlewares=oidc-ratelimit'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8766/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256MB
+        reservations:
+          cpus: '0.25'
+          memory: 128MB
+    profiles: ["auth"]  # Optional profile for selective deployment
+
+  # Redis for OIDC token storage (production)
+  redis-oidc:
+    image: redis:7-alpine
+    container_name: redis-oidc
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - ./data/redis:/data
+    networks: [traefik]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256MB
+        reservations:
+          cpus: '0.125'
+          memory: 128MB
+    profiles: ["auth"]  # Optional profile for selective deployment
 
 networks:
   traefik:

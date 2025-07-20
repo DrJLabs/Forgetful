@@ -283,6 +283,7 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
     user = db.query(User).filter(User.user_id == request.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
     # Get or create app
     app_obj = (
         db.query(App).filter(App.name == request.app, App.owner_id == user.id).first()
@@ -314,31 +315,36 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
         logging.warning(
             f"Memory client unavailable: {client_error}. Creating memory in database only."
         )
-        # Return a json response with the error
         return {"error": str(client_error)}
 
-    # Try to save to Qdrant via memory_client
+    # Try to save to mem0 via memory_client
     try:
-        qdrant_response = memory_client.add(
+        # Use the text directly as mem0 handles message formatting
+        mem0_response = memory_client.add(
             request.text,
-            user_id=request.user_id,  # Use string user_id to match search
+            user_id=request.user_id,
             metadata={
                 "source_app": "openmemory",
                 "mcp_client": request.app,
+                **request.metadata
             },
         )
 
         # Log the response for debugging
-        logging.info(f"Qdrant response: {qdrant_response}")
+        logging.info(f"Mem0 response: {mem0_response}")
 
-        # Process Qdrant response
-        if isinstance(qdrant_response, dict) and "results" in qdrant_response:
-            for result in qdrant_response["results"]:
-                if result["event"] == "ADD":
-                    # Get the Qdrant-generated ID
+        # Process mem0 response - it should have "results" array with proper UUIDs
+        stored_memories = []
+        if isinstance(mem0_response, dict) and "results" in mem0_response:
+            results = mem0_response.get("results", [])
+            
+            for result in results:
+                if isinstance(result, dict) and result.get("event") == "ADD":
+                    # Get the mem0-generated UUID
                     memory_id = UUID(result["id"])
+                    memory_content = result.get("memory", "")
 
-                    # Check if memory already exists
+                    # Check if memory already exists in our database
                     existing_memory = (
                         db.query(Memory).filter(Memory.id == memory_id).first()
                     )
@@ -346,15 +352,16 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
                     if existing_memory:
                         # Update existing memory
                         existing_memory.state = MemoryState.active
-                        existing_memory.content = result["memory"]
+                        existing_memory.content = memory_content
+                        existing_memory.metadata_ = {**existing_memory.metadata_, **request.metadata}
                         memory = existing_memory
                     else:
-                        # Create memory with the EXACT SAME ID from Qdrant
+                        # Create new memory with the UUID from mem0
                         memory = Memory(
-                            id=memory_id,  # Use the same ID that Qdrant generated
+                            id=memory_id,
                             user_id=user.id,
                             app_id=app_obj.id,
-                            content=result["memory"],
+                            content=memory_content,
                             metadata_=request.metadata,
                             state=MemoryState.active,
                         )
@@ -364,37 +371,41 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
                     history = MemoryStatusHistory(
                         memory_id=memory_id,
                         changed_by=user.id,
-                        old_state=(
-                            MemoryState.deleted
-                            if existing_memory
-                            else MemoryState.deleted
-                        ),
+                        old_state=MemoryState.deleted if existing_memory else MemoryState.deleted,
                         new_state=MemoryState.active,
                     )
                     db.add(history)
 
-                    db.commit()
-                    db.refresh(memory)
+            # Commit all changes before building response
+            db.commit()
+            
+            # Build response by querying refreshed memory objects
+            for result in results:
+                if isinstance(result, dict) and result.get("event") == "ADD":
+                    memory_id = UUID(result["id"])
+                    memory = db.query(Memory).filter(Memory.id == memory_id).first()
+                    if memory:
+                        stored_memories.append({
+                            "id": str(memory.id),
+                            "memory": memory.content,
+                            "created_at": memory.created_at.isoformat() if memory.created_at else None,
+                            "user_id": request.user_id,
+                            "metadata": memory.metadata_,
+                        })
 
-                    # Return response with results key to match test expectations
-                    return {
-                        "results": [
-                            {
-                                "id": str(memory.id),
-                                "memory": memory.content,
-                                "created_at": memory.created_at.isoformat(),
-                                "user_id": request.user_id,
-                                "metadata": memory.metadata_,
-                            }
-                        ]
-                    }
+            # Return in format expected by GPT Actions Bridge
+            return {
+                "results": stored_memories,
+                "relations": mem0_response.get("relations", {}),
+            }
+        else:
+            # If mem0 response doesn't have expected format, log and return error
+            logging.error(f"Unexpected mem0 response format: {mem0_response}")
+            return {"error": "Unexpected response format from memory system"}
 
-            # If no ADD events, return the response as is (could be NOOP events)
-            return qdrant_response
-    except Exception as qdrant_error:
-        logging.warning(f"Qdrant operation failed: {qdrant_error}.")
-        # Return a json response with the error
-        return {"error": str(qdrant_error)}
+    except Exception as mem0_error:
+        logging.error(f"Mem0 operation failed: {mem0_error}")
+        return {"error": str(mem0_error)}
 
 
 # Add search endpoint after the create_memory endpoint
