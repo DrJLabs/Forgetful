@@ -215,6 +215,7 @@ services:
       # OIDC Authentication Configuration
       - OIDC_JWKS_URL=${OIDC_JWKS_URL:-https://oidc.drjlabs.com/auth/jwks}
       - OIDC_ISSUER=${OIDC_ISSUER:-https://oidc.drjlabs.com}
+      - OIDC_AUDIENCE=${OIDC_AUDIENCE}
       # Legacy Variables (for backward compatibility)
       - USER=${APP_USER_ID}
       - API_KEY=${OPENAI_API_KEY}

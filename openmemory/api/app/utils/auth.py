@@ -13,6 +13,7 @@ import logging
 # OIDC Configuration
 OIDC_JWKS_URL = os.getenv("OIDC_JWKS_URL", "https://oidc.drjlabs.com/auth/jwks")
 OIDC_ISSUER = os.getenv("OIDC_ISSUER", "https://oidc.drjlabs.com")
+OIDC_AUDIENCE = os.getenv("OIDC_AUDIENCE")  # Set to your Google client_id for audience validation
 
 logger = logging.getLogger(__name__)
 
@@ -37,23 +38,23 @@ class JWTPayload:
 async def fetch_jwks() -> Dict[str, Any]:
     """Fetch JWKS from OIDC server with caching"""
     global _jwks_cache, _jwks_cache_expiry
-    
+
     from datetime import datetime, timedelta
     now = datetime.utcnow()
-    
+
     # Check cache validity (10 minute TTL)
     if _jwks_cache and _jwks_cache_expiry and now < _jwks_cache_expiry:
         return _jwks_cache
-    
+
     async with httpx.AsyncClient() as client:
         response = await client.get(OIDC_JWKS_URL)
         response.raise_for_status()
         jwks = response.json()
-        
+
         # Cache for 10 minutes
         _jwks_cache = jwks
         _jwks_cache_expiry = now + timedelta(minutes=10)
-        
+
         return jwks
 
 def jwk_to_rsa_key(jwk: Dict[str, Any]):
@@ -61,17 +62,17 @@ def jwk_to_rsa_key(jwk: Dict[str, Any]):
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives import serialization
     import base64
-    
+
     # Decode base64url-encoded values
     def base64url_decode(data):
         missing_padding = len(data) % 4
         if missing_padding:
             data += '=' * (4 - missing_padding)
         return base64.urlsafe_b64decode(data)
-    
+
     n = int.from_bytes(base64url_decode(jwk['n']), 'big')
     e = int.from_bytes(base64url_decode(jwk['e']), 'big')
-    
+
     public_numbers = rsa.RSAPublicNumbers(e, n)
     return public_numbers.public_key()
 
@@ -83,33 +84,39 @@ async def validate_jwt_token(token: str) -> Optional[JWTPayload]:
     try:
         # Fetch JWKS to get public key
         jwks = await fetch_jwks()
-        
+
         # Get key ID from token header
         unverified_header = jwt.get_unverified_header(token)
         kid = unverified_header.get('kid')
-        
-        # Find matching key in JWKS
+
+        # Find matching key in JWKS (RSA keys only for security)
         public_key = None
         for key in jwks['keys']:
-            if key.get('kid') == kid:
+            if key.get('kid') == kid and key.get('kty') == 'RSA':
                 public_key = jwk_to_rsa_key(key)
                 break
-        
+
         if not public_key:
             logger.warning(f"No matching key found for kid: {kid}")
             return None
-        
+
         # Verify token with RSA public key
-        payload = jwt.decode(
-            token,
-            public_key,
+        decode_kwargs = dict(
+            key=public_key,
             algorithms=["RS256"],
             issuer=OIDC_ISSUER,
-            options={"verify_aud": False}  # Audience varies by client
         )
         
+        # Add audience validation if OIDC_AUDIENCE is configured
+        if OIDC_AUDIENCE:
+            decode_kwargs["audience"] = OIDC_AUDIENCE
+        else:
+            decode_kwargs["options"] = {"verify_aud": False}
+
+        payload = jwt.decode(token, **decode_kwargs)
+
         return JWTPayload(payload)
-        
+
     except jwt.InvalidTokenError as e:
         logger.warning(f"Invalid JWT token: {e}")
         return None
@@ -124,7 +131,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     """
     if not credentials:
         return None
-    
+
     return await validate_jwt_token(credentials.credentials)
 
 async def require_authentication(current_user: JWTPayload = Depends(get_current_user)) -> JWTPayload:
@@ -150,4 +157,4 @@ async def get_user_id_from_auth(current_user: Optional[JWTPayload] = Depends(get
     else:
         # Fall back to default user ID for existing usage
         from app.config import USER_ID
-        return USER_ID 
+        return USER_ID
