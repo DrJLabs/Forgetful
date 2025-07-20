@@ -22,7 +22,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 import base64
 
 # Rate limiting imports
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
@@ -31,7 +31,18 @@ app = FastAPI(title="OIDC Auth Server", version="1.0.0")
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# Custom rate limit exception handler
+async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Custom handler for rate limit exceeded - returns specification-compliant JSON"""
+    return JSONResponse(
+        status_code=429,
+        content={"error": "rate_limited", "detail": "Too many requests"},
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
 
 # Environment variables
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
