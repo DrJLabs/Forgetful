@@ -38,7 +38,7 @@ def load_or_generate_rsa_keypair():
     # Try to load from environment or file (production)
     private_key_path = os.getenv("RSA_PRIVATE_KEY_PATH", "/run/secrets/rsa_private_key")
     private_key_pem = os.getenv("RSA_PRIVATE_KEY_PEM")
-    
+
     if private_key_pem:
         # Load from environment variable
         private_key = serialization.load_pem_private_key(
@@ -135,7 +135,7 @@ async def authorize(
     """
     if response_type != "code":
         raise HTTPException(400, "Only 'code' response_type supported")
-    
+
     # Store request info for later callback
     auth_state = secrets.token_urlsafe(32)
     auth_codes[auth_state] = {
@@ -147,7 +147,7 @@ async def authorize(
         "code_challenge_method": code_challenge_method,
         "created_at": datetime.utcnow()
     }
-    
+
     # Build Google OAuth URL
     google_oauth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth"
@@ -157,7 +157,7 @@ async def authorize(
         f"&scope=openid email profile"
         f"&state={auth_state}"
     )
-    
+
     return RedirectResponse(google_oauth_url)
 
 @app.get("/auth/callback")
@@ -169,9 +169,9 @@ async def google_callback(code: str, state: str):
     # Retrieve original request
     if state not in auth_codes:
         raise HTTPException(400, "Invalid state parameter")
-    
+
     original_request = auth_codes[state]
-    
+
     # Exchange Google code for tokens
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -184,23 +184,23 @@ async def google_callback(code: str, state: str):
                 "redirect_uri": os.getenv('GOOGLE_REDIRECT_URI', 'https://oidc.drjlabs.com/auth/callback')
             }
         )
-        
+
         if token_response.status_code != 200:
             raise HTTPException(400, "Failed to exchange Google code")
-        
+
         google_tokens = token_response.json()
-        
+
         # Get user info from Google
         userinfo_response = await client.get(
             "https://www.googleapis.com/oauth2/v3/userinfo",
             headers={"Authorization": f"Bearer {google_tokens['access_token']}"}
         )
-        
+
         if userinfo_response.status_code != 200:
             raise HTTPException(400, "Failed to get user info")
-        
+
         user_info = userinfo_response.json()
-    
+
     # Generate our authorization code for ChatGPT
     chatgpt_code = secrets.token_urlsafe(32)
     auth_codes[chatgpt_code] = {
@@ -209,15 +209,15 @@ async def google_callback(code: str, state: str):
         "original_request": original_request,
         "created_at": datetime.utcnow()
     }
-    
+
     # Clean up state
     del auth_codes[state]
-    
+
     # Redirect back to ChatGPT with our code
     redirect_url = f"{original_request['redirect_uri']}?code={chatgpt_code}"
     if original_request.get('original_state'):
         redirect_url += f"&state={original_request['original_state']}"
-    
+
     return RedirectResponse(redirect_url)
 
 @app.post("/auth/token")
@@ -228,19 +228,19 @@ async def token_endpoint(token_request: TokenRequest):
     """
     if token_request.grant_type != "authorization_code":
         raise HTTPException(400, "Only 'authorization_code' grant_type supported")
-    
+
     if token_request.code not in auth_codes:
         raise HTTPException(400, "Invalid authorization code")
-    
+
     code_data = auth_codes[token_request.code]
     user_info = code_data["user_info"]
-    
+
     # PKCE verification (if code_challenge was provided)
     original_request = code_data["original_request"]
     if original_request.get("code_challenge"):
         if not token_request.code_verifier:
             raise HTTPException(400, "code_verifier required for PKCE")
-        
+
         # Verify code_challenge
         challenge_method = original_request.get("code_challenge_method", "plain")
         if challenge_method == "S256":
@@ -251,17 +251,17 @@ async def token_endpoint(token_request: TokenRequest):
             computed_challenge = token_request.code_verifier
         else:
             raise HTTPException(400, f"Unsupported code_challenge_method: {challenge_method}")
-        
+
         if computed_challenge != original_request["code_challenge"]:
             raise HTTPException(400, "PKCE verification failed")
-    
+
     # Create JWT token with RSA signing
     now = datetime.utcnow()
-    
+
     # Validate audience (client_id)
     if not token_request.client_id:
         raise HTTPException(400, "client_id is required")
-    
+
     payload = {
         "sub": user_info["sub"],  # Google user ID
         "email": user_info["email"],
@@ -273,31 +273,31 @@ async def token_endpoint(token_request: TokenRequest):
         "exp": now + timedelta(minutes=JWT_EXPIRE_MINUTES),
         "scope": code_data["original_request"]["scope"]
     }
-    
+
     # Sign with RSA private key
     private_key_pem = RSA_PRIVATE_KEY.private_bytes(
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption()
     )
-    
+
     access_token = jwt.encode(
-        payload, 
-        private_key_pem, 
+        payload,
+        private_key_pem,
         algorithm=JWT_ALGORITHM,
         headers={"kid": KEY_ID}
     )
-    
+
     # Store token info
     access_tokens[access_token] = {
         "user_info": user_info,
         "created_at": datetime.utcnow(),
         "expires_at": datetime.utcnow() + timedelta(minutes=JWT_EXPIRE_MINUTES)
     }
-    
+
     # Clean up code
     del auth_codes[token_request.code]
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -315,25 +315,25 @@ async def userinfo(request: Request):
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         raise HTTPException(401, "Missing or invalid Authorization header")
-    
+
     token = auth_header.split(" ")[1]
-    
+
     try:
         # Verify with RSA public key
         public_key_pem = RSA_PUBLIC_KEY.public_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo
         )
-        
+
         payload = jwt.decode(
-            token, 
-            public_key_pem, 
+            token,
+            public_key_pem,
             algorithms=[JWT_ALGORITHM],
             issuer=BASE_URL
         )
         return {
             "sub": payload["sub"],
-            "email": payload["email"], 
+            "email": payload["email"],
             "name": payload["name"],
             "picture": payload.get("picture"),
             "email_verified": True
@@ -350,16 +350,16 @@ async def jwks(response: Response):
     # Add cache headers (10 minutes)
     response.headers["Cache-Control"] = "public, max-age=600"
     response.headers["ETag"] = f'"{KEY_ID}"'
-    
+
     # Get RSA public key numbers
     public_numbers = RSA_PUBLIC_KEY.public_numbers()
-    
+
     # Convert to base64url format for JWKS
     def int_to_base64url_uint(val):
         """Convert integer to base64url-encoded string without padding"""
         byte_length = (val.bit_length() + 7) // 8
         return base64.urlsafe_b64encode(val.to_bytes(byte_length, 'big')).decode('ascii').rstrip('=')
-    
+
     return {
         "keys": [
             {
@@ -375,4 +375,4 @@ async def jwks(response: Response):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8766) 
+    uvicorn.run(app, host="0.0.0.0", port=8766)

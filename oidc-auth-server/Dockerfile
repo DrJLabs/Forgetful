@@ -13,4 +13,4 @@ COPY main.py .
 EXPOSE 8766
 
 # Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8766"] 
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8766"]

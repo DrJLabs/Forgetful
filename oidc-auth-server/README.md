@@ -5,7 +5,7 @@ This server provides OAuth2/OIDC authentication endpoints that integrate with Go
 ## 🏗️ Architecture
 
 ```
-ChatGPT Actions → mcp.drjlabs.com/.well-known/openid-configuration 
+ChatGPT Actions → mcp.drjlabs.com/.well-known/openid-configuration
                 ↓ (discovers auth endpoints)
                 → oidc.drjlabs.com/auth/* (OAuth2 flow)
                 ↓ (gets JWT token)
@@ -36,7 +36,7 @@ JWT_SECRET=your_secure_jwt_secret_here
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create new project or select existing
-3. Enable "Google+ API" 
+3. Enable "Google+ API"
 4. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client IDs"
 5. Set authorized redirect URI: `https://oidc.drjlabs.com/auth/callback`
 6. Copy Client ID and Secret to `.env` file
@@ -95,7 +95,7 @@ In ChatGPT Custom Action setup:
 
 ## 🔄 Authentication Flow
 
-1. **ChatGPT Discovery:** 
+1. **ChatGPT Discovery:**
    - `GET mcp.drjlabs.com/.well-known/openid-configuration`
    - Returns OIDC config pointing to `oidc.drjlabs.com`
 
@@ -169,4 +169,4 @@ This solution maintains full backward compatibility:
 - ✅ Existing Cursor/MCP usage unchanged
 - ✅ API endpoints remain the same
 - ✅ No breaking changes to current functionality
-- ✅ Optional authentication (graceful fallback) 
+- ✅ Optional authentication (graceful fallback)

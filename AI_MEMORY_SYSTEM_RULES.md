@@ -47,11 +47,11 @@
 {
   "messages": [
     {
-      "role": "user", 
+      "role": "user",
       "content": "[Specific factual information with concrete details]"
     },
     {
-      "role": "assistant", 
+      "role": "assistant",
       "content": "[Confirmation that acknowledges specific facts being stored]"
     }
   ],
@@ -202,4 +202,4 @@
 
 ---
 
-**These rules MUST be followed to ensure accurate, reliable memory storage and prevent AI hallucinations in the mem0/OpenMemory system.** 
+**These rules MUST be followed to ensure accurate, reliable memory storage and prevent AI hallucinations in the mem0/OpenMemory system.**

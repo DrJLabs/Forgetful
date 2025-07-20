@@ -3,7 +3,7 @@
 ## ✅ **FIXES IMPLEMENTED**
 
 ### 1. **Discovery Endpoint Architecture** ⚡ **CRITICAL FIX**
-- **❌ REMOVED:** Stub discovery endpoint from MCP server 
+- **❌ REMOVED:** Stub discovery endpoint from MCP server
 - **✅ IMPROVED:** OpenAPI schema will point directly to `https://oidc.drjlabs.com/.well-known/openid-configuration`
 - **✅ BENEFIT:** Eliminates extra hop, follows best practices (resource server publishes schema, auth server publishes discovery)
 
@@ -14,7 +14,7 @@
 - **✅ IMPLEMENTED:** Private key stays on OIDC server, public key exposed for verification
 
 ### 3. **CORS Security Hardening** 🛡️ **SECURITY FIX**
-- **❌ REMOVED:** Wildcard origins (`"*"`) 
+- **❌ REMOVED:** Wildcard origins (`"*"`)
 - **❌ REMOVED:** Wildcard headers (`"*"`)
 - **✅ TIGHTENED:** Only ChatGPT domains allowed
 - **✅ TIGHTENED:** Only necessary headers (`Content-Type`, `Authorization`)
@@ -100,7 +100,7 @@ GOOGLE_CLIENT_SECRET=your_client_secret
 GOOGLE_REDIRECT_URI=https://oidc.drjlabs.com/auth/callback
 OIDC_BASE_URL=https://oidc.drjlabs.com
 
-# MCP Server  
+# MCP Server
 OIDC_JWKS_URL=https://oidc.drjlabs.com/auth/jwks
 OIDC_ISSUER=https://oidc.drjlabs.com
 ```
@@ -118,7 +118,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 ### Action Setup:
 - **Server URL:** `https://mcp.drjlabs.com/mcp/sse`
-- **Authentication Type:** OAuth2 
+- **Authentication Type:** OAuth2
 - **Authorization URL:** `https://oidc.drjlabs.com/auth/authorize`
 - **Token URL:** `https://oidc.drjlabs.com/auth/token`
 - **Scope:** `openid profile email`
@@ -134,18 +134,18 @@ sequenceDiagram
 
     C->>M: GET /openapi.json
     M->>C: Returns schema with openIdConnectUrl: oidc.drjlabs.com
-    
+
     C->>O: GET /.well-known/openid-configuration
     O->>C: Returns OIDC configuration
-    
+
     C->>O: GET /auth/authorize
     O->>G: Redirect to Google OAuth
     G->>O: Callback with code
     O->>C: Redirect with auth code
-    
+
     C->>O: POST /auth/token (exchange code)
     O->>C: Returns RSA-signed JWT access token
-    
+
     C->>M: API calls with Authorization: Bearer <jwt>
     M->>O: Fetches RSA public key from /auth/jwks
     M->>M: Validates JWT with RSA public key
@@ -168,4 +168,4 @@ sequenceDiagram
 4. **Configure Cloudflare** bypass rules
 5. **Test end-to-end** authentication flow
 
-**Status:** Ready for production deployment with industry-standard security practices! 🚀 
+**Status:** Ready for production deployment with industry-standard security practices! 🚀

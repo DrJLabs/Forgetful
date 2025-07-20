@@ -189,7 +189,7 @@ def configure_openapi_security():
     """Configure OpenAPI security scheme for OIDC authentication"""
     if not hasattr(app, 'openapi_schema') or app.openapi_schema is None:
         from fastapi.openapi.utils import get_openapi
-        
+
         # Generate base OpenAPI schema
         openapi_schema = get_openapi(
             title=app.title,
@@ -198,7 +198,7 @@ def configure_openapi_security():
             routes=app.routes,
             servers=app.servers
         )
-        
+
         # Add OIDC security scheme
         openapi_schema["components"]["securitySchemes"] = {
             "oidc": {
@@ -206,10 +206,10 @@ def configure_openapi_security():
                 "openIdConnectUrl": "https://oidc.drjlabs.com/.well-known/openid-configuration"
             }
         }
-        
-        # Apply security globally  
+
+        # Apply security globally
         openapi_schema["security"] = [{"oidc": ["openid", "email", "profile"]}]
-        
+
         app.openapi_schema = openapi_schema
 
 # Setup MCP server

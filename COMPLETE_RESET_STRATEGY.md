@@ -8,7 +8,7 @@ This document provides a comprehensive strategy for completely resetting the cor
 
 ### **What Gets Reset (Core Components):**
 - **mem0 API Server** (Port 8000): Complete application state and memory data
-- **PostgreSQL with pgvector** (pg16): All vector embeddings, memory tables, and user data  
+- **PostgreSQL with pgvector** (pg16): All vector embeddings, memory tables, and user data
 - **Neo4j 5.26.4**: Graph relationships, entity connections, and graph data
 - **OpenMemory MCP Server** (Port 8765): MCP protocol service state and cached data
 - **OpenMemory UI** (Port 3000): React interface state and cached data
@@ -33,7 +33,7 @@ PostgreSQL (pgvector)
 └── Health Check: pg_isready
 
 Neo4j 5.26.4
-├── Volume: ./data/neo4j:/data  
+├── Volume: ./data/neo4j:/data
 ├── APOC Plugins: Enabled for data export/import
 ├── Memory Config: heap_max=4G, pagecache=2G
 └── Health Check: HTTP endpoint on port 7474
@@ -92,7 +92,7 @@ The reset strategy leverages your existing sophisticated backup infrastructure:
 **Shutdown Sequence (Dependency-Aware):**
 ```bash
 1. OpenMemory UI (Port 3000)        # Frontend interface
-2. OpenMemory MCP (Port 8765)       # Protocol service  
+2. OpenMemory MCP (Port 8765)       # Protocol service
 3. mem0 API Server (Port 8000)      # Core API
 4. Neo4j (Ports 7687/7474)          # Graph database
 5. PostgreSQL (Port 5432)           # Vector database
@@ -110,7 +110,7 @@ The reset strategy leverages your existing sophisticated backup infrastructure:
 **PostgreSQL Reset:**
 ```sql
 -- Terminate connections
-SELECT pg_terminate_backend(pid) FROM pg_stat_activity 
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity
 WHERE datname = 'mem0' AND pid <> pg_backend_pid();
 
 -- Drop and recreate database
@@ -138,7 +138,7 @@ MATCH (n) RETURN count(n) as node_count;
 # Clear history data
 rm -rf ./data/mem0/history/*
 
-# Recreate directory structure  
+# Recreate directory structure
 mkdir -p ./data/mem0/history
 ```
 
@@ -261,7 +261,7 @@ The `reset_mem0_core.sh` script provides multiple execution modes:
 ```bash
 # API Endpoints
 curl -f http://localhost:8000/health    # mem0 API
-curl -f http://localhost:8765/health    # OpenMemory MCP  
+curl -f http://localhost:8765/health    # OpenMemory MCP
 curl -f http://localhost:3000           # OpenMemory UI
 
 # Database Connections
@@ -277,7 +277,7 @@ curl -X POST -H "Content-Type: application/json" \
   -d '{"messages": [{"role": "user", "content": "Reset verification test"}], "user_id": "reset_test"}' \
   http://localhost:8000/memories
 
-# Search test  
+# Search test
 curl -X POST -H "Content-Type: application/json" \
   -d '{"query": "verification", "user_id": "reset_test"}' \
   http://localhost:8000/search
@@ -355,7 +355,7 @@ For specific component issues:
 docker exec -i postgres-mem0 pg_restore \
   -U drj -d mem0 --clean --if-exists < backup.backup
 
-# Neo4j only  
+# Neo4j only
 docker cp backup.cypher neo4j-mem0:/var/lib/neo4j/
 docker exec neo4j-mem0 cypher-shell -f /var/lib/neo4j/backup.cypher
 ```
@@ -408,7 +408,7 @@ Operational scripts continue working:
 ### **Technical Success Indicators**
 
 ✅ **All core services running and healthy**
-✅ **Database connectivity verified**  
+✅ **Database connectivity verified**
 ✅ **Memory operations functional**
 ✅ **UI accessibility confirmed**
 ✅ **Cross-service communication working**
@@ -472,4 +472,4 @@ For critical issues:
 
 This comprehensive reset strategy provides a robust, safe, and efficient method for completely resetting mem0 core components while preserving your sophisticated operational infrastructure. The strategy leverages existing backup systems, maintains infrastructure integrity, and provides multiple safety mechanisms to ensure successful execution and recovery capabilities.
 
-The preservation of testing infrastructure, monitoring systems, and operational scripts ensures that your development and operational capabilities remain intact throughout the reset process, allowing for immediate productivity and continued system reliability. 
+The preservation of testing infrastructure, monitoring systems, and operational scripts ensures that your development and operational capabilities remain intact throughout the reset process, allowing for immediate productivity and continued system reliability.

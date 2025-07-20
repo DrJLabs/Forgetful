@@ -283,7 +283,7 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
     user = db.query(User).filter(User.user_id == request.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Get or create app
     app_obj = (
         db.query(App).filter(App.name == request.app, App.owner_id == user.id).first()
@@ -337,7 +337,7 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
         stored_memories = []
         if isinstance(mem0_response, dict) and "results" in mem0_response:
             results = mem0_response.get("results", [])
-            
+
             for result in results:
                 if isinstance(result, dict) and result.get("event") == "ADD":
                     # Get the mem0-generated UUID
@@ -378,7 +378,7 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
 
             # Commit all changes before building response
             db.commit()
-            
+
             # Build response by querying refreshed memory objects
             for result in results:
                 if isinstance(result, dict) and result.get("event") == "ADD":

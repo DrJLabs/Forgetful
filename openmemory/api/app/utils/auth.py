@@ -106,7 +106,7 @@ async def validate_jwt_token(token: str) -> Optional[JWTPayload]:
             algorithms=["RS256"],
             issuer=OIDC_ISSUER,
         )
-        
+
         # Add audience validation if OIDC_AUDIENCE is configured
         if OIDC_AUDIENCE:
             decode_kwargs["audience"] = OIDC_AUDIENCE

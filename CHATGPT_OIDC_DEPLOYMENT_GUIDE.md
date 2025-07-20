@@ -16,7 +16,7 @@ graph TB
     D --> E[RSA-signed JWT tokens]
     E --> F[MCP API with Bearer auth]
     F --> G[Memory operations]
-    
+
     subgraph "Consolidated Docker Stack"
         H[oidc-auth-server:8766]
         I[openmemory-mcp:8765]
@@ -83,7 +83,7 @@ docker compose ps
 # Test OIDC discovery
 curl -s https://oidc.drjlabs.com/.well-known/openid-configuration | jq
 
-# Test MCP API health  
+# Test MCP API health
 curl -s https://mcp.drjlabs.com/health | jq
 
 # Test OpenAPI schema
@@ -98,7 +98,7 @@ curl -s https://mcp.drjlabs.com/openapi.json | jq '.components.securitySchemes'
 Create Access application with **BYPASS** for:
 ```
 /openapi.json
-/mcp/sse  
+/mcp/sse
 /api/v1/memories/*
 /health
 ```
@@ -106,7 +106,7 @@ Create Access application with **BYPASS** for:
 ### **DNS Records**
 ```dns
 CNAME   oidc    tunnel-id.cfargotunnel.com
-CNAME   mcp     tunnel-id.cfargotunnel.com  
+CNAME   mcp     tunnel-id.cfargotunnel.com
 ```
 
 ### **No Access App for oidc.drjlabs.com**
@@ -141,7 +141,7 @@ Description: "Access personal memory system for context and knowledge retrieval"
 # OIDC server health
 curl https://oidc.drjlabs.com/health
 
-# MCP server health  
+# MCP server health
 curl https://mcp.drjlabs.com/health
 
 # Database health (internal)
@@ -245,7 +245,7 @@ graph LR
 # Check OIDC discovery
 curl -v https://oidc.drjlabs.com/.well-known/openid-configuration
 
-# Validate JWKS  
+# Validate JWKS
 curl -s https://oidc.drjlabs.com/auth/jwks | jq '.keys[0]'
 
 # Test MCP OpenAPI
@@ -263,7 +263,7 @@ docker compose logs openmemory-mcp
 Before going live, verify:
 
 - [ ] **Discovery endpoint** responds with correct issuer
-- [ ] **JWKS endpoint** returns RSA public key  
+- [ ] **JWKS endpoint** returns RSA public key
 - [ ] **OAuth flow** completes with Google
 - [ ] **Token validation** works in MCP server
 - [ ] **OpenAPI schema** includes OIDC security scheme
@@ -295,4 +295,4 @@ Your ChatGPT OIDC integration is now **production-ready** with:
 
 ---
 
-**🎯 Integration Status: PRODUCTION READY** ✅ 
+**🎯 Integration Status: PRODUCTION READY** ✅

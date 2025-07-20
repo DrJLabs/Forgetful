@@ -24,7 +24,7 @@ code_challenge_method: Optional[str] = None
 if original_request.get("code_challenge"):
     if not token_request.code_verifier:
         raise HTTPException(400, "code_verifier required for PKCE")
-    
+
     challenge_method = original_request.get("code_challenge_method", "plain")
     if challenge_method == "S256":
         verifier_hash = hashlib.sha256(token_request.code_verifier.encode()).digest()
@@ -33,7 +33,7 @@ if original_request.get("code_challenge"):
         computed_challenge = token_request.code_verifier
     else:
         raise HTTPException(400, f"Unsupported code_challenge_method: {challenge_method}")
-    
+
     if computed_challenge != original_request["code_challenge"]:
         raise HTTPException(400, "PKCE verification failed")
 ```
@@ -56,7 +56,7 @@ def load_or_generate_rsa_keypair():
     # Try to load from environment or file (production)
     private_key_path = os.getenv("RSA_PRIVATE_KEY_PATH", "/run/secrets/rsa_private_key")
     private_key_pem = os.getenv("RSA_PRIVATE_KEY_PEM")
-    
+
     if private_key_pem:
         # Load from environment variable
         private_key = serialization.load_pem_private_key(private_key_pem.encode(), password=None)
@@ -124,7 +124,7 @@ payload = {
 
 **Status:** ✅ **No legacy files found** - codebase is clean
 - Only **one** OIDC server implementation (RSA-based)
-- Only **one** MCP main with tight CORS 
+- Only **one** MCP main with tight CORS
 - Requirements properly consolidated
 - No duplicate discovery endpoints
 
@@ -135,7 +135,7 @@ payload = {
 **Current State:**
 ```bash
 # Project root: requirements.txt (authoritative)
-# oidc-auth-server/requirements.txt: -r ../requirements.txt  
+# oidc-auth-server/requirements.txt: -r ../requirements.txt
 # openmemory/api/requirements.txt: -r ../../requirements.txt
 ```
 
@@ -218,7 +218,7 @@ curl -X POST https://oidc.drjlabs.com/auth/token \
 
 Your implementation now surpasses industry standards for:
 - **🛡️ Security:** OAuth 2.1, PKCE, RSA cryptography
-- **⚡ Performance:** JWKS caching, optimized validation  
+- **⚡ Performance:** JWKS caching, optimized validation
 - **🔧 Operations:** Secret management, health monitoring
 - **📋 Compliance:** OIDC specification, security best practices
 
@@ -232,4 +232,4 @@ Your implementation now surpasses industry standards for:
 
 ---
 
-**Your Round 4 audit was exceptionally thorough - every security gap has been professionally addressed!** 🎯 
+**Your Round 4 audit was exceptionally thorough - every security gap has been professionally addressed!** 🎯

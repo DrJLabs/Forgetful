@@ -112,7 +112,7 @@ pydantic>=2.7.1          # Data validation
 ```mermaid
 sequenceDiagram
     participant C as ChatGPT
-    participant M as mcp.drjlabs.com  
+    participant M as mcp.drjlabs.com
     participant O as oidc.drjlabs.com
     participant G as Google
 
@@ -120,7 +120,7 @@ sequenceDiagram
     Note over M: Returns OIDC security scheme
     M->>C: openIdConnectUrl: oidc.drjlabs.com
 
-    C->>O: GET /.well-known/openid-configuration  
+    C->>O: GET /.well-known/openid-configuration
     O->>C: Discovery with RS256 + PKCE support
 
     C->>O: OAuth2 Authorization Code Flow
@@ -138,9 +138,9 @@ sequenceDiagram
 
 ## 🏆 **7. SECURITY COMPLIANCE ACHIEVED**
 
-### **✅ Industry Standards** 
+### **✅ Industry Standards**
 - **🔐 RSA-256:** Industry standard asymmetric signing
-- **📋 OIDC Spec:** Full compliance with discovery protocol  
+- **📋 OIDC Spec:** Full compliance with discovery protocol
 - **🛡️ CORS:** Production-hardened policies
 - **⚡ Performance:** JWKS caching, minimal attack surface
 - **🔒 Isolation:** Private key never leaves OIDC server
@@ -148,7 +148,7 @@ sequenceDiagram
 ### **✅ ChatGPT Connector Requirements**
 - **📋 OpenAPI 3.1.0:** Security scheme properly defined
 - **🔓 OAuth2/OIDC:** Only supported authentication method
-- **🔍 Discovery:** Automatic endpoint discovery  
+- **🔍 Discovery:** Automatic endpoint discovery
 - **🎯 SSE Endpoint:** `/mcp/sse` ready for ChatGPT
 - **📦 API Schema:** `/openapi.json` with security metadata
 
@@ -176,12 +176,12 @@ Authentication: OAuth2
 Scopes: openid email profile
 ```
 
-### **3. Cloudflare Rules** 
+### **3. Cloudflare Rules**
 ```nginx
 # oidc.drjlabs.com - NO ACCESS APP (public)
 # mcp.drjlabs.com - ACCESS APP with BYPASS:
 #   - /openapi.json
-#   - /mcp/sse  
+#   - /mcp/sse
 #   - /api/v1/memories/*
 #   - /health
 ```
@@ -203,10 +203,10 @@ Scopes: openid email profile
 
 ### **Key Achievements:**
 1. **🔐 Zero shared secrets** between MCP and OIDC servers
-2. **📋 Full OIDC specification compliance** 
+2. **📋 Full OIDC specification compliance**
 3. **🛡️ Production-hardened CORS** policies
 4. **⚡ Performance-optimized** JWKS caching
 5. **🎯 Minimal attack surface** (only 4 public endpoints)
 6. **✅ All audit findings resolved** with industry best practices
 
-**Ready for ChatGPT connector setup!** 🎯 
+**Ready for ChatGPT connector setup!** 🎯

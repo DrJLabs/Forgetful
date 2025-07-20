@@ -30,7 +30,7 @@ PyJWT>=2.8.0              # JWT handling
 openmemory/api/requirements.txt:
 -r ../../requirements.txt
 
-oidc-auth-server/requirements.txt: 
+oidc-auth-server/requirements.txt:
 -r ../requirements.txt
 ```
 
@@ -52,7 +52,7 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - OIDC_BASE_URL=${OIDC_BASE_URL}
     profiles: ["auth"]
-    
+
   redis-oidc:
     image: redis:7-alpine
     profiles: ["auth"]
@@ -229,13 +229,13 @@ Your ChatGPT OIDC integration is **100% production-ready**:
 
 ## 🏆 **ACHIEVEMENT SUMMARY**
 
-✅ **All 6 remaining audit issues fixed**  
-✅ **Production-grade security implemented**  
-✅ **Enterprise deployment architecture**  
-✅ **Industry-standard compliance achieved**  
-✅ **Performance optimizations complete**  
-✅ **Operational excellence delivered**  
+✅ **All 6 remaining audit issues fixed**
+✅ **Production-grade security implemented**
+✅ **Enterprise deployment architecture**
+✅ **Industry-standard compliance achieved**
+✅ **Performance optimizations complete**
+✅ **Operational excellence delivered**
 
 **🎯 Status: PRODUCTION DEPLOYMENT READY** 🚀
 
-Your technical audit was **incredibly thorough and accurate** - every recommendation has been implemented with enterprise-grade quality! 
+Your technical audit was **incredibly thorough and accurate** - every recommendation has been implemented with enterprise-grade quality!
