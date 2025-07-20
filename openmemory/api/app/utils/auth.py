@@ -13,7 +13,9 @@ import logging
 # OIDC Configuration
 OIDC_JWKS_URL = os.getenv("OIDC_JWKS_URL", "https://oidc.drjlabs.com/auth/jwks")
 OIDC_ISSUER = os.getenv("OIDC_ISSUER", "https://oidc.drjlabs.com")
-OIDC_AUDIENCE = os.getenv("OIDC_AUDIENCE")  # Set to your Google client_id for audience validation
+OIDC_EXPECTED_AUD = os.getenv("OIDC_EXPECTED_AUD", "https://api.openmemory.io")  # Expected audience for JWT validation
+OIDC_AUDIENCE = os.getenv("OIDC_AUDIENCE")  # Legacy: Set to your Google client_id for audience validation
+ALLOW_OLD_AUD = os.getenv("ALLOW_OLD_AUD", "false").lower() == "true"  # Migration toggle for backward compatibility
 
 logger = logging.getLogger(__name__)
 
@@ -107,13 +109,29 @@ async def validate_jwt_token(token: str) -> Optional[JWTPayload]:
             issuer=OIDC_ISSUER,
         )
 
-        # Add audience validation if OIDC_AUDIENCE is configured
-        if OIDC_AUDIENCE:
+        # Audience validation with migration support
+        if OIDC_EXPECTED_AUD:
+            # First try to validate with expected audience
+            decode_kwargs["audience"] = OIDC_EXPECTED_AUD
+            try:
+                payload = jwt.decode(token, **decode_kwargs)
+            except jwt.InvalidAudienceError:
+                # If migration toggle is enabled, try with legacy audience
+                if ALLOW_OLD_AUD and OIDC_AUDIENCE:
+                    logger.warning(f"Token validation failed with expected audience {OIDC_EXPECTED_AUD}, trying legacy audience {OIDC_AUDIENCE}")
+                    decode_kwargs["audience"] = OIDC_AUDIENCE
+                    payload = jwt.decode(token, **decode_kwargs)
+                else:
+                    logger.warning(f"Token validation failed: invalid audience, expected {OIDC_EXPECTED_AUD}")
+                    raise
+        elif OIDC_AUDIENCE:
+            # Fallback to legacy audience validation
             decode_kwargs["audience"] = OIDC_AUDIENCE
+            payload = jwt.decode(token, **decode_kwargs)
         else:
+            # No audience validation (not recommended for production)
             decode_kwargs["options"] = {"verify_aud": False}
-
-        payload = jwt.decode(token, **decode_kwargs)
+            payload = jwt.decode(token, **decode_kwargs)
 
         return JWTPayload(payload)
 

@@ -125,13 +125,15 @@ async def openid_configuration():
 
 @app.get("/auth/authorize")
 async def authorize(
+    request: Request,
     client_id: str,
     redirect_uri: str,
     response_type: str = "code",
     scope: str = "openid profile email",
     state: Optional[str] = None,
     code_challenge: Optional[str] = None,
-    code_challenge_method: Optional[str] = None
+    code_challenge_method: Optional[str] = None,
+    resource: Optional[str] = None
 ):
     """
     OAuth2 Authorization endpoint
@@ -172,6 +174,7 @@ async def authorize(
         "original_state": state,
         "code_challenge": code_challenge,
         "code_challenge_method": code_challenge_method,
+        "resource": resource,
         "created_at": datetime.utcnow()
     }
 
@@ -358,7 +361,7 @@ async def handle_authorization_code_grant(token_request: TokenRequest):
         "name": user_info["name"],
         "picture": user_info.get("picture"),
         "iss": BASE_URL,
-        "aud": token_request.client_id,
+        "aud": code_data["original_request"].get("resource") or "https://api.openmemory.io",
         "iat": now,
         "exp": now + timedelta(minutes=JWT_EXPIRE_MINUTES),
         "scope": code_data["original_request"]["scope"]
@@ -384,6 +387,7 @@ async def handle_authorization_code_grant(token_request: TokenRequest):
         "sub": user_info["sub"],
         "client_id": token_request.client_id,
         "scope": code_data["original_request"]["scope"],
+        "audience": code_data["original_request"].get("resource") or "https://api.openmemory.io",
         "user_info": user_info,
         "created_at": datetime.utcnow(),
         "expires_at": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -452,7 +456,7 @@ async def handle_refresh_token_grant(token_request: TokenRequest):
         "name": user_info["name"],
         "picture": user_info.get("picture"),
         "iss": BASE_URL,
-        "aud": refresh_token_data["client_id"],
+        "aud": refresh_token_data.get("audience", "https://api.openmemory.io"),
         "iat": now,
         "exp": now + timedelta(minutes=JWT_EXPIRE_MINUTES),
         "scope": refresh_token_data["scope"]
@@ -484,6 +488,7 @@ async def handle_refresh_token_grant(token_request: TokenRequest):
         "sub": user_info["sub"],
         "client_id": refresh_token_data["client_id"],
         "scope": refresh_token_data["scope"],
+        "audience": refresh_token_data.get("audience", "https://api.openmemory.io"),
         "user_info": user_info,
         "created_at": datetime.utcnow(),
         "expires_at": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
