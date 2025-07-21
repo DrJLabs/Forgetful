@@ -19,7 +19,7 @@ import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any
 
 import asyncpg
 
@@ -114,7 +114,7 @@ class ConnectionPoolMetrics:
             if not success:
                 self.health_check_failures += 1
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get connection pool statistics."""
         with self.lock:
             avg_wait_time = self.wait_time_total / max(self.wait_count, 1)
@@ -356,7 +356,7 @@ class OptimizedPostgreSQLPool:
         async with self.acquire() as conn:
             return await conn.fetchval(query, *args, **kwargs)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive pool statistics."""
         stats = self.metrics.get_stats()
 
@@ -529,13 +529,13 @@ class OptimizedNeo4jPool:
             self.metrics.record_connection_failed()
             raise
 
-    async def execute_query(self, query: str, parameters: Dict = None):
+    async def execute_query(self, query: str, parameters: dict = None):
         """Execute a Neo4j query with connection pooling."""
         async with self.session() as session:
             result = await session.run(query, parameters or {})
             return await result.data()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive pool statistics."""
         stats = self.metrics.get_stats()
         stats.update(
@@ -687,7 +687,7 @@ class OptimizedRedisPool:
 
         return self.redis_client
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive pool statistics."""
         stats = self.metrics.get_stats()
         stats.update(
@@ -796,7 +796,7 @@ class ConnectionPoolManager:
         if unhealthy_pools:
             logger.warning(f"Unhealthy pools detected: {unhealthy_pools}")
 
-    def get_comprehensive_stats(self) -> Dict[str, Any]:
+    def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get comprehensive statistics from all pools."""
         stats = {"timestamp": datetime.now().isoformat(), "pools": {}}
 

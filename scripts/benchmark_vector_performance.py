@@ -14,7 +14,6 @@ import os
 import random
 import sys
 import time
-from typing import Dict, List
 
 import psycopg2
 
@@ -22,12 +21,12 @@ import psycopg2
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 
-def generate_random_vector(dimensions: int = 1536) -> List[float]:
+def generate_random_vector(dimensions: int = 1536) -> list[float]:
     """Generate a random vector with specified dimensions."""
     return [random.uniform(-1.0, 1.0) for _ in range(dimensions)]
 
 
-def format_vector_for_db(vector: List[float], use_pgvector: bool = True) -> str:
+def format_vector_for_db(vector: list[float], use_pgvector: bool = True) -> str:
     """Format vector for database storage."""
     if use_pgvector:
         # Format as pgvector array: [1.0, 2.0, 3.0]
@@ -38,11 +37,11 @@ def format_vector_for_db(vector: List[float], use_pgvector: bool = True) -> str:
 
 
 def benchmark_vector_operations(
-    connection_params: Dict[str, str],
+    connection_params: dict[str, str],
     num_vectors: int = 1000,
     query_count: int = 100,
     use_pgvector: bool = True,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     """Benchmark vector operations."""
 
     print(f"🔍 Benchmarking {'pgvector' if use_pgvector else 'String'} storage...")

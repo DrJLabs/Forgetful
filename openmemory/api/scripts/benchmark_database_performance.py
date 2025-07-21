@@ -6,12 +6,12 @@ Phase 2 - Action Item 3: Database Performance Optimization
 This script measures database setup performance to validate optimization claims.
 """
 
-import time
-import statistics
 import os
+import statistics
 import sys
+import time
 from contextlib import contextmanager
-from typing import Dict, Any
+from typing import Any
 
 # Set up test environment
 os.environ["TESTING"] = "true"
@@ -44,7 +44,7 @@ class DatabasePerformanceBenchmark:
         print(f"  {description}: {elapsed:.4f}s")
         return elapsed
 
-    def benchmark_function_scoped_fixtures(self) -> Dict[str, float]:
+    def benchmark_function_scoped_fixtures(self) -> dict[str, float]:
         """Benchmark traditional function-scoped database fixtures."""
         print("🔄 Benchmarking function-scoped database fixtures...")
 
@@ -115,7 +115,7 @@ class DatabasePerformanceBenchmark:
             "raw_times": total_times,
         }
 
-    def benchmark_session_scoped_fixtures(self) -> Dict[str, float]:
+    def benchmark_session_scoped_fixtures(self) -> dict[str, float]:
         """Benchmark optimized session-scoped database fixtures."""
         print("🚀 Benchmarking session-scoped database fixtures...")
 
@@ -191,7 +191,7 @@ class DatabasePerformanceBenchmark:
             "raw_times": test_times,
         }
 
-    def benchmark_database_operations(self) -> Dict[str, float]:
+    def benchmark_database_operations(self) -> dict[str, float]:
         """Benchmark common database operations for context."""
         print("📊 Benchmarking database operations...")
 
@@ -256,7 +256,7 @@ class DatabasePerformanceBenchmark:
             for op, times in operation_times.items()
         }
 
-    def run_comprehensive_benchmark(self) -> Dict[str, Any]:
+    def run_comprehensive_benchmark(self) -> dict[str, Any]:
         """Run comprehensive database performance benchmark."""
         print("=== Database Performance Benchmark ===")
         print(f"Iterations: {self.iterations}")
@@ -280,7 +280,7 @@ class DatabasePerformanceBenchmark:
             "operations": operations_results,
         }
 
-    def generate_report(self, results: Dict[str, Any]) -> str:
+    def generate_report(self, results: dict[str, Any]) -> str:
         """Generate performance analysis report."""
         report = []
         report.append("# Database Performance Analysis Report")

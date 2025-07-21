@@ -13,20 +13,20 @@ import datetime
 import json
 import uuid
 
+from dotenv import load_dotenv
+
+# NEW IMPORTS
+from fastapi import FastAPI, Request, status
+from fastapi.routing import APIRouter
+from mcp.server.fastmcp import FastMCP
+from mcp.server.sse import SseServerTransport
+from pydantic import BaseModel, Field
+
 from app.database import SessionLocal
 from app.models import Memory, MemoryAccessLog, MemoryState, MemoryStatusHistory
 from app.utils.db import get_user_and_app
 from app.utils.memory import get_memory_client
 from app.utils.permissions import check_memory_access_permissions
-from dotenv import load_dotenv
-# NEW IMPORTS
-from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.routing import APIRouter
-from pydantic import BaseModel, Field
-from typing import List
-from mcp.server.fastmcp import FastMCP
-from mcp.server.sse import SseServerTransport
-
 from shared.errors import (
     ExternalServiceError,
     handle_error,
@@ -87,7 +87,7 @@ class MessagesRequest(BaseModel):
     """Schema for /mcp/messages payload."""
 
     user_id: str = Field(..., description="User identifier")
-    messages: List[str] = Field(..., description="List of message strings")
+    messages: list[str] = Field(..., description="List of message strings")
 
     @property
     def content(self) -> str:
@@ -99,13 +99,12 @@ class MessagesRequest(BaseModel):
 # Unified helper – shared by both GET & POST routes
 # ─────────────────────────────────────────────────────────────────────────────
 
+
 async def _process_mcp_messages(req: MessagesRequest):
     """Persist the messages and return memory metadata."""
     # Use the existing add_memories MCP tool
     result = await add_memories(
-        text=req.content,
-        user_id=req.user_id,
-        agent_id="mcp-client"
+        text=req.content, user_id=req.user_id, agent_id="mcp-client"
     )
 
     return {"status": "ok", "result": result}
@@ -114,6 +113,7 @@ async def _process_mcp_messages(req: MessagesRequest):
 # ─────────────────────────────────────────────────────────────────────────────
 # MCP Tools
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @mcp.tool(
     description="Add a new memory. This method is called everytime the user informs anything about themselves, their preferences, or anything that has any relevant information which can be useful in the future conversation. This can also be called when the user asks you to remember something."
@@ -277,9 +277,15 @@ async def search_memory(
             # Check if we have schema mismatch (no overlapping IDs)
             mem0_ids = set()
             if isinstance(search_results, dict) and "results" in search_results:
-                mem0_ids = {result.get("id") for result in search_results["results"] if "id" in result}
+                mem0_ids = {
+                    result.get("id")
+                    for result in search_results["results"]
+                    if "id" in result
+                }
             elif isinstance(search_results, list):
-                mem0_ids = {result.get("id") for result in search_results if "id" in result}
+                mem0_ids = {
+                    result.get("id") for result in search_results if "id" in result
+                }
 
             accessible_id_strings = {str(mid) for mid in accessible_memory_ids}
             has_overlap = bool(mem0_ids.intersection(accessible_id_strings))
@@ -295,34 +301,38 @@ async def search_memory(
                         "agent_id": client_name,
                         "accessible_ids_count": len(accessible_memory_ids),
                         "mem0_ids_count": len(mem0_ids),
-                    }
+                    },
                 )
 
                 # Format mem0 results for return
                 memories = []
                 if isinstance(search_results, dict) and "results" in search_results:
                     for result in search_results["results"]:
-                        memories.append({
-                            "id": result.get("id"),
-                            "memory": result.get("memory", ""),
-                            "hash": result.get("hash"),
-                            "created_at": result.get("created_at"),
-                            "updated_at": result.get("updated_at"),
-                            "score": result.get("score", 0.0),
-                            "metadata": result.get("metadata", {}),
-                        })
+                        memories.append(
+                            {
+                                "id": result.get("id"),
+                                "memory": result.get("memory", ""),
+                                "hash": result.get("hash"),
+                                "created_at": result.get("created_at"),
+                                "updated_at": result.get("updated_at"),
+                                "score": result.get("score", 0.0),
+                                "metadata": result.get("metadata", {}),
+                            }
+                        )
                 else:
                     # Handle list format
                     for result in search_results:
-                        memories.append({
-                            "id": result.get("id"),
-                            "memory": result.get("memory", ""),
-                            "hash": result.get("hash"),
-                            "created_at": result.get("created_at"),
-                            "updated_at": result.get("updated_at"),
-                            "score": result.get("score", 0.0),
-                            "metadata": result.get("metadata", {}),
-                        })
+                        memories.append(
+                            {
+                                "id": result.get("id"),
+                                "memory": result.get("memory", ""),
+                                "hash": result.get("hash"),
+                                "created_at": result.get("created_at"),
+                                "updated_at": result.get("updated_at"),
+                                "score": result.get("score", 0.0),
+                                "metadata": result.get("metadata", {}),
+                            }
+                        )
 
                 # Skip access logging for schema mismatch cases to avoid database errors
                 logger.info(
@@ -395,7 +405,9 @@ async def search_memory(
                     )
                     db.add(access_log)
                 except (ValueError, Exception) as log_error:
-                    logger.warning(f"Failed to create access log for memory {memory.get('id')}: {log_error}")
+                    logger.warning(
+                        f"Failed to create access log for memory {memory.get('id')}: {log_error}"
+                    )
 
             db.commit()
 
@@ -618,6 +630,7 @@ async def mcp_health_check():
         db_status = "healthy"
         try:
             from sqlalchemy import text
+
             db = SessionLocal()
             db.execute(text("SELECT 1"))
             db.close()
@@ -753,6 +766,7 @@ def validate_query_input(query: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 # Routes
 # ─────────────────────────────────────────────────────────────────────────────
+
 
 @router.post("/messages/", status_code=status.HTTP_201_CREATED)
 async def post_messages(payload: MessagesRequest):
@@ -892,8 +906,6 @@ async def mcp_delete_all_memories(request: Request):
     except Exception as e:
         logger.error(f"MCP delete_all_memories failed: {e}")
         return {"error": "delete_all_memories failed", "detail": str(e)}
-
-
 
 
 def setup_mcp_server(app: FastAPI):

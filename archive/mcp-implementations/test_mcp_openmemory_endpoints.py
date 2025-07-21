@@ -4,12 +4,12 @@ Comprehensive test suite for MCP-OpenMemory endpoints at localhost:8765
 Tests all available endpoints systematically and generates a detailed report.
 """
 
-import requests
 import json
-import time
-from datetime import datetime
-from typing import Dict, List, Any, Optional
 import sys
+from datetime import datetime
+
+import requests
+
 
 class MCPEndpointTester:
     def __init__(self, base_url: str = "http://localhost:8765"):
@@ -20,10 +20,15 @@ class MCPEndpointTester:
         self.test_memory_id = None
         self.test_app_id = None
 
-    def log_test(self, method: str, endpoint: str, status: str,
-                 response_code: Optional[int] = None,
-                 response_data: Optional[Dict] = None,
-                 error: Optional[str] = None):
+    def log_test(
+        self,
+        method: str,
+        endpoint: str,
+        status: str,
+        response_code: int | None = None,
+        response_data: dict | None = None,
+        error: str | None = None,
+    ):
         """Log test result"""
         result = {
             "timestamp": datetime.now().isoformat(),
@@ -32,16 +37,20 @@ class MCPEndpointTester:
             "status": status,
             "response_code": response_code,
             "response_data": response_data,
-            "error": error
+            "error": error,
         }
         self.test_results.append(result)
         print(f"[{status}] {method} {endpoint} - {response_code}")
         if error:
             print(f"   Error: {error}")
 
-    def make_request(self, method: str, endpoint: str,
-                    data: Optional[Dict] = None,
-                    params: Optional[Dict] = None) -> Dict:
+    def make_request(
+        self,
+        method: str,
+        endpoint: str,
+        data: dict | None = None,
+        params: dict | None = None,
+    ) -> dict:
         """Make HTTP request with error handling"""
         url = f"{self.base_url}{endpoint}"
         try:
@@ -63,19 +72,28 @@ class MCPEndpointTester:
                 response_data = {"raw_response": response.text}
 
             if response.status_code < 400:
-                self.log_test(method, endpoint, "PASS", response.status_code, response_data)
+                self.log_test(
+                    method, endpoint, "PASS", response.status_code, response_data
+                )
             else:
-                self.log_test(method, endpoint, "FAIL", response.status_code, response_data)
+                self.log_test(
+                    method, endpoint, "FAIL", response.status_code, response_data
+                )
 
             return {
                 "status_code": response.status_code,
                 "data": response_data,
-                "success": response.status_code < 400
+                "success": response.status_code < 400,
             }
 
         except Exception as e:
             self.log_test(method, endpoint, "ERROR", None, None, str(e))
-            return {"status_code": None, "data": None, "success": False, "error": str(e)}
+            return {
+                "status_code": None,
+                "data": None,
+                "success": False,
+                "error": str(e),
+            }
 
     def test_health_endpoints(self):
         """Test health check endpoints"""
@@ -97,11 +115,14 @@ class MCPEndpointTester:
         # Test memory creation
         memory_data = {
             "messages": [
-                {"role": "user", "content": "This is a test memory for MCP endpoint testing"},
-                {"role": "assistant", "content": "I understand this is a test memory."}
+                {
+                    "role": "user",
+                    "content": "This is a test memory for MCP endpoint testing",
+                },
+                {"role": "assistant", "content": "I understand this is a test memory."},
             ],
             "user_id": self.test_user_id,
-            "metadata": {"test": True, "endpoint_test": "mcp_memories"}
+            "metadata": {"test": True, "endpoint_test": "mcp_memories"},
         }
         create_result = self.make_request("POST", "/mcp/memories", data=memory_data)
 
@@ -115,10 +136,7 @@ class MCPEndpointTester:
         self.make_request("GET", "/mcp/memories", params={"user_id": self.test_user_id})
 
         # Test memory search
-        search_data = {
-            "query": "test memory",
-            "user_id": self.test_user_id
-        }
+        search_data = {"query": "test memory", "user_id": self.test_user_id}
         self.make_request("POST", "/mcp/search", data=search_data)
 
         # Test messages endpoint
@@ -126,7 +144,7 @@ class MCPEndpointTester:
             "messages": [
                 {"role": "user", "content": "Test message for MCP messages endpoint"}
             ],
-            "user_id": self.test_user_id
+            "user_id": self.test_user_id,
         }
         self.make_request("POST", "/mcp/messages/", data=messages_data)
 
@@ -137,7 +155,9 @@ class MCPEndpointTester:
         # Note: SSE endpoints are typically for streaming, so we'll test basic connectivity
         try:
             # Test basic SSE endpoint
-            response = self.session.get(f"{self.base_url}/mcp/sse", stream=True, timeout=5)
+            response = self.session.get(
+                f"{self.base_url}/mcp/sse", stream=True, timeout=5
+            )
             if response.status_code == 200:
                 self.log_test("GET", "/mcp/sse", "PASS", response.status_code)
             else:
@@ -149,7 +169,9 @@ class MCPEndpointTester:
         # Test client-specific SSE endpoint
         try:
             client_sse_endpoint = f"/mcp/test_client/sse/{self.test_user_id}"
-            response = self.session.get(f"{self.base_url}{client_sse_endpoint}", stream=True, timeout=5)
+            response = self.session.get(
+                f"{self.base_url}{client_sse_endpoint}", stream=True, timeout=5
+            )
             if response.status_code == 200:
                 self.log_test("GET", client_sse_endpoint, "PASS", response.status_code)
             else:
@@ -166,10 +188,13 @@ class MCPEndpointTester:
         memory_data = {
             "messages": [
                 {"role": "user", "content": "This is a test memory for API v1 testing"},
-                {"role": "assistant", "content": "I understand this is an API v1 test memory."}
+                {
+                    "role": "assistant",
+                    "content": "I understand this is an API v1 test memory.",
+                },
             ],
             "user_id": self.test_user_id,
-            "metadata": {"test": True, "endpoint_test": "api_v1_memories"}
+            "metadata": {"test": True, "endpoint_test": "api_v1_memories"},
         }
         create_result = self.make_request("POST", "/api/v1/memories/", data=memory_data)
 
@@ -180,23 +205,19 @@ class MCPEndpointTester:
                 self.test_memory_id = memories[0].get("id")
 
         # Get all memories
-        self.make_request("GET", "/api/v1/memories/", params={"user_id": self.test_user_id})
+        self.make_request(
+            "GET", "/api/v1/memories/", params={"user_id": self.test_user_id}
+        )
 
         # Get memory categories
         self.make_request("GET", "/api/v1/memories/categories")
 
         # Search memories
-        search_data = {
-            "query": "test memory",
-            "user_id": self.test_user_id
-        }
+        search_data = {"query": "test memory", "user_id": self.test_user_id}
         self.make_request("POST", "/api/v1/memories/search", data=search_data)
 
         # Filter memories
-        filter_data = {
-            "user_id": self.test_user_id,
-            "filters": {"test": True}
-        }
+        filter_data = {"user_id": self.test_user_id, "filters": {"test": True}}
         self.make_request("POST", "/api/v1/memories/filter", data=filter_data)
 
         # Test individual memory operations if we have a memory ID
@@ -205,13 +226,15 @@ class MCPEndpointTester:
             self.make_request("GET", f"/api/v1/memories/{self.test_memory_id}")
 
             # Update memory
-            update_data = {
-                "text": "Updated test memory content"
-            }
-            self.make_request("PUT", f"/api/v1/memories/{self.test_memory_id}", data=update_data)
+            update_data = {"text": "Updated test memory content"}
+            self.make_request(
+                "PUT", f"/api/v1/memories/{self.test_memory_id}", data=update_data
+            )
 
             # Get memory access log
-            self.make_request("GET", f"/api/v1/memories/{self.test_memory_id}/access-log")
+            self.make_request(
+                "GET", f"/api/v1/memories/{self.test_memory_id}/access-log"
+            )
 
             # Get related memories
             self.make_request("GET", f"/api/v1/memories/{self.test_memory_id}/related")
@@ -220,7 +243,9 @@ class MCPEndpointTester:
         if self.test_memory_id:
             # Archive memory
             archive_data = {"memory_ids": [self.test_memory_id]}
-            self.make_request("POST", "/api/v1/memories/actions/archive", data=archive_data)
+            self.make_request(
+                "POST", "/api/v1/memories/actions/archive", data=archive_data
+            )
 
             # Pause memory
             pause_data = {"memory_ids": [self.test_memory_id]}
@@ -247,9 +272,11 @@ class MCPEndpointTester:
             # Update app
             update_data = {
                 "name": "Updated Test App",
-                "description": "Updated description for testing"
+                "description": "Updated description for testing",
             }
-            self.make_request("PUT", f"/api/v1/apps/{self.test_app_id}", data=update_data)
+            self.make_request(
+                "PUT", f"/api/v1/apps/{self.test_app_id}", data=update_data
+            )
 
             # Get app memories
             self.make_request("GET", f"/api/v1/apps/{self.test_app_id}/memories")
@@ -315,9 +342,9 @@ class MCPEndpointTester:
 
     def generate_report(self):
         """Generate a comprehensive test report"""
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("MCP-OPENMEMORY ENDPOINT TEST REPORT")
-        print("="*80)
+        print("=" * 80)
 
         total_tests = len(self.test_results)
         passed_tests = len([r for r in self.test_results if r["status"] == "PASS"])
@@ -328,30 +355,44 @@ class MCPEndpointTester:
         print(f"Passed: {passed_tests}")
         print(f"Failed: {failed_tests}")
         print(f"Errors: {error_tests}")
-        print(f"Success Rate: {(passed_tests/total_tests)*100:.1f}%")
+        print(f"Success Rate: {(passed_tests / total_tests) * 100:.1f}%")
 
         print("\nDETAILED RESULTS:")
         print("-" * 80)
 
         for result in self.test_results:
-            status_symbol = "✓" if result["status"] == "PASS" else "✗" if result["status"] == "FAIL" else "!"
-            print(f"{status_symbol} {result['method']} {result['endpoint']} [{result['response_code']}]")
+            status_symbol = (
+                "✓"
+                if result["status"] == "PASS"
+                else "✗"
+                if result["status"] == "FAIL"
+                else "!"
+            )
+            print(
+                f"{status_symbol} {result['method']} {result['endpoint']} [{result['response_code']}]"
+            )
             if result["error"]:
                 print(f"   Error: {result['error']}")
 
         # Save detailed report to file
-        report_file = f"mcp_endpoint_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_file, 'w') as f:
-            json.dump({
-                "summary": {
-                    "total_tests": total_tests,
-                    "passed": passed_tests,
-                    "failed": failed_tests,
-                    "errors": error_tests,
-                    "success_rate": (passed_tests/total_tests)*100
+        report_file = (
+            f"mcp_endpoint_test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        with open(report_file, "w") as f:
+            json.dump(
+                {
+                    "summary": {
+                        "total_tests": total_tests,
+                        "passed": passed_tests,
+                        "failed": failed_tests,
+                        "errors": error_tests,
+                        "success_rate": (passed_tests / total_tests) * 100,
+                    },
+                    "detailed_results": self.test_results,
                 },
-                "detailed_results": self.test_results
-            }, f, indent=2)
+                f,
+                indent=2,
+            )
 
         print(f"\nDetailed report saved to: {report_file}")
 
@@ -360,7 +401,7 @@ class MCPEndpointTester:
             "passed": passed_tests,
             "failed": failed_tests,
             "errors": error_tests,
-            "success_rate": (passed_tests/total_tests)*100
+            "success_rate": (passed_tests / total_tests) * 100,
         }
 
     def run_all_tests(self):
@@ -388,7 +429,9 @@ class MCPEndpointTester:
 
             # Exit with appropriate code
             if summary["errors"] > 0 or summary["failed"] > 0:
-                print(f"\n⚠️  Tests completed with {summary['failed']} failures and {summary['errors']} errors")
+                print(
+                    f"\n⚠️  Tests completed with {summary['failed']} failures and {summary['errors']} errors"
+                )
                 return False
             else:
                 print(f"\n✅ All {summary['total']} tests passed successfully!")
@@ -403,6 +446,7 @@ class MCPEndpointTester:
             self.cleanup_test_data()
             return False
 
+
 def main():
     """Main function"""
     base_url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8765"
@@ -411,6 +455,7 @@ def main():
     success = tester.run_all_tests()
 
     sys.exit(0 if success else 1)
+
 
 if __name__ == "__main__":
     main()

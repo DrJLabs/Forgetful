@@ -34,7 +34,6 @@ import socket
 
 from app.database import SessionLocal
 from app.models import Config as ConfigModel
-
 from mem0 import Memory
 from shared.errors import ExternalServiceError, handle_error
 
@@ -87,7 +86,7 @@ def _get_docker_host_url():
 
     # 2. Docker bridge gateway (typically 172.17.0.1 on Linux)
     try:
-        with open("/proc/net/route", "r") as f:
+        with open("/proc/net/route") as f:
             for line in f:
                 fields = line.strip().split()
                 if fields[1] == "00000000":  # Default route
@@ -259,12 +258,19 @@ def get_memory_client(custom_instructions: str = None):
                         mem0_config = json_config["mem0"]
 
                         # Update vector_store configuration if available
-                        if "vector_store" in mem0_config and mem0_config["vector_store"] is not None:
+                        if (
+                            "vector_store" in mem0_config
+                            and mem0_config["vector_store"] is not None
+                        ):
                             config["vector_store"] = mem0_config["vector_store"]
-                            print(f"Loaded vector_store config from database: {config['vector_store']['provider']}")
+                            print(
+                                f"Loaded vector_store config from database: {config['vector_store']['provider']}"
+                            )
                         else:
                             # Ensure we're using pgvector as default, not qdrant
-                            print(f"No vector_store config in database, using pgvector default: {config['vector_store']['provider']}")
+                            print(
+                                f"No vector_store config in database, using pgvector default: {config['vector_store']['provider']}"
+                            )
 
                         # Update LLM configuration if available
                         if "llm" in mem0_config and mem0_config["llm"] is not None:
@@ -307,7 +313,9 @@ def get_memory_client(custom_instructions: str = None):
             config = _parse_environment_variables(config)
 
             # Debug: Show the final vector store configuration being used
-            print(f"Final vector_store configuration: provider={config['vector_store']['provider']}")
+            print(
+                f"Final vector_store configuration: provider={config['vector_store']['provider']}"
+            )
             print(f"Vector store config details: {config['vector_store']['config']}")
 
             # Check if config has changed by comparing hashes

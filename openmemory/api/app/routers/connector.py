@@ -6,17 +6,17 @@ Returns only necessary data (IDs, scores, text) without exposing metadata.
 """
 
 import logging
-from typing import Dict, List, Optional
 from uuid import UUID
 
-from app.database import get_db
-from app.models import Memory, MemoryState
-from app.utils.auth import get_current_user, require_authentication, JWTPayload
-from app.utils.memory import get_memory_client
-from app.utils.permissions import check_memory_access_permissions
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import Memory, MemoryState
+from app.utils.auth import JWTPayload, require_authentication
+from app.utils.memory import get_memory_client
+from app.utils.permissions import check_memory_access_permissions
 
 logger = logging.getLogger(__name__)
 
@@ -28,28 +28,37 @@ router = APIRouter(
         401: {"description": "Authentication required"},
         403: {"description": "Access forbidden"},
         404: {"description": "Resource not found"},
-        500: {"description": "Internal server error"}
-    }
+        500: {"description": "Internal server error"},
+    },
 )
 
 
 class SearchRequest(BaseModel):
     """Request model for memory search"""
-    query: str = Field(..., description="Search query text", min_length=1, max_length=1000)
-    limit: int = Field(10, description="Maximum number of results to return", ge=1, le=100)
+
+    query: str = Field(
+        ..., description="Search query text", min_length=1, max_length=1000
+    )
+    limit: int = Field(
+        10, description="Maximum number of results to return", ge=1, le=100
+    )
 
 
 class SearchResult(BaseModel):
     """Search result containing only ID and relevance score"""
+
     id: str = Field(..., description="Memory UUID")
     score: float = Field(..., description="Relevance score (0.0 to 1.0)")
 
 
 class FetchRequest(BaseModel):
     """Request model for fetching memories by IDs"""
-    ids: List[str] = Field(..., description="List of memory UUIDs to fetch", min_items=1, max_items=50)
 
-    @validator('ids')
+    ids: list[str] = Field(
+        ..., description="List of memory UUIDs to fetch", min_items=1, max_items=50
+    )
+
+    @validator("ids")
     def validate_uuids(cls, v):
         """Validate that all IDs are valid UUIDs"""
         validated_ids = []
@@ -67,11 +76,14 @@ class FetchRequest(BaseModel):
 
 class FetchResult(BaseModel):
     """Fetch result containing only ID and text content"""
+
     id: str = Field(..., description="Memory UUID")
     text: str = Field(..., description="Memory text content")
 
 
-async def get_current_app_id(current_user: JWTPayload = Depends(require_authentication)) -> Optional[UUID]:
+async def get_current_app_id(
+    current_user: JWTPayload = Depends(require_authentication),
+) -> UUID | None:
     """
     Extract app_id from JWT claims or generate default app for user
     For ChatGPT integration, we'll use a default app per user
@@ -81,12 +93,14 @@ async def get_current_app_id(current_user: JWTPayload = Depends(require_authenti
     return None
 
 
-async def get_current_user_id(current_user: JWTPayload = Depends(require_authentication)) -> str:
+async def get_current_user_id(
+    current_user: JWTPayload = Depends(require_authentication),
+) -> str:
     """Extract user_id from JWT token"""
     return current_user.sub
 
 
-async def fetch_by_ids(db: Session, ids: List[str], app_id: Optional[UUID]) -> List[Dict]:
+async def fetch_by_ids(db: Session, ids: list[str], app_id: UUID | None) -> list[dict]:
     """
     Helper function to fetch memories by IDs with access control
     """
@@ -122,24 +136,15 @@ async def fetch_by_ids(db: Session, ids: List[str], app_id: Optional[UUID]) -> L
             # Get memory text from mem0 client
             try:
                 mem0_result = memory_client.get(id_str)
-                if mem0_result and 'content' in mem0_result:
-                    results.append({
-                        "id": id_str,
-                        "text": mem0_result['content']
-                    })
+                if mem0_result and "content" in mem0_result:
+                    results.append({"id": id_str, "text": mem0_result["content"]})
                 else:
                     # Fallback to database content if mem0 doesn't have it
-                    results.append({
-                        "id": id_str,
-                        "text": memory.content
-                    })
+                    results.append({"id": id_str, "text": memory.content})
             except Exception as mem0_error:
                 logger.warning(f"Failed to fetch from mem0 for {id_str}: {mem0_error}")
                 # Fallback to database content
-                results.append({
-                    "id": id_str,
-                    "text": memory.content
-                })
+                results.append({"id": id_str, "text": memory.content})
 
         except Exception as e:
             logger.error(f"Error processing memory ID {id_str}: {e}")
@@ -148,16 +153,17 @@ async def fetch_by_ids(db: Session, ids: List[str], app_id: Optional[UUID]) -> L
     return results
 
 
-@router.post("/search",
+@router.post(
+    "/search",
     summary="Search memories",
     description="Search memories and return only IDs and relevance scores",
-    response_model=List[SearchResult]
+    response_model=list[SearchResult],
 )
 async def search_memories(
     request: SearchRequest,
     current_user_id: str = Depends(get_current_user_id),
-    current_user: JWTPayload = Depends(require_authentication)
-) -> List[SearchResult]:
+    current_user: JWTPayload = Depends(require_authentication),
+) -> list[SearchResult]:
     """
     Search memories using the provided query string.
     Returns only memory IDs and relevance scores for security.
@@ -166,49 +172,45 @@ async def search_memories(
         memory_client = get_memory_client()
         if not memory_client:
             raise HTTPException(
-                status_code=503,
-                detail="Memory service temporarily unavailable"
+                status_code=503, detail="Memory service temporarily unavailable"
             )
 
         # Use mem0's search method
         search_results = memory_client.search(
-            request.query,
-            user_id=current_user_id,
-            limit=request.limit
+            request.query, user_id=current_user_id, limit=request.limit
         )
 
         # Extract only IDs and scores
         results = []
-        if search_results and 'results' in search_results:
-            for result in search_results['results']:
-                if 'id' in result and 'score' in result:
-                    results.append(SearchResult(
-                        id=str(result['id']),
-                        score=float(result['score'])
-                    ))
+        if search_results and "results" in search_results:
+            for result in search_results["results"]:
+                if "id" in result and "score" in result:
+                    results.append(
+                        SearchResult(id=str(result["id"]), score=float(result["score"]))
+                    )
 
-        logger.info(f"Search completed: query='{request.query}', results={len(results)}, user={current_user_id}")
+        logger.info(
+            f"Search completed: query='{request.query}', results={len(results)}, user={current_user_id}"
+        )
         return results
 
     except Exception as e:
         logger.error(f"Search failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Search operation failed"
-        )
+        raise HTTPException(status_code=500, detail="Search operation failed")
 
 
-@router.post("/fetch",
+@router.post(
+    "/fetch",
     summary="Fetch memories by IDs",
     description="Fetch memory content by providing specific memory IDs",
-    response_model=List[FetchResult]
+    response_model=list[FetchResult],
 )
 async def fetch_memories(
     request: FetchRequest,
-    app_id: Optional[UUID] = Depends(get_current_app_id),
+    app_id: UUID | None = Depends(get_current_app_id),
     current_user: JWTPayload = Depends(require_authentication),
-    db: Session = Depends(get_db)
-) -> List[FetchResult]:
+    db: Session = Depends(get_db),
+) -> list[FetchResult]:
     """
     Fetch memory text content for the provided memory IDs.
     Only returns memories that the current user/app has access to.
@@ -219,16 +221,14 @@ async def fetch_memories(
 
         # Convert to response format
         results = [
-            FetchResult(id=mem["id"], text=mem["text"])
-            for mem in accessible_memories
+            FetchResult(id=mem["id"], text=mem["text"]) for mem in accessible_memories
         ]
 
-        logger.info(f"Fetch completed: requested={len(request.ids)}, accessible={len(results)}, user={current_user.sub}")
+        logger.info(
+            f"Fetch completed: requested={len(request.ids)}, accessible={len(results)}, user={current_user.sub}"
+        )
         return results
 
     except Exception as e:
         logger.error(f"Fetch failed: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Fetch operation failed"
-        )
+        raise HTTPException(status_code=500, detail="Fetch operation failed")

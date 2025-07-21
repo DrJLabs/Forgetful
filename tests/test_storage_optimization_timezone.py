@@ -9,7 +9,7 @@ This test suite covers:
 """
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from freezegun import freeze_time
@@ -215,7 +215,7 @@ class TestStorageOptimizationIntegration:
     def create_memory_dataset(self, count=50):
         """Create a dataset of test memories with various timestamps."""
         memories = []
-        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         for i in range(count):
             # Create memories with different ages
@@ -346,7 +346,7 @@ class TestStorageOptimizationIntegration:
     def test_scheduled_optimization_timing(self):
         """Test that scheduled optimization timing respects timezone consistency."""
         # Set initial optimization time
-        initial_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        initial_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         with freeze_time(initial_time):
             self.autonomous_manager.last_optimization = create_memory_timestamp()
@@ -392,7 +392,7 @@ class TestTimezoneRegressionTests:
         timezone-aware datetime objects, causing incorrect age calculations.
         """
         # Create memory with timezone-aware timestamp
-        utc_time = datetime.now(timezone.utc)
+        utc_time = datetime.now(UTC)
         memory = {
             "id": str(uuid.uuid4()),
             "memory": "Test memory for regression test",
@@ -470,7 +470,7 @@ class TestTimezoneRegressionTests:
     def test_memory_age_calculation_accuracy_regression(self):
         """Test that memory age calculations are accurate after timezone fixes."""
         # Create memories with known ages
-        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         test_cases = [
             {"days_old": 0, "should_purge": False},  # Brand new
@@ -534,7 +534,7 @@ class TestPerformanceRegression:
     def create_large_memory_dataset(self, count=1000):
         """Create a large dataset for performance testing."""
         memories = []
-        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        base_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         for i in range(count):
             memory_time = base_time - timedelta(days=i % 365)

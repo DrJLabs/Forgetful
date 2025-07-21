@@ -7,14 +7,14 @@ This script measures actual performance characteristics of the test suite
 to establish accurate baselines before optimization.
 """
 
-import subprocess
-import time
 import json
-import sys
 import os
-from dataclasses import dataclass, asdict
-from typing import List, Dict, Any
 import statistics
+import subprocess
+import sys
+import time
+from dataclasses import asdict, dataclass
+from typing import Any
 
 
 @dataclass
@@ -41,7 +41,7 @@ class BaselinePerformanceMeasurer:
     def __init__(self, test_path: str = "tests/test_simple.py", iterations: int = 3):
         self.test_path = test_path
         self.iterations = iterations
-        self.results: List[PerformanceResult] = []
+        self.results: list[PerformanceResult] = []
 
     def measure_test_collection(self) -> float:
         """Measure test collection time."""
@@ -155,7 +155,7 @@ class BaselinePerformanceMeasurer:
             cpu_usage_percent=0.0,  # TODO: Add CPU monitoring
         )
 
-    def run_comprehensive_baseline(self) -> Dict[str, Any]:
+    def run_comprehensive_baseline(self) -> dict[str, Any]:
         """Run comprehensive baseline measurements."""
         print("=== Phase 2 Baseline Performance Measurement ===")
         print(f"Test target: {self.test_path}")
@@ -211,7 +211,7 @@ class BaselinePerformanceMeasurer:
 
         return all_results
 
-    def generate_report(self, results: Dict[str, Any]) -> str:
+    def generate_report(self, results: dict[str, Any]) -> str:
         """Generate performance baseline report."""
         report = []
         report.append("# Performance Baseline Report")
@@ -301,7 +301,7 @@ class BaselinePerformanceMeasurer:
 
         return "\n".join(report)
 
-    def save_results(self, results: Dict[str, Any], report: str):
+    def save_results(self, results: dict[str, Any], report: str):
         """Save results and report to files."""
         timestamp = time.strftime("%Y%m%d_%H%M%S")
 
