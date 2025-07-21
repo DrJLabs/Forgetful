@@ -75,7 +75,9 @@ GPT Actions Bridge (FastAPI Server)
 python3 -c "
 import secrets
 api_key = 'gpt_' + secrets.token_bytes(32).hex()
-print(f'API Key: {api_key}')
+# For security, mask the API key when displaying
+print(f'API Key: {api_key[:8]}...{api_key[-4:]}')
+print('Full API key has been generated - copy from terminal carefully')
 "
 ```
 

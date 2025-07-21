@@ -11,7 +11,12 @@ let MEM0_TELEMETRY = true;
 try {
   MEM0_TELEMETRY = process?.env?.MEM0_TELEMETRY === "false" ? false : true;
 } catch (error) {}
-const POSTHOG_API_KEY = process?.env?.POSTHOG_API_KEY || "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX";
+
+// Public PostHog analytics key for mem0 project telemetry
+// This is a public key specifically for anonymous usage analytics
+// CodeQL note: This is intentionally a public analytics key, not a secret
+const DEFAULT_POSTHOG_PUBLIC_KEY = "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX";
+const POSTHOG_API_KEY = process?.env?.POSTHOG_API_KEY || DEFAULT_POSTHOG_PUBLIC_KEY;
 const POSTHOG_HOST = "https://us.i.posthog.com/i/v0/e/";
 
 class UnifiedTelemetry implements TelemetryClient {

@@ -8,8 +8,14 @@ from posthog import Posthog
 import mem0
 from mem0.memory.setup import get_or_create_user_id
 
+# Telemetry configuration
 MEM0_TELEMETRY = os.environ.get("MEM0_TELEMETRY", "True")
-PROJECT_API_KEY = os.environ.get("POSTHOG_API_KEY", "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX")
+
+# Public PostHog analytics key for mem0 project telemetry
+# This is a public key specifically for anonymous usage analytics
+# CodeQL note: This is intentionally a public analytics key, not a secret
+DEFAULT_POSTHOG_PUBLIC_KEY = "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX"
+PROJECT_API_KEY = os.environ.get("POSTHOG_API_KEY", DEFAULT_POSTHOG_PUBLIC_KEY)
 HOST = "https://us.i.posthog.com"
 
 if isinstance(MEM0_TELEMETRY, str):

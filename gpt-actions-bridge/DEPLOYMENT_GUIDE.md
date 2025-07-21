@@ -34,8 +34,10 @@ GPT_API_KEYS=${GPT_API_KEYS}
 python3 -c "
 import secrets
 api_key = 'gpt_' + secrets.token_bytes(32).hex()
-print(f'Generated API key: {api_key}')
+# For security, mask the API key when displaying
+print(f'Generated API key: {api_key[:8]}...{api_key[-4:]}')
 print(f'Add this to your .env file: GPT_API_KEYS={api_key}')
+print('Note: Copy the full API key from terminal carefully')
 "
 ```
 

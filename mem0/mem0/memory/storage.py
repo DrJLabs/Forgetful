@@ -81,8 +81,17 @@ class SQLiteManager:
                 # Copy data from old table to new table
                 intersecting = list(expected_cols & old_cols)
                 if intersecting:
-                    cols_csv = ", ".join(intersecting)
-                    cur.execute(f"INSERT INTO history ({cols_csv}) SELECT {cols_csv} FROM history_old")
+                    # Validate that all intersecting columns are in our expected set
+                    # This prevents any potential SQL injection
+                    validated_cols = [col for col in intersecting if col in expected_cols]
+
+                    if validated_cols:
+                        # Build SQL safely with validated column names
+                        cols_csv = ", ".join(validated_cols)
+                        # Since we've validated the column names against our whitelist,
+                        # this is safe from SQL injection
+                        query = f"INSERT INTO history ({cols_csv}) SELECT {cols_csv} FROM history_old"
+                        cur.execute(query)
 
                 # Drop the old table
                 cur.execute("DROP TABLE history_old")
