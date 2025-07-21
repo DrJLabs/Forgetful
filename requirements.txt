@@ -11,7 +11,7 @@ python-dotenv>=0.21.0
 
 # Authentication & Security
 PyJWT==2.9.0  # Pinned to secure version (was >=2.8.0 - vulnerable)
-cryptography==43.0.1  # Pinned to secure version (was >=42.0.0 - vulnerable)
+cryptography==44.0.1  # Pinned to secure version (was >=42.0.0 - vulnerable)
 slowapi>=0.1.9
 
 # Database & ORM
