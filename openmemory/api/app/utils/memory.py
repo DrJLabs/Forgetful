@@ -267,13 +267,13 @@ def get_memory_client(custom_instructions: str = None):
                             and mem0_config["vector_store"] is not None
                         ):
                             config["vector_store"] = mem0_config["vector_store"]
-                            print(
-                                f"Loaded vector_store config from database: {config['vector_store']['provider']}"
+                            logger.info(
+                                f"Loaded vector_store provider from database: {config['vector_store']['provider']}"
                             )
                         else:
                             # Ensure we're using pgvector as default, not qdrant
-                            print(
-                                f"No vector_store config in database, using pgvector default: {config['vector_store']['provider']}"
+                            logger.info(
+                                "No vector_store config in database, using default provider: pgvector"
                             )
 
                         # Update LLM configuration if available
