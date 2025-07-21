@@ -2,6 +2,7 @@ import { VectorStore } from "./base";
 import { SearchFilters, VectorStoreConfig, VectorStoreResult } from "../types";
 import sqlite3 from "sqlite3";
 import path from "path";
+import { randomBytes } from "crypto";
 
 interface MemoryVector {
   id: string;
@@ -217,10 +218,9 @@ export class MemoryVectorStore implements VectorStore {
       return row.user_id;
     }
 
-    // Generate a random user_id if none exists
-    const randomUserId =
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
+    // Generate a cryptographically secure random user_id if none exists
+    const randomBuffer = randomBytes(16);
+    const randomUserId = randomBuffer.toString('hex');
     await this.run(`INSERT INTO memory_migrations (user_id) VALUES (?)`, [
       randomUserId,
     ]);

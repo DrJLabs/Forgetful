@@ -6,6 +6,7 @@ import type {
   RedisModules,
   RedisScripts,
 } from "redis";
+import { randomBytes } from "crypto";
 import { VectorStore } from "./base";
 import { SearchFilters, VectorStoreConfig, VectorStoreResult } from "../types";
 
@@ -642,10 +643,9 @@ export class RedisDB implements VectorStore {
         return userId;
       }
 
-      // Generate a random user_id if none exists
-      const randomUserId =
-        Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
+      // Generate a cryptographically secure random user_id if none exists
+      const randomBuffer = randomBytes(16);
+      const randomUserId = randomBuffer.toString('hex');
 
       // Store the user ID
       await this.client.set("memory_migrations:1", randomUserId);

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import type { TelemetryClient, TelemetryOptions } from "./telemetry.types";
+import { randomBytes } from "crypto";
 
 let version = "2.1.36";
 
@@ -11,12 +12,12 @@ try {
 const POSTHOG_API_KEY = process?.env?.POSTHOG_API_KEY || "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX";
 const POSTHOG_HOST = "https://us.i.posthog.com/i/v0/e/";
 
-// Simple hash function using random strings
+// Secure hash function using cryptographically strong random bytes
 function generateHash(input: string): string {
-  const randomStr =
-    Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15);
-  return randomStr;
+  // Generate 16 bytes (128 bits) of cryptographically secure random data
+  const randomBuffer = randomBytes(16);
+  // Convert to base36 for URL-safe string
+  return randomBuffer.toString('hex');
 }
 
 class UnifiedTelemetry implements TelemetryClient {

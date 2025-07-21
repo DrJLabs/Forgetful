@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { randomBytes } from "crypto";
 import { VectorStore } from "./base";
 import { SearchFilters, VectorStoreConfig, VectorStoreResult } from "../types";
 
@@ -367,10 +368,9 @@ See the SQL migration instructions in the code comments.`,
         .limit(1);
 
       if (!tableExists || tableExists.length === 0) {
-        // Generate a random user_id
-        const randomUserId =
-          Math.random().toString(36).substring(2, 15) +
-          Math.random().toString(36).substring(2, 15);
+        // Generate a cryptographically secure random user_id
+        const randomBuffer = randomBytes(16);
+        const randomUserId = randomBuffer.toString('hex');
 
         // Insert the new user_id
         const { error: insertError } = await this.client
@@ -389,10 +389,9 @@ See the SQL migration instructions in the code comments.`,
 
       if (error) throw error;
       if (!data || data.length === 0) {
-        // Generate a random user_id if no data found
-        const randomUserId =
-          Math.random().toString(36).substring(2, 15) +
-          Math.random().toString(36).substring(2, 15);
+        // Generate a cryptographically secure random user_id if no data found
+        const randomBuffer = randomBytes(16);
+        const randomUserId = randomBuffer.toString('hex');
 
         const { error: insertError } = await this.client
           .from("memory_migrations")

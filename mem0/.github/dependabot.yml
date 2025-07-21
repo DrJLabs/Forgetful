@@ -5,7 +5,14 @@ updates:
     directory: '/mem0'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      python-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -13,18 +20,22 @@ updates:
     labels:
       - 'dependencies'
       - 'python'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
-
-  # Embedchain Python package - REMOVED (legacy, not maintained)
 
   # OpenMemory API Python package
   - package-ecosystem: 'pip'
     directory: '/openmemory/api'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      python-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -32,8 +43,6 @@ updates:
     labels:
       - 'dependencies'
       - 'python'
-      - 'openmemory'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
 
@@ -42,7 +51,14 @@ updates:
     directory: '/mem0/server'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      python-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -51,7 +67,6 @@ updates:
       - 'dependencies'
       - 'python'
       - 'server'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
 
@@ -60,7 +75,14 @@ updates:
     directory: '/mem0/mem0-ts'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      npm-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -68,7 +90,6 @@ updates:
     labels:
       - 'dependencies'
       - 'typescript'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
 
@@ -77,7 +98,14 @@ updates:
     directory: '/mem0/vercel-ai-sdk'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      npm-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -86,7 +114,6 @@ updates:
       - 'dependencies'
       - 'typescript'
       - 'vercel-ai-sdk'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
 
@@ -95,7 +122,14 @@ updates:
     directory: '/openmemory/ui'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      npm-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -104,35 +138,45 @@ updates:
       - 'dependencies'
       - 'typescript'
       - 'openmemory'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
-
-  # Community TypeScript package - REMOVED (not actively maintained)
-
-  # Example projects - REMOVED (not maintained)
 
   # GitHub Actions
   - package-ecosystem: 'github-actions'
     directory: '/mem0/.github/workflows'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 3
+    groups:
+      actions-deps:
+        patterns:
+          - '*'
+    allow:
+      - dependency-type: 'all'
     reviewers:
       - 'maintainers'
     labels:
       - 'dependencies'
       - 'github-actions'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
 
-  # Root level dependencies
+  # Root level dependencies (Python)
   - package-ecosystem: 'pip'
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      python-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -141,16 +185,22 @@ updates:
       - 'dependencies'
       - 'python'
       - 'root'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'
 
-  # OpenMemory root UI dependencies
+  # Root level dependencies (npm)
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
       interval: 'weekly'
+      day: 'monday'
+      time: '06:00'
+      timezone: 'America/New_York'
     open-pull-requests-limit: 5
+    groups:
+      npm-deps:
+        patterns:
+          - '*'
     allow:
       - dependency-type: 'all'
     reviewers:
@@ -159,6 +209,5 @@ updates:
       - 'dependencies'
       - 'typescript'
       - 'root'
-    # Security-focused enhancements
     target-branch: 'main'
     rebase-strategy: 'auto'

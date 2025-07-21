@@ -1,5 +1,6 @@
 import { MemoryClient } from "../mem0";
 import dotenv from "dotenv";
+import { randomBytes } from "crypto";
 
 dotenv.config();
 
@@ -8,12 +9,10 @@ const apiKey = process.env.MEM0_API_KEY || "";
 // const client = new MemoryClient({ apiKey, host: 'https://api.mem0.ai', organizationName: "saket-default-org", projectName: "default-project" });
 const client = new MemoryClient({ apiKey, host: "https://api.mem0.ai" });
 
-// Generate a random string
+// Generate a cryptographically secure random string
 const randomString = () => {
-  return (
-    Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15)
-  );
+  const randomBuffer = randomBytes(16);
+  return randomBuffer.toString('hex');
 };
 
 describe("MemoryClient API", () => {

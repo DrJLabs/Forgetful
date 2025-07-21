@@ -1,5 +1,6 @@
 import Cloudflare from "cloudflare";
 import type { Vectorize, VectorizeVector } from "@cloudflare/workers-types";
+import { randomBytes } from "crypto";
 import { VectorStore } from "./base";
 import { SearchFilters, VectorStoreConfig, VectorStoreResult } from "../types";
 
@@ -227,14 +228,18 @@ export class VectorizeDB implements VectorStore {
   }
 
   private generateUUID(): string {
-    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-      /[xy]/g,
-      function (c) {
-        const r = (Math.random() * 16) | 0;
-        const v = c === "x" ? r : (r & 0x3) | 0x8;
-        return v.toString(16);
-      },
-    );
+    // Generate cryptographically secure UUID using random bytes
+    const randomBuffer = randomBytes(16);
+    const hex = randomBuffer.toString('hex');
+
+    // Format as UUID v4
+    return [
+      hex.substring(0, 8),
+      hex.substring(8, 12),
+      '4' + hex.substring(13, 16),
+      ((parseInt(hex.substring(16, 17), 16) & 0x3) | 0x8).toString(16) + hex.substring(17, 20),
+      hex.substring(20, 32)
+    ].join('-');
   }
 
   async getUserId(): Promise<string> {
@@ -273,10 +278,9 @@ export class VectorizeDB implements VectorStore {
         return result.matches[0].metadata.userId as string;
       }
 
-      // Generate a random userId if none exists
-      const randomUserId =
-        Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
+      // Generate a cryptographically secure random userId if none exists
+      const randomBuffer = randomBytes(16);
+      const randomUserId = randomBuffer.toString('hex');
       const data: VectorizeVector = {
         id: this.generateUUID(),
         values: [0],

@@ -4,6 +4,7 @@ import {
   LanguageModelV1CallOptions,
   LanguageModelV1Message,
 } from "@ai-sdk/provider";
+import { randomBytes } from "crypto";
 
 import { Mem0ChatConfig, Mem0ChatModelId, Mem0ChatSettings, Mem0ConfigSettings, Mem0StreamResponse } from "./mem0-types";
 import { Mem0ClassSelector } from "./mem0-provider-selector";
@@ -11,7 +12,9 @@ import { Mem0ProviderSettings } from "./mem0-provider";
 import { addMemories, getMemories, retrieveMemories } from "./mem0-utils";
 
 const generateRandomId = () => {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  // Generate 16 bytes (128 bits) of cryptographically secure random data
+  const randomBuffer = randomBytes(16);
+  return randomBuffer.toString('hex');
 }
 
 export class Mem0GenericLanguageModel implements LanguageModelV1 {

@@ -1,4 +1,5 @@
 import { Client, Pool } from "pg";
+import { randomBytes } from "crypto";
 import { VectorStore } from "./base";
 import { SearchFilters, VectorStoreConfig, VectorStoreResult } from "../types";
 
@@ -311,10 +312,9 @@ export class PGVector implements VectorStore {
       return result.rows[0].user_id;
     }
 
-    // Generate a random user_id if none exists
-    const randomUserId =
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
+    // Generate a cryptographically secure random user_id if none exists
+    const randomBuffer = randomBytes(16);
+    const randomUserId = randomBuffer.toString('hex');
     await this.client.query(
       "INSERT INTO memory_migrations (user_id) VALUES ($1)",
       [randomUserId],
