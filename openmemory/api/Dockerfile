@@ -10,6 +10,9 @@ COPY ./shared /usr/src/shared
 # Copy local mem0 library
 COPY ./mem0 /usr/src/mem0
 
+# Copy root requirements.txt to make relative path work
+COPY ./requirements.txt /usr/src/requirements.txt
+
 # Install dependencies
 COPY ./openmemory/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

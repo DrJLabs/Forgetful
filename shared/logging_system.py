@@ -86,6 +86,11 @@ class StructuredLogger:
         entry = self._build_log_entry(message, level="CRITICAL", **kwargs)
         self.logger.critical(json.dumps(entry))
 
+    def exception(self, message: str, **kwargs):
+        """Log exception with structured format and traceback."""
+        entry = self._build_log_entry(message, level="ERROR", **kwargs)
+        self.logger.error(json.dumps(entry), exc_info=True)
+
 
 class StructuredFormatter(logging.Formatter):
     """Custom formatter for structured logging."""
