@@ -32,8 +32,8 @@ async def get_profile(user_id: str, db: Session = Depends(get_db)):
     except Exception:
         total_memories = 0
 
-    # Get total number of apps
-    apps = db.query(App).filter(App.owner == user)
+    # Get total number of apps - Fixed: Use owner_id instead of owner
+    apps = db.query(App).filter(App.owner_id == user.id)
     total_apps = apps.count()
 
     return {
