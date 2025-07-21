@@ -57,58 +57,30 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      # Multi-level Python caching strategy
-      - name: Cache Python Dependencies (pip cache)
-        if: matrix.language == 'python'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ env.CACHE_VERSION }}-codeql-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', 'mem0/pyproject.toml') }}
-          restore-keys: |
-            ${{ env.CACHE_VERSION }}-codeql-pip-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
-            ${{ env.CACHE_VERSION }}-codeql-pip-${{ runner.os }}-
-
-      - name: Cache Virtual Environment
-        if: matrix.language == 'python'
-        uses: actions/cache@v4
-        id: codeql-venv-cache
-        with:
-          path: ~/codeql-venv
-          key: ${{ env.CACHE_VERSION }}-codeql-venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-${{ hashFiles('**/requirements*.txt', 'mem0/pyproject.toml') }}
-          restore-keys: |
-            ${{ env.CACHE_VERSION }}-codeql-venv-${{ runner.os }}-${{ env.PYTHON_VERSION }}-
-
-      # Install Python dependencies (optimized)
-      - name: Install Python dependencies (optimized)
+      # Install Python dependencies (simplified)
+      - name: Install Python dependencies
         if: matrix.language == 'python'
         run: |
-          # Create or activate virtual environment
-          if [ ! -d ~/codeql-venv ]; then
-            python -m venv ~/codeql-venv
-          fi
-          source ~/codeql-venv/bin/activate
+          echo "📦 Installing Python dependencies..."
+          python -m pip install --upgrade pip
 
-          # Only install if cache miss or requirements changed
-          if [ "${{ steps.codeql-venv-cache.outputs.cache-hit }}" != "true" ]; then
-            echo "📦 Installing Python dependencies..."
-            python -m pip install --upgrade pip
-            # Install mem0 package
-            if [ -f mem0/pyproject.toml ]; then
-              cd mem0 && pip install -e .
-              cd ..
-            fi
-            # Install OpenMemory API requirements
-            if [ -f openmemory/api/requirements.txt ]; then
-              pip install -r openmemory/api/requirements.txt
-            fi
-            # Install shared dependencies
-            if [ -f requirements.txt ]; then
-              pip install -r requirements.txt
-            fi
-            echo "✅ Python dependencies installed and cached"
-          else
-            echo "✅ Using cached Python dependencies"
+          # Install mem0 package
+          if [ -f mem0/pyproject.toml ]; then
+            cd mem0 && pip install -e .
+            cd ..
           fi
+
+          # Install OpenMemory API requirements
+          if [ -f openmemory/api/requirements.txt ]; then
+            pip install -r openmemory/api/requirements.txt
+          fi
+
+          # Install shared dependencies
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+          echo "✅ Python dependencies installed"
 
       # Setup pnpm first
       - name: Setup pnpm
@@ -129,40 +101,30 @@ jobs:
             mem0/mem0-ts/pnpm-lock.yaml
             mem0/vercel-ai-sdk/pnpm-lock.yaml
 
-      # Cache node_modules directories for faster installs
-      - name: Cache OpenMemory UI node_modules
-        if: matrix.language == 'javascript-typescript'
-        uses: actions/cache@v4
-        id: cache-ui-modules
-        with:
-          path: openmemory/ui/node_modules
-          key: ${{ env.CACHE_VERSION }}-codeql-ui-modules-${{ hashFiles('openmemory/ui/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ env.CACHE_VERSION }}-codeql-ui-modules-
-
-      # Install Node.js dependencies (optimized)
-      - name: Install Node.js dependencies (optimized)
+      # Install Node.js dependencies (simplified)
+      - name: Install Node.js dependencies
         if: matrix.language == 'javascript-typescript'
         run: |
+          echo "📦 Installing Node.js dependencies..."
+
           # Install dependencies for OpenMemory UI
           if [ -f openmemory/ui/package.json ]; then
             cd openmemory/ui
-            if [ "${{ steps.cache-ui-modules.outputs.cache-hit }}" != "true" ]; then
-              echo "📦 Installing OpenMemory UI dependencies..."
-              pnpm install --frozen-lockfile --prefer-offline
-            else
-              echo "✅ Using cached OpenMemory UI dependencies"
-            fi
+            pnpm install --frozen-lockfile --prefer-offline
             cd ..
           fi
+
           # Install dependencies for mem0-ts
           if [ -f mem0/mem0-ts/package.json ]; then
             cd mem0/mem0-ts && pnpm install --frozen-lockfile --prefer-offline && cd ../..
           fi
+
           # Install dependencies for vercel-ai-sdk
           if [ -f mem0/vercel-ai-sdk/package.json ]; then
             cd mem0/vercel-ai-sdk && pnpm install --frozen-lockfile --prefer-offline && cd ../..
           fi
+
+          echo "✅ Node.js dependencies installed"
 
       # Initialize CodeQL with custom configuration
       - name: Initialize CodeQL
