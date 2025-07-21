@@ -224,6 +224,10 @@ def configure_openapi_security():
 # Setup MCP server
 setup_mcp_server(app)
 
+# Setup Cursor-specific MCP compatibility
+from app.mcp_cursor_fix import setup_cursor_compatibility
+setup_cursor_compatibility(app)
+
 # Include routers - using the corrected memories router
 app.include_router(memories_router)
 app.include_router(apps_router)
