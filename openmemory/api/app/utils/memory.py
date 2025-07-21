@@ -205,13 +205,13 @@ def _parse_environment_variables(config_dict):
                 if env_value:
                     parsed_config[key] = env_value
                     if key.lower() in {"password", "api_key"}:
-                        print(f"Loaded {env_var} from environment for {key}, but sensitive value is masked")
+                        logger.info(f"Loaded {env_var} from environment for {key}, but sensitive value is masked")
                         parsed_config[key] = "*****"  # Mask sensitive data
                     else:
-                        print(f"Loaded {env_var} from environment for {key}")
+                        logger.info(f"Loaded {env_var} from environment for {key}")
                 else:
-                    print(
-                        f"Warning: Environment variable {env_var} not found, keeping original value"
+                    logger.warning(
+                        f"Environment variable {env_var} not found, keeping original value"
                     )
                     parsed_config[key] = value
             elif isinstance(value, dict):
@@ -313,33 +313,33 @@ def get_memory_client(custom_instructions: str = None):
 
             # ALWAYS parse environment variables in the final config
             # This ensures that even default config values like "env:OPENAI_API_KEY" get parsed
-            print("Parsing environment variables in final config...")
+            logger.info("Parsing environment variables in final config...")
             config = _parse_environment_variables(config)
 
             # Debug: Show the final vector store configuration being used
-            print(
+            logger.info(
                 f"Final vector_store configuration: provider={config['vector_store']['provider']}"
             )
             sanitized_config = config['vector_store']['config'].copy()
             if "password" in sanitized_config:
                 sanitized_config["password"] = "*****"  # Mask sensitive data
-            print(f"Vector store config details: {sanitized_config}")
+            logger.info(f"Vector store config details: {sanitized_config}")
 
             # Check if config has changed by comparing hashes
             current_config_hash = _get_config_hash(config)
 
             # Only reinitialize if config changed or client doesn't exist
             if _memory_client is None or _config_hash != current_config_hash:
-                print(
+                logger.info(
                     f"Initializing memory client with config hash: {current_config_hash}"
                 )
                 try:
                     _memory_client = Memory.from_config(config_dict=config)
                     _config_hash = current_config_hash
-                    print("Memory client initialized successfully")
+                    logger.info("Memory client initialized successfully")
                 except Exception as init_error:
-                    print(f"Warning: Failed to initialize memory client: {init_error}")
-                    print(
+                    logger.warning(f"Failed to initialize memory client: {init_error}")
+                    logger.warning(
                         "Server will continue running with limited memory functionality"
                     )
                     _memory_client = None
