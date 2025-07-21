@@ -259,7 +259,7 @@ class TestMemoryClientIntegration:
         with patch("app.utils.memory.get_memory_client") as mock_get_client:
             # Mock client that times out
             mock_client = MagicMock()
-            mock_client.add.side_effect = asyncio.TimeoutError("Request timeout")
+            mock_client.add.side_effect = TimeoutError("Request timeout")
             mock_get_client.return_value = mock_client
 
             memory_data = TestDataFactory.create_memory_data("timeout_user")

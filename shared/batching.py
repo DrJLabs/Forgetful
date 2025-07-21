@@ -19,11 +19,12 @@ import threading
 import time
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from shared.connection_pool import global_pool_manager
 from shared.logging_system import get_logger
@@ -47,11 +48,11 @@ class BatchRequest:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     operation: str = ""
     data: Any = None
-    callback: Optional[Callable] = None
+    callback: Callable | None = None
     priority: BatchPriority = BatchPriority.NORMAL
     created_at: float = field(default_factory=time.time)
     timeout: float = 30.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -109,7 +110,7 @@ class BatchMetrics:
         with self.lock:
             self.retry_count += 1
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get batch processing statistics."""
         with self.lock:
             avg_batch_size = self.batch_size_total / max(self.batches_processed, 1)
@@ -193,7 +194,7 @@ class BatchProcessor:
         # Wait for queue to empty
         try:
             await asyncio.wait_for(self.queue.join(), timeout=5.0)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(f"Timeout waiting for queue to empty in '{self.name}'")
 
         logger.info(f"Batch processor '{self.name}' stopped")
@@ -227,7 +228,7 @@ class BatchProcessor:
         try:
             result = await asyncio.wait_for(future, timeout=request.timeout)
             return result
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.metrics.record_timeout()
             raise
 
@@ -288,7 +289,7 @@ class BatchProcessor:
                 # Process the batch
                 await self._process_batch(batch)
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # No work available, continue
                 continue
             except Exception as e:
@@ -299,7 +300,7 @@ class BatchProcessor:
                 if batch is not None:
                     self.queue.task_done()
 
-    async def _process_batch(self, batch: List[BatchRequest]):
+    async def _process_batch(self, batch: list[BatchRequest]):
         """Process a batch of requests."""
         if not batch:
             return
@@ -311,7 +312,7 @@ class BatchProcessor:
             results = await self._process_with_retries(batch)
 
             # Send results to callbacks
-            for request, result in zip(batch, results):
+            for request, result in zip(batch, results, strict=False):
                 if request.callback:
                     if isinstance(result, Exception):
                         # Handle Future callback for exceptions
@@ -339,7 +340,7 @@ class BatchProcessor:
                     request.callback.set_exception(e)
                     self.metrics.record_request_failed()
 
-    async def _process_with_retries(self, batch: List[BatchRequest]) -> List[Any]:
+    async def _process_with_retries(self, batch: list[BatchRequest]) -> list[Any]:
         """Process batch with retry logic."""
         last_exception = None
 
@@ -366,7 +367,7 @@ class BatchProcessor:
         # Return exceptions for each request
         return [last_exception] * len(batch)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get comprehensive batch processor statistics."""
         stats = self.metrics.get_stats()
         stats.update(
@@ -415,7 +416,7 @@ class MemoryWriteBatcher:
     async def add_memory_write(
         self,
         user_id: str,
-        memory_data: Dict,
+        memory_data: dict,
         priority: BatchPriority = BatchPriority.NORMAL,
     ) -> str:
         """Add memory write operation to batch."""
@@ -428,7 +429,7 @@ class MemoryWriteBatcher:
 
         return await self.processor.add_request(request)
 
-    async def _process_memory_writes(self, batch: List[BatchRequest]) -> List[Any]:
+    async def _process_memory_writes(self, batch: list[BatchRequest]) -> list[Any]:
         """Process batch of memory write operations."""
         results = []
 
@@ -464,7 +465,7 @@ class MemoryWriteBatcher:
 
         return results
 
-    async def _insert_memory(self, conn, user_id: str, memory_data: Dict) -> str:
+    async def _insert_memory(self, conn, user_id: str, memory_data: dict) -> str:
         """Insert memory into database."""
         # Simplified memory insertion - would integrate with actual mem0 logic
         query = """
@@ -482,7 +483,7 @@ class MemoryWriteBatcher:
 
         return str(memory_id)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get memory write batcher statistics."""
         return self.processor.get_stats()
 
@@ -518,11 +519,11 @@ class VectorSearchBatcher:
     async def add_vector_search(
         self,
         user_id: str,
-        query_embedding: List[float],
+        query_embedding: list[float],
         limit: int = 10,
-        filters: Dict = None,
+        filters: dict = None,
         priority: BatchPriority = BatchPriority.NORMAL,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Add vector search operation to batch."""
         request = BatchRequest(
             operation="vector_search",
@@ -538,7 +539,7 @@ class VectorSearchBatcher:
 
         return await self.processor.add_request(request)
 
-    async def _process_vector_searches(self, batch: List[BatchRequest]) -> List[Any]:
+    async def _process_vector_searches(self, batch: list[BatchRequest]) -> list[Any]:
         """Process batch of vector search operations."""
         results = []
 
@@ -571,7 +572,7 @@ class VectorSearchBatcher:
 
         return results
 
-    async def _execute_vector_search(self, conn, search_data: Dict) -> List[Dict]:
+    async def _execute_vector_search(self, conn, search_data: dict) -> list[dict]:
         """Execute vector similarity search."""
         # Simplified vector search - would integrate with actual pgvector logic
         query = """
@@ -600,7 +601,7 @@ class VectorSearchBatcher:
             for row in rows
         ]
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get vector search batcher statistics."""
         return self.processor.get_stats()
 
@@ -637,9 +638,9 @@ class GraphQueryBatcher:
         self,
         user_id: str,
         query: str,
-        parameters: Dict = None,
+        parameters: dict = None,
         priority: BatchPriority = BatchPriority.NORMAL,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Add graph query operation to batch."""
         request = BatchRequest(
             operation="graph_query",
@@ -650,7 +651,7 @@ class GraphQueryBatcher:
 
         return await self.processor.add_request(request)
 
-    async def _process_graph_queries(self, batch: List[BatchRequest]) -> List[Any]:
+    async def _process_graph_queries(self, batch: list[BatchRequest]) -> list[Any]:
         """Process batch of graph query operations."""
         results = []
 
@@ -677,13 +678,13 @@ class GraphQueryBatcher:
 
         return results
 
-    async def _execute_graph_query(self, session, query_data: Dict) -> List[Dict]:
+    async def _execute_graph_query(self, session, query_data: dict) -> list[dict]:
         """Execute graph query."""
         result = await session.run(query_data["query"], query_data["parameters"])
 
         return await result.data()
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get graph query batcher statistics."""
         return self.processor.get_stats()
 
@@ -745,7 +746,7 @@ class BatchingManager:
             except Exception as e:
                 logger.error(f"Batching monitoring error: {e}")
 
-    def get_comprehensive_stats(self) -> Dict[str, Any]:
+    def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get comprehensive statistics from all batchers."""
         return {
             "timestamp": datetime.now().isoformat(),
@@ -767,7 +768,7 @@ def batch_memory_write(priority: BatchPriority = BatchPriority.NORMAL):
 
     def decorator(func):
         @wraps(func)
-        async def wrapper(user_id: str, memory_data: Dict, *args, **kwargs):
+        async def wrapper(user_id: str, memory_data: dict, *args, **kwargs):
             # Use batching manager
             result = (
                 await global_batching_manager.memory_write_batcher.add_memory_write(
@@ -788,9 +789,9 @@ def batch_vector_search(priority: BatchPriority = BatchPriority.NORMAL):
         @wraps(func)
         async def wrapper(
             user_id: str,
-            query_embedding: List[float],
+            query_embedding: list[float],
             limit: int = 10,
-            filters: Dict = None,
+            filters: dict = None,
             *args,
             **kwargs,
         ):
@@ -813,7 +814,7 @@ def batch_graph_query(priority: BatchPriority = BatchPriority.NORMAL):
     def decorator(func):
         @wraps(func)
         async def wrapper(
-            user_id: str, query: str, parameters: Dict = None, *args, **kwargs
+            user_id: str, query: str, parameters: dict = None, *args, **kwargs
         ):
             # Use batching manager
             result = await global_batching_manager.graph_query_batcher.add_graph_query(

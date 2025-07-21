@@ -15,9 +15,10 @@ import hashlib
 import json
 import pickle
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 import msgpack
 
@@ -168,7 +169,7 @@ class OptimizedL1Cache:
             "hot_keys": set(),
         }
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from L1 cache with LRU updates."""
         async with self.lock:
             if key not in self.cache:
@@ -195,7 +196,7 @@ class OptimizedL1Cache:
             logger.debug(f"L1 Cache HIT for key: {key}")
             return entry.value
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in L1 cache with size-based eviction."""
         async with self.lock:
             ttl = ttl or self.config.l1_ttl
@@ -222,7 +223,7 @@ class OptimizedL1Cache:
             logger.debug(f"L1 Cache SET for key: {key}, size: {entry.size}, TTL: {ttl}")
             return True
 
-    async def warm(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def warm(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Warm cache with hot memory data."""
         result = await self.set(key, value, ttl)
         if result:
@@ -268,7 +269,7 @@ class OptimizedL1Cache:
                 f"L1 Cache invalidated {len(keys_to_remove)} entries for user: {user_id}"
             )
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get L1 cache statistics."""
         total_requests = self.metrics["hits"] + self.metrics["misses"]
         hit_rate = self.metrics["hits"] / max(total_requests, 1)
@@ -325,7 +326,7 @@ class OptimizedL2RedisCache:
             logger.warning(f"Redis connection failed, using L1 fallback: {e}")
             self.redis_client = None
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from L2 Redis cache with async support."""
         if self.redis_client:
             try:
@@ -349,7 +350,7 @@ class OptimizedL2RedisCache:
         self.metrics["fallbacks"] += 1
         return await self.fallback_cache.get(key)
 
-    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+    async def set(self, key: str, value: Any, ttl: int | None = None) -> bool:
         """Set value in L2 Redis cache with async support."""
         ttl = ttl or self.config.l2_ttl
 
@@ -399,7 +400,7 @@ class OptimizedL2RedisCache:
         # Also invalidate fallback cache
         await self.fallback_cache.invalidate_user_cache(user_id)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get L2 cache statistics."""
         total_requests = self.metrics["hits"] + self.metrics["misses"]
         hit_rate = self.metrics["hits"] / max(total_requests, 1)
@@ -459,7 +460,7 @@ class OptimizedL3QueryCache:
         """Generate key for prepared statement."""
         return hashlib.sha256(query.encode()).hexdigest()[:16]
 
-    async def get_query_result(self, query: str, params: tuple = None) -> Optional[Any]:
+    async def get_query_result(self, query: str, params: tuple = None) -> Any | None:
         """Get cached query result."""
         cache_key = self.get_cache_key(query, params)
 
@@ -556,7 +557,7 @@ class OptimizedL3QueryCache:
 
         logger.debug(f"L3 Cache cleaned up {cleaned_count} prepared statements")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get L3 cache statistics."""
         total_requests = self.metrics["hits"] + self.metrics["misses"]
         hit_rate = self.metrics["hits"] / max(total_requests, 1)
@@ -597,13 +598,13 @@ class MultiLayerCache:
             "cache_misses": 0,
         }
 
-    def _generate_key(self, prefix: str, params: Dict) -> str:
+    def _generate_key(self, prefix: str, params: dict) -> str:
         """Generate cache key from parameters."""
         param_str = json.dumps(params, sort_keys=True)
         hash_val = hashlib.sha256(param_str.encode()).hexdigest()[:16]
         return f"{prefix}:{hash_val}"
 
-    async def get(self, key: str) -> Optional[Any]:
+    async def get(self, key: str) -> Any | None:
         """Get value from multi-layer cache (L1 → L2 → L3)."""
         self.metrics["total_requests"] += 1
 
@@ -633,7 +634,7 @@ class MultiLayerCache:
         # Set in L2 cache
         await self.l2_cache.set(key, value, ttl)
 
-    async def warm_cache(self, user_id: str, hot_memories: List[Dict]):
+    async def warm_cache(self, user_id: str, hot_memories: list[dict]):
         """Warm cache with hot memories and frequent queries."""
         for memory in hot_memories:
             # Warm L1 cache with hot memory data
@@ -664,7 +665,7 @@ class MultiLayerCache:
         """Get L3 query cache instance."""
         return self.l3_cache
 
-    def get_comprehensive_stats(self) -> Dict[str, Any]:
+    def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get comprehensive statistics from all cache layers."""
         total_requests = self.metrics["total_requests"]
         overall_hit_rate = (
@@ -791,7 +792,7 @@ def query_cached(ttl: int = 3600):
 
 
 # Cache warming utilities
-async def warm_cache(cache_name: str, data: Dict[str, Any], ttl: int = 3600):
+async def warm_cache(cache_name: str, data: dict[str, Any], ttl: int = 3600):
     """Warm cache with predefined data."""
     # Use global_cache directly for multi-layer warming
     for key, value in data.items():
@@ -801,7 +802,7 @@ async def warm_cache(cache_name: str, data: Dict[str, Any], ttl: int = 3600):
     logger.info(f"Cache {cache_name} warmed with {len(data)} entries")
 
 
-async def cache_health_check() -> Dict[str, Any]:
+async def cache_health_check() -> dict[str, Any]:
     """Perform cache health check."""
     health = {
         "status": "healthy",

@@ -8,7 +8,7 @@ import argparse
 import json
 import subprocess
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 
 class GitHubProjectManager:
@@ -58,7 +58,7 @@ class GitHubProjectManager:
             },
         }
 
-    def run_graphql_query(self, query: str, variables: Dict[str, Any] = None) -> Dict:
+    def run_graphql_query(self, query: str, variables: dict[str, Any] = None) -> dict:
         """Execute a GraphQL query using GitHub CLI"""
         cmd = ["gh", "api", "graphql", "-f", f"query={query}"]
 
@@ -79,7 +79,7 @@ class GitHubProjectManager:
             print(f"Failed to parse JSON response: {e}")
             return {}
 
-    def get_project_overview(self) -> Dict:
+    def get_project_overview(self) -> dict:
         """Get comprehensive project overview"""
         query = """
         query($orgLogin: String!, $projectNumber: Int!) {
@@ -169,7 +169,7 @@ class GitHubProjectManager:
 
         return self.run_graphql_query(query, variables)
 
-    def generate_project_analytics(self) -> Dict:
+    def generate_project_analytics(self) -> dict:
         """Generate comprehensive project analytics"""
         data = self.get_project_overview()
 
@@ -249,7 +249,7 @@ class GitHubProjectManager:
 
         return analytics
 
-    def create_sprint_board_view(self, sprint_name: str) -> Dict:
+    def create_sprint_board_view(self, sprint_name: str) -> dict:
         """Create a virtual sprint board view"""
         data = self.get_project_overview()
 
@@ -314,7 +314,7 @@ class GitHubProjectManager:
             },
         }
 
-    def bulk_update_items(self, updates: List[Dict]) -> Dict:
+    def bulk_update_items(self, updates: list[dict]) -> dict:
         """Bulk update multiple project items"""
         results = {"success": [], "failed": []}
 
@@ -383,7 +383,7 @@ class GitHubProjectManager:
             and result["data"]["updateProjectV2ItemFieldValue"]
         )
 
-    def generate_velocity_report(self, weeks: int = 4) -> Dict:
+    def generate_velocity_report(self, weeks: int = 4) -> dict:
         """Generate velocity report for the last N weeks"""
         data = self.get_project_overview()
 
@@ -510,7 +510,7 @@ def main():
         sys.exit(1)
 
 
-def print_analytics(analytics: Dict):
+def print_analytics(analytics: dict):
     """Pretty print analytics data"""
     print("📊 PROJECT ANALYTICS")
     print("=" * 50)
@@ -538,7 +538,7 @@ def print_analytics(analytics: Dict):
         print(f"• {metric.replace('_', ' ').title()}: {value}%")
 
 
-def print_sprint_board(board_data: Dict):
+def print_sprint_board(board_data: dict):
     """Pretty print sprint board"""
     print(f"🏃 SPRINT BOARD: {board_data.get('sprint', 'Unknown')}")
     print("=" * 50)
@@ -570,7 +570,7 @@ def print_sprint_board(board_data: Dict):
             print(f"   Component: {item['component']} | Assignees: {assignees}")
 
 
-def print_velocity_report(velocity: Dict):
+def print_velocity_report(velocity: dict):
     """Pretty print velocity report"""
     print(f"🚀 VELOCITY REPORT ({velocity.get('period_weeks', 0)} weeks)")
     print("=" * 50)
@@ -591,7 +591,7 @@ def print_velocity_report(velocity: Dict):
         print(f"{effort_emoji} {item['title']} - {item['effort']}")
 
 
-def print_health_check(health: Dict):
+def print_health_check(health: dict):
     """Pretty print health check"""
     print("🏥 PROJECT HEALTH CHECK")
     print("=" * 30)

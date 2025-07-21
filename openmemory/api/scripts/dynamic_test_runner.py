@@ -10,14 +10,14 @@ This script automatically selects the optimal number of workers based on:
 - Historical performance data
 """
 
+import argparse
+import json
+import multiprocessing
+import os
 import subprocess
 import sys
-import os
-import json
 import time
-import multiprocessing
-from typing import List, Tuple, Optional, Dict, Any
-import argparse
+from typing import Any
 
 
 class DynamicTestRunner:
@@ -33,9 +33,9 @@ class DynamicTestRunner:
         """Load historical performance data for intelligent decisions."""
         if os.path.exists(self.cache_file):
             try:
-                with open(self.cache_file, "r") as f:
+                with open(self.cache_file) as f:
                     self.performance_cache = json.load(f)
-            except (json.JSONDecodeError, IOError):
+            except (OSError, json.JSONDecodeError):
                 self.performance_cache = {}
 
     def save_performance_cache(self):
@@ -43,10 +43,10 @@ class DynamicTestRunner:
         try:
             with open(self.cache_file, "w") as f:
                 json.dump(self.performance_cache, f, indent=2)
-        except IOError:
+        except OSError:
             pass  # Gracefully handle if we can't save cache
 
-    def discover_tests(self, test_path: str) -> Tuple[int, List[str]]:
+    def discover_tests(self, test_path: str) -> tuple[int, list[str]]:
         """Discover tests and analyze their characteristics."""
         try:
             result = subprocess.run(
@@ -118,7 +118,7 @@ class DynamicTestRunner:
             return 0, []
 
     def calculate_optimal_workers(
-        self, test_count: int, test_types: List[str], test_path: str
+        self, test_count: int, test_types: list[str], test_path: str
     ) -> int:
         """Calculate optimal number of workers based on multiple factors."""
 
@@ -147,7 +147,7 @@ class DynamicTestRunner:
             # Large test suites - scale with CPU cores
             return min(8, max(4, self.cpu_cores // 2))
 
-    def get_distribution_strategy(self, test_count: int, test_types: List[str]) -> str:
+    def get_distribution_strategy(self, test_count: int, test_types: list[str]) -> str:
         """Select optimal distribution strategy based on test characteristics."""
 
         slow_tests = test_types.count("slow")
@@ -169,8 +169,8 @@ class DynamicTestRunner:
         workers: int,
         distribution: str,
         coverage: bool = True,
-        extra_args: List[str] = None,
-    ) -> List[str]:
+        extra_args: list[str] = None,
+    ) -> list[str]:
         """Build optimized pytest command."""
 
         cmd = ["python", "-m", "pytest", test_path]
@@ -201,9 +201,9 @@ class DynamicTestRunner:
         self,
         test_path: str,
         coverage: bool = True,
-        extra_args: List[str] = None,
+        extra_args: list[str] = None,
         dry_run: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Run tests with optimal configuration."""
 
         print(f"🔍 Analyzing test suite: {test_path}")
@@ -290,7 +290,7 @@ class DynamicTestRunner:
 
     def estimate_improvement(
         self, test_count: int, workers: int, execution_time: float
-    ) -> Optional[float]:
+    ) -> float | None:
         """Estimate performance improvement based on known baselines."""
 
         # Known baseline for test_simple.py (16 tests)

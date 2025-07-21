@@ -12,7 +12,7 @@ import time
 import uuid
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 # Thread-local storage for correlation context
 _correlation_context = threading.local()
@@ -46,7 +46,7 @@ class StructuredLogger:
         """Get current correlation ID from context."""
         return getattr(_correlation_context, "correlation_id", None)
 
-    def _build_log_entry(self, message: str, **kwargs) -> Dict[str, Any]:
+    def _build_log_entry(self, message: str, **kwargs) -> dict[str, Any]:
         """Build structured log entry with metadata."""
         entry = {
             "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -127,7 +127,7 @@ class CorrelationContextManager:
         _correlation_context.correlation_id = correlation_id
 
     @staticmethod
-    def get_correlation_id() -> Optional[str]:
+    def get_correlation_id() -> str | None:
         """Get correlation ID for current thread."""
         return getattr(_correlation_context, "correlation_id", None)
 
@@ -138,7 +138,7 @@ class CorrelationContextManager:
 
     @staticmethod
     @contextmanager
-    def correlation_context(correlation_id: Optional[str] = None):
+    def correlation_context(correlation_id: str | None = None):
         """Context manager for correlation tracking."""
         if correlation_id is None:
             correlation_id = CorrelationContextManager.generate_correlation_id()
@@ -201,7 +201,7 @@ class PerformanceLogger:
                 **context,
             )
 
-    def log_metric(self, metric_name: str, value: Union[int, float], **context):
+    def log_metric(self, metric_name: str, value: int | float, **context):
         """Log a performance metric."""
         self.logger.info(
             f"Metric: {metric_name}",

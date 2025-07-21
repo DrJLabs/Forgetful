@@ -8,7 +8,7 @@ import argparse
 import json
 import subprocess
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 
 class ProjectWorkflowManager:
@@ -38,7 +38,7 @@ class ProjectWorkflowManager:
             },
         }
 
-    def run_graphql_query(self, query: str, variables: Dict[str, Any] = None) -> Dict:
+    def run_graphql_query(self, query: str, variables: dict[str, Any] = None) -> dict:
         """Execute a GraphQL query using GitHub CLI"""
         cmd = ["gh", "api", "graphql", "-f", f"query={query}"]
 
@@ -59,7 +59,7 @@ class ProjectWorkflowManager:
             print(f"Failed to parse JSON response: {e}")
             return {}
 
-    def create_automation_rules(self) -> Dict:
+    def create_automation_rules(self) -> dict:
         """Create project automation rules using GraphQL"""
 
         # Example: Create a workflow that automatically moves items to "In Progress"
@@ -97,7 +97,7 @@ class ProjectWorkflowManager:
 
         return automation_config
 
-    def simulate_webhook_processing(self, webhook_event: Dict) -> Dict:
+    def simulate_webhook_processing(self, webhook_event: dict) -> dict:
         """Simulate processing a GitHub webhook event"""
 
         event_type = webhook_event.get("action")
@@ -123,7 +123,7 @@ class ProjectWorkflowManager:
 
         return results
 
-    def process_new_issue(self, issue_data: Dict) -> List[str]:
+    def process_new_issue(self, issue_data: dict) -> list[str]:
         """Process a new issue and determine automation actions"""
         actions = []
 
@@ -155,7 +155,7 @@ class ProjectWorkflowManager:
 
         return actions
 
-    def process_new_pr(self, pr_data: Dict) -> List[str]:
+    def process_new_pr(self, pr_data: dict) -> list[str]:
         """Process a new PR and determine automation actions"""
         actions = []
 
@@ -173,7 +173,7 @@ class ProjectWorkflowManager:
 
         return actions
 
-    def process_completion(self, item_data: Dict) -> List[str]:
+    def process_completion(self, item_data: dict) -> list[str]:
         """Process completion of issue/PR"""
         actions = []
 
@@ -185,7 +185,7 @@ class ProjectWorkflowManager:
 
         return actions
 
-    def detect_component(self, title: str, body: str, labels: List[str]) -> str:
+    def detect_component(self, title: str, body: str, labels: list[str]) -> str:
         """Detect component based on content analysis"""
 
         component_keywords = {
@@ -207,7 +207,7 @@ class ProjectWorkflowManager:
 
         return "unknown"
 
-    def detect_priority(self, title: str, body: str, labels: List[str]) -> str:
+    def detect_priority(self, title: str, body: str, labels: list[str]) -> str:
         """Detect priority based on keywords"""
 
         priority_keywords = {
@@ -251,7 +251,7 @@ class ProjectWorkflowManager:
         else:
             return "xl"
 
-    def find_linked_issues(self, pr_body: str) -> List[str]:
+    def find_linked_issues(self, pr_body: str) -> list[str]:
         """Find issue numbers mentioned in PR body"""
         import re
 
@@ -268,7 +268,7 @@ class ProjectWorkflowManager:
 
         return list(set(linked_issues))  # Remove duplicates
 
-    def generate_automation_report(self) -> Dict:
+    def generate_automation_report(self) -> dict:
         """Generate a report on current automation capabilities"""
 
         report = {
@@ -351,7 +351,7 @@ def main():
                     },
                 }
             else:
-                with open(args.event_file, "r") as f:
+                with open(args.event_file) as f:
                     sample_event = json.load(f)
 
             result = manager.simulate_webhook_processing(sample_event)
@@ -397,7 +397,7 @@ def main():
         sys.exit(1)
 
 
-def print_workflow_report(data: Dict, command: str):
+def print_workflow_report(data: dict, command: str):
     """Pretty print workflow automation reports"""
 
     if command == "report":

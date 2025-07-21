@@ -13,7 +13,13 @@ from app.config import DEFAULT_APP_ID, USER_ID
 from app.database import Base, SessionLocal, engine
 from app.mcp_server import setup_mcp_server
 from app.models import App, User
-from app.routers import apps_router, config_router, connector_router, memories_router, stats_router
+from app.routers import (
+    apps_router,
+    config_router,
+    connector_router,
+    memories_router,
+    stats_router,
+)
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -28,8 +34,8 @@ app = FastAPI(
     # OpenAPI 3.1.0 security scheme for ChatGPT OIDC integration
     servers=[
         {"url": "https://mcp.drjlabs.com", "description": "Production server"},
-        {"url": "http://localhost:8765", "description": "Development server"}
-    ]
+        {"url": "http://localhost:8765", "description": "Development server"},
+    ],
 )
 
 
@@ -115,8 +121,8 @@ app.add_middleware(
     CORSMiddleware,
     # Tightened CORS for production security
     allow_origins=[
-        "http://localhost:3000",           # Local UI development
-        "https://chat.openai.com",         # ChatGPT origin
+        "http://localhost:3000",  # Local UI development
+        "https://chat.openai.com",  # ChatGPT origin
     ],
     allow_credentials=False,  # Bearer tokens don't need credentials
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -192,11 +198,12 @@ async def init_database():
 # OIDC Discovery: OpenAPI schema points directly to oidc.drjlabs.com/.well-known/openid-configuration
 # This follows best practice: resource server publishes schema, auth server publishes discovery
 
+
 # Add OpenAPI security scheme for ChatGPT integration
 @app.on_event("startup")
 def configure_openapi_security():
     """Configure OpenAPI security scheme for OIDC authentication"""
-    if not hasattr(app, 'openapi_schema') or app.openapi_schema is None:
+    if not hasattr(app, "openapi_schema") or app.openapi_schema is None:
         from fastapi.openapi.utils import get_openapi
 
         # Generate base OpenAPI schema
@@ -205,14 +212,14 @@ def configure_openapi_security():
             version=app.version,
             description=app.description,
             routes=app.routes,
-            servers=app.servers
+            servers=app.servers,
         )
 
         # Add OIDC security scheme
         openapi_schema["components"]["securitySchemes"] = {
             "oidc": {
                 "type": "openIdConnect",
-                "openIdConnectUrl": "https://oidc.drjlabs.com/.well-known/openid-configuration"
+                "openIdConnectUrl": "https://oidc.drjlabs.com/.well-known/openid-configuration",
             }
         }
 
@@ -221,8 +228,14 @@ def configure_openapi_security():
 
         app.openapi_schema = openapi_schema
 
+
 # Setup MCP server
 setup_mcp_server(app)
+
+# Setup Cursor-specific MCP compatibility
+from app.mcp_cursor_fix import setup_cursor_compatibility
+
+setup_cursor_compatibility(app)
 
 # Include routers - using the corrected memories router
 app.include_router(memories_router)
@@ -235,7 +248,7 @@ connector_app = FastAPI(
     title="OpenMemory ChatGPT Connector",
     docs_url=None,  # Disable docs for security
     redoc_url=None,  # Disable redoc for security
-    openapi_url=None  # Disable OpenAPI for security
+    openapi_url=None,  # Disable OpenAPI for security
 )
 
 # ChatGPT-specific CORS configuration

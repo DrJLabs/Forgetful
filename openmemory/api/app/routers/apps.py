@@ -1,11 +1,11 @@
-from typing import Optional
 from uuid import UUID
 
-from app.database import get_db
-from app.models import App, Memory, MemoryAccessLog, MemoryState
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session, joinedload
+
+from app.database import get_db
+from app.models import App, Memory, MemoryAccessLog, MemoryState
 
 router = APIRouter(prefix="/api/v1/apps", tags=["apps"])
 
@@ -21,8 +21,8 @@ def get_app_or_404(db: Session, app_id: UUID) -> App:
 # List all apps with filtering
 @router.get("/")
 async def list_apps(
-    name: Optional[str] = None,
-    is_active: Optional[bool] = None,
+    name: str | None = None,
+    is_active: bool | None = None,
     sort_by: str = "name",
     sort_direction: str = "asc",
     page: int = Query(1, ge=1),

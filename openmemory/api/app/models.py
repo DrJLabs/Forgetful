@@ -3,8 +3,6 @@ import enum
 import uuid
 
 import sqlalchemy as sa
-from app.database import Base
-from app.utils.categorization import get_categories_for_memory
 from sqlalchemy import (
     JSON,
     UUID,
@@ -20,6 +18,9 @@ from sqlalchemy import (
     event,
 )
 from sqlalchemy.orm import Session, relationship
+
+from app.database import Base
+from app.utils.categorization import get_categories_for_memory
 
 # Import pgvector types for proper vector storage
 try:

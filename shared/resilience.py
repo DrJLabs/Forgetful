@@ -11,10 +11,11 @@ This module provides comprehensive resilience patterns including:
 import random
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Dict
+from typing import Any
 
 from .errors import ErrorCategory, ErrorRecovery, ErrorSeverity, StructuredError
 from .logging_system import get_logger
@@ -272,7 +273,7 @@ class ResilienceManager:
         return self.fallback_handlers[name]
 
     def execute_with_resilience(
-        self, func: Callable, resilience_config: Dict[str, Any], *args, **kwargs
+        self, func: Callable, resilience_config: dict[str, Any], *args, **kwargs
     ) -> Any:
         """
         Execute function with comprehensive resilience patterns.
@@ -320,7 +321,7 @@ class ResilienceManager:
             self.metrics["failed_calls"] += 1
             raise
 
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict[str, Any]:
         """Get resilience metrics."""
         return {
             **self.metrics,
@@ -381,7 +382,7 @@ def fallback(fallback_func: Callable):
     return decorator
 
 
-def resilient(resilience_config: Dict[str, Any] = None):
+def resilient(resilience_config: dict[str, Any] = None):
     """Decorator for comprehensive resilience."""
 
     def decorator(func: Callable) -> Callable:

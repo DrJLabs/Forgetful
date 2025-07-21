@@ -238,12 +238,12 @@ class TestErrorHandlingUtils:
         import asyncio
 
         # Mock timeout error
-        timeout_error = asyncio.TimeoutError("Request timeout")
+        timeout_error = TimeoutError("Request timeout")
 
         # Test error handling
         try:
             raise timeout_error
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             assert str(e) == "Request timeout"
             assert isinstance(e, asyncio.TimeoutError)
 

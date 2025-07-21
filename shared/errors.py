@@ -9,7 +9,7 @@ import json
 import traceback
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class ErrorSeverity(Enum):
@@ -64,11 +64,11 @@ class StructuredError(Exception):
         error_code: str,
         category: ErrorCategory = ErrorCategory.UNKNOWN,
         severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-        user_message: Optional[str] = None,
-        technical_details: Optional[Dict[str, Any]] = None,
-        recovery_strategy: Optional[ErrorRecovery] = None,
-        correlation_id: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None,
+        user_message: str | None = None,
+        technical_details: dict[str, Any] | None = None,
+        recovery_strategy: ErrorRecovery | None = None,
+        correlation_id: str | None = None,
+        context: dict[str, Any] | None = None,
     ):
         super().__init__(message)
         self.message = message
@@ -100,7 +100,7 @@ class StructuredError(Exception):
         }
         return user_messages.get(self.category, "An error occurred. Please try again.")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary for logging/serialization."""
         return {
             "error_code": self.error_code,
@@ -333,7 +333,7 @@ class ErrorClassifier:
             )
 
     @staticmethod
-    def analyze_error_patterns(errors: List[StructuredError]) -> Dict[str, Any]:
+    def analyze_error_patterns(errors: list[StructuredError]) -> dict[str, Any]:
         """
         Analyze patterns in error data.
 
@@ -388,7 +388,7 @@ class ErrorClassifier:
 
 
 # Error handling utilities
-def handle_error(error: Exception, context: Dict[str, Any] = None) -> StructuredError:
+def handle_error(error: Exception, context: dict[str, Any] = None) -> StructuredError:
     """
     Handle and classify an error with context.
 
@@ -411,7 +411,7 @@ def handle_error(error: Exception, context: Dict[str, Any] = None) -> Structured
     return structured_error
 
 
-def create_error_response(error: StructuredError) -> Dict[str, Any]:
+def create_error_response(error: StructuredError) -> dict[str, Any]:
     """
     Create a standardized error response for APIs.
 

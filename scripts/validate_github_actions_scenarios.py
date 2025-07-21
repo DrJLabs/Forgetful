@@ -11,14 +11,15 @@ Usage:
     python scripts/validate_github_actions_scenarios.py [--scenario SCENARIO]
 """
 
+import argparse
 import asyncio
 import json
 import logging
-import argparse
-import docker
+import sys
 import time
 from datetime import datetime
-import sys
+
+import docker
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
