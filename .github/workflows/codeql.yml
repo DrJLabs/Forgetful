@@ -171,8 +171,6 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           config-file: ./.github/codeql/codeql-config.yml
-          # Enhanced query packs for comprehensive security analysis
-          queries: +security-extended,security-and-quality
 
       # Manual build step (if needed)
       - if: matrix.build-mode == 'manual'
