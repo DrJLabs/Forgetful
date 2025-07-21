@@ -13,12 +13,15 @@ updates:
     labels:
       - 'dependencies'
       - 'python'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
 
   # Embedchain Python package - REMOVED (legacy, not maintained)
 
   # OpenMemory API Python package
   - package-ecosystem: 'pip'
-    directory: '/mem0/openmemory/api'
+    directory: '/openmemory/api'
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 5
@@ -30,6 +33,9 @@ updates:
       - 'dependencies'
       - 'python'
       - 'openmemory'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
 
   # Server Python package
   - package-ecosystem: 'pip'
@@ -45,6 +51,9 @@ updates:
       - 'dependencies'
       - 'python'
       - 'server'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
 
   # Main TypeScript package
   - package-ecosystem: 'npm'
@@ -59,6 +68,9 @@ updates:
     labels:
       - 'dependencies'
       - 'typescript'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
 
   # Vercel AI SDK TypeScript package
   - package-ecosystem: 'npm'
@@ -74,10 +86,13 @@ updates:
       - 'dependencies'
       - 'typescript'
       - 'vercel-ai-sdk'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
 
   # OpenMemory UI TypeScript package
   - package-ecosystem: 'npm'
-    directory: '/mem0/openmemory/ui'
+    directory: '/openmemory/ui'
     schedule:
       interval: 'weekly'
     open-pull-requests-limit: 5
@@ -89,6 +104,9 @@ updates:
       - 'dependencies'
       - 'typescript'
       - 'openmemory'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
 
   # Community TypeScript package - REMOVED (not actively maintained)
 
@@ -105,3 +123,42 @@ updates:
     labels:
       - 'dependencies'
       - 'github-actions'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
+
+  # Root level dependencies
+  - package-ecosystem: 'pip'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: 'all'
+    reviewers:
+      - 'maintainers'
+    labels:
+      - 'dependencies'
+      - 'python'
+      - 'root'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
+
+  # OpenMemory root UI dependencies
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    allow:
+      - dependency-type: 'all'
+    reviewers:
+      - 'maintainers'
+    labels:
+      - 'dependencies'
+      - 'typescript'
+      - 'root'
+    # Security-focused enhancements
+    target-branch: 'main'
+    rebase-strategy: 'auto'
