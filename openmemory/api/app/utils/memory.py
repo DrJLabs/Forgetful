@@ -49,9 +49,26 @@ _memory_client = None
 _config_hash = None
 
 
+def _sanitize_config_for_hash(config_dict):
+    """
+    Recursively remove sensitive keys from the config dict before hashing.
+    """
+    SENSITIVE_KEYS = {"password", "api_key", "token", "secret", "access_key"}
+    if isinstance(config_dict, dict):
+        return {
+            k: _sanitize_config_for_hash(v)
+            for k, v in config_dict.items()
+            if k.lower() not in SENSITIVE_KEYS
+        }
+    elif isinstance(config_dict, list):
+        return [_sanitize_config_for_hash(v) for v in config_dict]
+    else:
+        return config_dict
+
 def _get_config_hash(config_dict):
-    """Generate a hash of the config to detect changes."""
-    config_str = json.dumps(config_dict, sort_keys=True)
+    """Generate a hash of the config to detect changes, excluding sensitive fields."""
+    sanitized_dict = _sanitize_config_for_hash(config_dict)
+    config_str = json.dumps(sanitized_dict, sort_keys=True)
     return hashlib.sha256(config_str.encode()).hexdigest()
 
 
