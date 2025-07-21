@@ -8,7 +8,7 @@ import logging
 import os
 import time
 from contextlib import contextmanager
-from typing import Any, Dict, Optional
+from typing import Any
 
 from prometheus_client import (
     CollectorRegistry,
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 class MetricsCollector:
     """Centralized metrics collection for mem0-stack services."""
 
-    def __init__(self, service_name: str, registry: Optional[CollectorRegistry] = None):
+    def __init__(self, service_name: str, registry: CollectorRegistry | None = None):
         self.service_name = service_name
         self.registry = registry or CollectorRegistry()
         self._init_metrics()
@@ -409,7 +409,7 @@ class TracingManager:
         return self.tracer
 
     @contextmanager
-    def trace_span(self, name: str, attributes: Dict[str, Any] = None):
+    def trace_span(self, name: str, attributes: dict[str, Any] = None):
         """Context manager for creating spans."""
         if not self.tracer:
             yield None
@@ -523,7 +523,7 @@ def get_tracing(service_name: str) -> TracingManager:
 
 
 # Health check utilities
-def check_service_health(service_name: str) -> Dict[str, Any]:
+def check_service_health(service_name: str) -> dict[str, Any]:
     """Check and return service health status."""
     health_status = {
         "service": service_name,

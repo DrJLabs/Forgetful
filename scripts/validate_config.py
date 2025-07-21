@@ -23,7 +23,6 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import List
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent
@@ -46,10 +45,10 @@ class ValidationResult:
     """Stores validation results with severity levels."""
 
     def __init__(self):
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
-        self.info: List[str] = []
-        self.success: List[str] = []
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
+        self.info: list[str] = []
+        self.success: list[str] = []
 
     def add_error(self, message: str):
         """Add an error message."""
@@ -362,7 +361,7 @@ def validate_file_permissions() -> ValidationResult:
     return result
 
 
-def generate_validation_report(results: List[ValidationResult], level: str) -> None:
+def generate_validation_report(results: list[ValidationResult], level: str) -> None:
     """Generate a comprehensive validation report."""
 
     print("\n" + "=" * 60)

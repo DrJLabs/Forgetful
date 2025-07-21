@@ -6,13 +6,13 @@ Phase 2 - Action Item 4: Benchmark Infrastructure
 This script runs performance benchmarks and generates reports for CI/CD integration.
 """
 
+import argparse
+import json
 import subprocess
 import sys
-import json
 import time
-import argparse
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 
 
 class BenchmarkRunner:
@@ -24,8 +24,8 @@ class BenchmarkRunner:
         self.timestamp = time.strftime("%Y%m%d_%H%M%S")
 
     def run_benchmark_suite(
-        self, groups: List[str] = None, compare_baseline: str = None
-    ) -> Dict[str, Any]:
+        self, groups: list[str] = None, compare_baseline: str = None
+    ) -> dict[str, Any]:
         """Run the complete benchmark suite."""
         print("🚀 Running Performance Benchmark Suite")
         print(f"Timestamp: {self.timestamp}")
@@ -85,10 +85,10 @@ class BenchmarkRunner:
         except Exception as e:
             return {"success": False, "error": str(e), "command": " ".join(cmd)}
 
-    def parse_benchmark_results(self, results_file: str) -> Dict[str, Any]:
+    def parse_benchmark_results(self, results_file: str) -> dict[str, Any]:
         """Parse benchmark results from JSON file."""
         try:
-            with open(results_file, "r") as f:
+            with open(results_file) as f:
                 data = json.load(f)
 
             parsed = {
@@ -132,7 +132,7 @@ class BenchmarkRunner:
         except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
             return {"error": f"Failed to parse benchmark results: {e}"}
 
-    def generate_performance_report(self, parsed_results: Dict[str, Any]) -> str:
+    def generate_performance_report(self, parsed_results: dict[str, Any]) -> str:
         """Generate human-readable performance report."""
         if "error" in parsed_results:
             return f"# Performance Report - ERROR\n\n{parsed_results['error']}"
@@ -247,7 +247,7 @@ class BenchmarkRunner:
 
     def check_performance_regression(
         self, current_results: str, baseline_results: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Compare current results with baseline for regression detection."""
         try:
             current = self.parse_benchmark_results(current_results)

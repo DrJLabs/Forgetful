@@ -12,8 +12,8 @@ This module provides helper functions and utilities for API contract testing:
 Based on FastAPI testing patterns from Context7 documentation.
 """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, Union
+from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
 import jsonschema
@@ -23,14 +23,14 @@ from jsonschema import ValidationError as JsonSchemaValidationError
 class OpenAPIValidator:
     """Validates OpenAPI schemas and responses"""
 
-    def __init__(self, openapi_schema: Dict[str, Any]):
+    def __init__(self, openapi_schema: dict[str, Any]):
         self.openapi_schema = openapi_schema
         self.components = openapi_schema.get("components", {})
         self.schemas = self.components.get("schemas", {})
 
     def validate_request_schema(
-        self, schema_name: str, request_data: Dict[str, Any]
-    ) -> Tuple[bool, Optional[str]]:
+        self, schema_name: str, request_data: dict[str, Any]
+    ) -> tuple[bool, str | None]:
         """
         Validate request data against OpenAPI schema
 
@@ -53,8 +53,8 @@ class OpenAPIValidator:
             return False, str(e)
 
     def validate_response_schema(
-        self, schema_name: str, response_data: Dict[str, Any]
-    ) -> Tuple[bool, Optional[str]]:
+        self, schema_name: str, response_data: dict[str, Any]
+    ) -> tuple[bool, str | None]:
         """
         Validate response data against OpenAPI schema
 
@@ -67,13 +67,13 @@ class OpenAPIValidator:
         """
         return self.validate_request_schema(schema_name, response_data)
 
-    def get_schema_by_name(self, schema_name: str) -> Optional[Dict[str, Any]]:
+    def get_schema_by_name(self, schema_name: str) -> dict[str, Any] | None:
         """Get schema definition by name"""
         return self.schemas.get(schema_name)
 
     def get_endpoint_schema(
         self, path: str, method: str, response_code: str = "200"
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Get response schema for specific endpoint
 
@@ -109,8 +109,8 @@ class OpenAPIValidator:
         return content["application/json"].get("schema")
 
     def validate_error_response_format(
-        self, error_response: Dict[str, Any]
-    ) -> Tuple[bool, Optional[str]]:
+        self, error_response: dict[str, Any]
+    ) -> tuple[bool, str | None]:
         """
         Validate that error response follows FastAPI error format
 
@@ -161,8 +161,8 @@ class ResponseValidator:
 
     @staticmethod
     def validate_pagination_response(
-        response_data: Dict[str, Any],
-    ) -> Tuple[bool, Optional[str]]:
+        response_data: dict[str, Any],
+    ) -> tuple[bool, str | None]:
         """
         Validate pagination response format
 
@@ -220,8 +220,8 @@ class ResponseValidator:
 
     @staticmethod
     def validate_memory_response(
-        response_data: Dict[str, Any],
-    ) -> Tuple[bool, Optional[str]]:
+        response_data: dict[str, Any],
+    ) -> tuple[bool, str | None]:
         """
         Validate memory response format
 
@@ -275,7 +275,7 @@ class ResponseValidator:
             return False
 
     @staticmethod
-    def validate_timestamp_format(timestamp: Union[str, int]) -> bool:
+    def validate_timestamp_format(timestamp: str | int) -> bool:
         """
         Validate timestamp format
 
@@ -288,7 +288,7 @@ class ResponseValidator:
         if isinstance(timestamp, int):
             # Unix timestamp
             try:
-                datetime.fromtimestamp(timestamp, tz=timezone.utc)
+                datetime.fromtimestamp(timestamp, tz=UTC)
                 return True
             except (ValueError, OSError):
                 return False
@@ -308,7 +308,7 @@ class TestDataFactory:
     """Factory for creating test data"""
 
     @staticmethod
-    def create_test_user_data() -> Dict[str, Any]:
+    def create_test_user_data() -> dict[str, Any]:
         """Create test user data"""
         return {
             "user_id": f"test_user_{uuid4().hex[:8]}",
@@ -317,7 +317,7 @@ class TestDataFactory:
         }
 
     @staticmethod
-    def create_test_app_data() -> Dict[str, Any]:
+    def create_test_app_data() -> dict[str, Any]:
         """Create test app data"""
         return {
             "name": f"test_app_{uuid4().hex[:8]}",
@@ -325,7 +325,7 @@ class TestDataFactory:
         }
 
     @staticmethod
-    def create_test_memory_request() -> Dict[str, Any]:
+    def create_test_memory_request() -> dict[str, Any]:
         """Create test memory creation request"""
         return {
             "user_id": f"test_user_{uuid4().hex[:8]}",
@@ -333,13 +333,13 @@ class TestDataFactory:
             "metadata": {
                 "test": True,
                 "category": "contract_test",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
             "app": f"test_app_{uuid4().hex[:8]}",
         }
 
     @staticmethod
-    def create_memory_data(user_id: str = None) -> Dict[str, Any]:
+    def create_memory_data(user_id: str = None) -> dict[str, Any]:
         """Create test memory data for unit tests"""
         return {
             "user_id": user_id or f"test_user_{uuid4().hex[:8]}",
@@ -347,18 +347,18 @@ class TestDataFactory:
             "metadata": {
                 "test": True,
                 "category": "unit_test",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
             "app": f"test_app_{uuid4().hex[:8]}",
         }
 
     @staticmethod
-    def create_test_memory_response() -> Dict[str, Any]:
+    def create_test_memory_response() -> dict[str, Any]:
         """Create test memory response"""
         return {
             "id": str(uuid4()),
             "content": "Test memory content",
-            "created_at": int(datetime.now(timezone.utc).timestamp()),
+            "created_at": int(datetime.now(UTC).timestamp()),
             "user_id": f"test_user_{uuid4().hex[:8]}",
             "metadata": {"test": True},
             "state": "active",
@@ -368,11 +368,11 @@ class TestDataFactory:
 
     @staticmethod
     def create_test_pagination_response(
-        items: List[Dict[str, Any]] = None,
+        items: list[dict[str, Any]] = None,
         total: int = 0,
         page: int = 1,
         size: int = 10,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create test pagination response"""
         if items is None:
             items = []
@@ -389,8 +389,8 @@ class TestDataFactory:
 
     @staticmethod
     def create_test_error_response(
-        field_errors: List[Tuple[str, str]] = None,
-    ) -> Dict[str, Any]:
+        field_errors: list[tuple[str, str]] = None,
+    ) -> dict[str, Any]:
         """
         Create test error response
 
@@ -417,7 +417,7 @@ class ContractTestAssertions:
 
     @staticmethod
     def assert_valid_openapi_schema(
-        schema: Dict[str, Any], schema_name: str = "OpenAPI Schema"
+        schema: dict[str, Any], schema_name: str = "OpenAPI Schema"
     ):
         """Assert that schema is valid OpenAPI format"""
         assert isinstance(schema, dict), f"{schema_name} must be a dictionary"
@@ -433,7 +433,7 @@ class ContractTestAssertions:
         assert version.startswith("3."), f"{schema_name} must use OpenAPI 3.x"
 
     @staticmethod
-    def assert_valid_pagination_response(response_data: Dict[str, Any]):
+    def assert_valid_pagination_response(response_data: dict[str, Any]):
         """Assert that response is valid pagination format"""
         is_valid, error_message = ResponseValidator.validate_pagination_response(
             response_data
@@ -441,7 +441,7 @@ class ContractTestAssertions:
         assert is_valid, f"Invalid pagination response: {error_message}"
 
     @staticmethod
-    def assert_valid_memory_response(response_data: Dict[str, Any]):
+    def assert_valid_memory_response(response_data: dict[str, Any]):
         """Assert that response is valid memory format"""
         is_valid, error_message = ResponseValidator.validate_memory_response(
             response_data
@@ -449,7 +449,7 @@ class ContractTestAssertions:
         assert is_valid, f"Invalid memory response: {error_message}"
 
     @staticmethod
-    def assert_valid_error_response(response_data: Dict[str, Any]):
+    def assert_valid_error_response(response_data: dict[str, Any]):
         """Assert that response is valid error format"""
         validator = OpenAPIValidator({})
         is_valid, error_message = validator.validate_error_response_format(
@@ -459,8 +459,8 @@ class ContractTestAssertions:
 
     @staticmethod
     def assert_schema_compliance(
-        request_data: Dict[str, Any],
-        schema: Dict[str, Any],
+        request_data: dict[str, Any],
+        schema: dict[str, Any],
         schema_name: str = "Schema",
     ):
         """Assert that data complies with schema"""
@@ -511,7 +511,7 @@ class MockDataGenerator:
     """Generate mock data for testing"""
 
     @staticmethod
-    def generate_memory_list(count: int = 5) -> List[Dict[str, Any]]:
+    def generate_memory_list(count: int = 5) -> list[dict[str, Any]]:
         """Generate list of mock memory objects"""
         memories = []
         for i in range(count):
@@ -521,13 +521,13 @@ class MockDataGenerator:
         return memories
 
     @staticmethod
-    def generate_large_dataset(size: int = 1000) -> List[Dict[str, Any]]:
+    def generate_large_dataset(size: int = 1000) -> list[dict[str, Any]]:
         """Generate large dataset for pagination testing"""
         return [
             {
                 "id": str(uuid4()),
                 "content": f"Memory {i + 1}",
-                "created_at": int(datetime.now(timezone.utc).timestamp()) - i,
+                "created_at": int(datetime.now(UTC).timestamp()) - i,
                 "user_id": "test_user",
                 "metadata": {"index": i},
                 "state": "active",
@@ -538,7 +538,7 @@ class MockDataGenerator:
         ]
 
     @staticmethod
-    def generate_invalid_requests() -> List[Dict[str, Any]]:
+    def generate_invalid_requests() -> list[dict[str, Any]]:
         """Generate list of invalid request examples"""
         return [
             {},  # Empty request

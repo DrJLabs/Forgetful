@@ -13,7 +13,7 @@ Features:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings
@@ -172,8 +172,8 @@ class AppConfig(BaseConfig):
     APP_LOG_LEVEL: str = Field(default="INFO", description="Logging level")
 
     # Security settings
-    APP_SECRET_KEY: Optional[str] = Field(None, description="Application secret key")
-    APP_API_KEY: Optional[str] = Field(
+    APP_SECRET_KEY: str | None = Field(None, description="Application secret key")
+    APP_API_KEY: str | None = Field(
         None, description="Optional API key for authentication"
     )
 
@@ -209,8 +209,8 @@ class ServiceUrlConfig(BaseConfig):
     )
 
     # External service URLs
-    REDIS_URL: Optional[str] = Field(None, description="Redis URL for caching")
-    ELASTICSEARCH_URL: Optional[str] = Field(
+    REDIS_URL: str | None = Field(None, description="Redis URL for caching")
+    ELASTICSEARCH_URL: str | None = Field(
         None, description="Elasticsearch URL for search"
     )
 
@@ -237,8 +237,8 @@ class FrontendConfig(BaseConfig):
     )
 
     # Build settings
-    NEXT_PUBLIC_BUILD_TIME: Optional[str] = Field(None, description="Build timestamp")
-    NEXT_PUBLIC_VERSION: Optional[str] = Field(None, description="Application version")
+    NEXT_PUBLIC_BUILD_TIME: str | None = Field(None, description="Build timestamp")
+    NEXT_PUBLIC_VERSION: str | None = Field(None, description="Application version")
 
 
 class DockerConfig(BaseConfig):
@@ -249,13 +249,13 @@ class DockerConfig(BaseConfig):
     )
 
     # Legacy compatibility variables
-    POSTGRES_USER: Optional[str] = Field(None, description="Legacy PostgreSQL user")
-    POSTGRES_PASSWORD: Optional[str] = Field(
+    POSTGRES_USER: str | None = Field(None, description="Legacy PostgreSQL user")
+    POSTGRES_PASSWORD: str | None = Field(
         None, description="Legacy PostgreSQL password"
     )
-    POSTGRES_DB: Optional[str] = Field(None, description="Legacy PostgreSQL database")
-    USER: Optional[str] = Field(None, description="Legacy user variable")
-    NEO4J_AUTH: Optional[str] = Field(None, description="Legacy Neo4j auth")
+    POSTGRES_DB: str | None = Field(None, description="Legacy PostgreSQL database")
+    USER: str | None = Field(None, description="Legacy user variable")
+    NEO4J_AUTH: str | None = Field(None, description="Legacy Neo4j auth")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -303,7 +303,7 @@ class Config(
         if not self.NEXT_PUBLIC_USER_ID:
             self.NEXT_PUBLIC_USER_ID = self.APP_USER_ID
 
-    def get_mem0_config(self) -> Dict[str, Any]:
+    def get_mem0_config(self) -> dict[str, Any]:
         """Generate mem0 configuration dictionary."""
         return {
             "version": "v1.1",
@@ -348,7 +348,7 @@ class Config(
             },
         }
 
-    def validate_all(self) -> List[str]:
+    def validate_all(self) -> list[str]:
         """Validate all configuration and return any errors."""
         errors = []
 
@@ -382,7 +382,7 @@ class Config(
 
 
 # Global configuration instance
-_config: Optional[Config] = None
+_config: Config | None = None
 
 
 def get_config() -> Config:

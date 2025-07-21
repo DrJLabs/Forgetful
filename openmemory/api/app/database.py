@@ -1,12 +1,11 @@
 import logging
 import os
-from typing import Generator
+from collections.abc import Generator
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
-
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
 

@@ -13,7 +13,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import Mock
 
 # Database and HTTP testing
@@ -48,9 +48,9 @@ class TestEnvironment:
 
     def __init__(self, config: TestConfig = None):
         self.config = config or TestConfig()
-        self.temp_dirs: List[Path] = []
-        self.mock_patches: List[Mock] = []
-        self.performance_data: Dict[str, Any] = {}
+        self.temp_dirs: list[Path] = []
+        self.mock_patches: list[Mock] = []
+        self.performance_data: dict[str, Any] = {}
 
     def setup(self):
         """Setup test environment"""
@@ -128,7 +128,7 @@ class DataFactory:
     @staticmethod
     def create_user_data(
         user_id: str = None, name: str = None, email: str = None, **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create user test data"""
         return {
             "user_id": user_id or DataFactory.random_string(),
@@ -142,9 +142,9 @@ class DataFactory:
     def create_memory_data(
         user_id: str = None,
         content: str = None,
-        metadata: Dict[str, Any] = None,
+        metadata: dict[str, Any] = None,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create memory test data"""
         return {
             "user_id": user_id or DataFactory.random_string(),
@@ -158,7 +158,7 @@ class DataFactory:
     @staticmethod
     def create_app_data(
         name: str = None, description: str = None, **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create app test data"""
         return {
             "name": name or f"test_app_{DataFactory.random_string(5)}",
@@ -172,7 +172,7 @@ class DataFactory:
     @staticmethod
     def create_message_data(
         role: str = "user", content: str = None, **kwargs
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Create message test data"""
         return {
             "role": role,
@@ -184,7 +184,7 @@ class DataFactory:
     @staticmethod
     def create_batch_data(
         factory_func: callable, count: int = 5, **kwargs
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Create batch of test data"""
         return [factory_func(**kwargs) for _ in range(count)]
 
@@ -359,7 +359,7 @@ class PerformanceTracker:
                 }
             )
 
-    def get_metrics(self, name: str) -> Dict[str, Any]:
+    def get_metrics(self, name: str) -> dict[str, Any]:
         """Get metrics for operation"""
         return self.metrics.get(name, {})
 
@@ -404,7 +404,7 @@ class TestAssertions:
             raise AssertionError(message)
 
     @staticmethod
-    def assert_json_structure(data: Dict[str, Any], expected_keys: List[str]):
+    def assert_json_structure(data: dict[str, Any], expected_keys: list[str]):
         """Assert JSON has expected structure"""
         missing_keys = [key for key in expected_keys if key not in data]
         if missing_keys:

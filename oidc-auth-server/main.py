@@ -5,26 +5,26 @@ Provides OAuth2/OIDC endpoints that proxy to Google OAuth
 and issue JWTs for ChatGPT Actions to use with the MCP server.
 """
 
+import base64
+import hashlib
 import os
 import secrets
-import jwt
-import httpx
-import hashlib
 import uuid
 from datetime import datetime, timedelta
-from typing import Optional
-from fastapi import FastAPI, Request, HTTPException, Response
-from fastapi.responses import RedirectResponse, JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+
+import httpx
+import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-import base64
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from pydantic import BaseModel
 
 # Rate limiting imports
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 app = FastAPI(title="OIDC Auth Server", version="1.0.0")
 
@@ -111,11 +111,11 @@ app.add_middleware(
 
 class TokenRequest(BaseModel):
     grant_type: str
-    code: Optional[str] = None
-    redirect_uri: Optional[str] = None
-    client_id: Optional[str] = None
-    code_verifier: Optional[str] = None  # PKCE verification
-    refresh_token: Optional[str] = None  # For refresh token flow
+    code: str | None = None
+    redirect_uri: str | None = None
+    client_id: str | None = None
+    code_verifier: str | None = None  # PKCE verification
+    refresh_token: str | None = None  # For refresh token flow
 
 
 @app.get("/health")
@@ -160,10 +160,10 @@ async def authorize(
     redirect_uri: str,
     response_type: str = "code",
     scope: str = "openid profile email",
-    state: Optional[str] = None,
-    code_challenge: Optional[str] = None,
-    code_challenge_method: Optional[str] = None,
-    resource: Optional[str] = None,
+    state: str | None = None,
+    code_challenge: str | None = None,
+    code_challenge_method: str | None = None,
+    resource: str | None = None,
 ):
     """
     OAuth2 Authorization endpoint

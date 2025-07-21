@@ -416,6 +416,6 @@ class TestMCPPerformance:
                 )
                 # If it completes within timeout, that's fine
                 assert "Successfully added memory" in result
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 # Timeout is expected for this test
                 assert True, "Operation timed out as expected"

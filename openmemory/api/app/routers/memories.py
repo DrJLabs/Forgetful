@@ -1,14 +1,7 @@
 import logging
 from datetime import UTC, datetime
-from typing import List, Optional, Set
 from uuid import UUID
 
-from app.database import get_db
-from app.models import AccessControl, App, Category
-from app.models import Memory, MemoryAccessLog, MemoryState, MemoryStatusHistory, User
-from app.schemas import MemoryResponse
-from app.utils.memory import get_memory_client
-from app.utils.permissions import check_memory_access_permissions
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
@@ -16,6 +9,20 @@ from pydantic import BaseModel, validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
+from app.database import get_db
+from app.models import (
+    AccessControl,
+    App,
+    Category,
+    Memory,
+    MemoryAccessLog,
+    MemoryState,
+    MemoryStatusHistory,
+    User,
+)
+from app.schemas import MemoryResponse
+from app.utils.memory import get_memory_client
+from app.utils.permissions import check_memory_access_permissions
 from shared.errors import (
     NotFoundError,
 )
@@ -65,7 +72,7 @@ def update_memory_state(
     return memory
 
 
-def get_accessible_memory_ids(db: Session, app_id: UUID) -> Set[UUID]:
+def get_accessible_memory_ids(db: Session, app_id: UUID) -> set[UUID]:
     """
     Get the set of memory IDs that the app has access to based on app-level ACL rules.
     Returns all memory IDs if no specific restrictions are found.
@@ -113,24 +120,24 @@ def get_accessible_memory_ids(db: Session, app_id: UUID) -> Set[UUID]:
 @router.get("/", response_model=Page[MemoryResponse])
 async def list_memories(
     user_id: str,
-    app_id: Optional[UUID] = None,
-    from_date: Optional[int] = Query(
+    app_id: UUID | None = None,
+    from_date: int | None = Query(
         None,
         description="Filter memories created after this date (timestamp)",
         examples=[1718505600],
     ),
-    to_date: Optional[int] = Query(
+    to_date: int | None = Query(
         None,
         description="Filter memories created before this date (timestamp)",
         examples=[1718505600],
     ),
-    categories: Optional[str] = None,
+    categories: str | None = None,
     params: Params = Depends(),
-    search_query: Optional[str] = None,
-    sort_column: Optional[str] = Query(
+    search_query: str | None = None,
+    sort_column: str | None = Query(
         None, description="Column to sort by (memory, categories, app_name, created_at)"
     ),
-    sort_direction: Optional[str] = Query(
+    sort_direction: str | None = Query(
         None, description="Sort direction (asc or desc)"
     ),
     db: Session = Depends(get_db),
@@ -165,10 +172,7 @@ async def list_memories(
     # Join categories only if filtering by them
     if categories:
         category_list = [c.strip() for c in categories.split(",")]
-        query = (
-            query.join(Memory.categories)
-            .filter(Category.name.in_(category_list))
-        )
+        query = query.join(Memory.categories).filter(Category.name.in_(category_list))
 
     # Apply sorting if specified
     if sort_column:
@@ -329,7 +333,7 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
             metadata={
                 "source_app": "openmemory",
                 "mcp_client": request.app,
-                **request.metadata
+                **request.metadata,
             },
         )
 
@@ -356,7 +360,10 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
                         # Update existing memory
                         existing_memory.state = MemoryState.active
                         existing_memory.content = memory_content
-                        existing_memory.metadata_ = {**existing_memory.metadata_, **request.metadata}
+                        existing_memory.metadata_ = {
+                            **existing_memory.metadata_,
+                            **request.metadata,
+                        }
                         memory = existing_memory
                     else:
                         # Create new memory with the UUID from mem0
@@ -374,7 +381,9 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
                     history = MemoryStatusHistory(
                         memory_id=memory_id,
                         changed_by=user.id,
-                        old_state=MemoryState.deleted if existing_memory else MemoryState.deleted,
+                        old_state=MemoryState.deleted
+                        if existing_memory
+                        else MemoryState.deleted,
                         new_state=MemoryState.active,
                     )
                     db.add(history)
@@ -388,13 +397,17 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
                     memory_id = UUID(result["id"])
                     memory = db.query(Memory).filter(Memory.id == memory_id).first()
                     if memory:
-                        stored_memories.append({
-                            "id": str(memory.id),
-                            "memory": memory.content,
-                            "created_at": memory.created_at.isoformat() if memory.created_at else None,
-                            "user_id": request.user_id,
-                            "metadata": memory.metadata_,
-                        })
+                        stored_memories.append(
+                            {
+                                "id": str(memory.id),
+                                "memory": memory.content,
+                                "created_at": memory.created_at.isoformat()
+                                if memory.created_at
+                                else None,
+                                "user_id": request.user_id,
+                                "metadata": memory.metadata_,
+                            }
+                        )
 
             # Return in format expected by GPT Actions Bridge
             return {
@@ -467,7 +480,7 @@ async def get_memory(memory_id: str, db: Session = Depends(get_db)):
 
 
 class DeleteMemoriesRequest(BaseModel):
-    memory_ids: List[UUID]
+    memory_ids: list[UUID]
     user_id: str
 
 
@@ -496,7 +509,7 @@ async def delete_memory(memory_id: UUID, db: Session = Depends(get_db)):
 # Archive memories
 @router.post("/actions/archive")
 async def archive_memories(
-    memory_ids: List[UUID], user_id: UUID, db: Session = Depends(get_db)
+    memory_ids: list[UUID], user_id: UUID, db: Session = Depends(get_db)
 ):
     for memory_id in memory_ids:
         update_memory_state(db, memory_id, MemoryState.archived, user_id)
@@ -504,12 +517,12 @@ async def archive_memories(
 
 
 class PauseMemoriesRequest(BaseModel):
-    memory_ids: Optional[List[UUID]] = None
-    category_ids: Optional[List[UUID]] = None
-    app_id: Optional[UUID] = None
+    memory_ids: list[UUID] | None = None
+    category_ids: list[UUID] | None = None
+    app_id: UUID | None = None
     all_for_app: bool = False
     global_pause: bool = False
-    state: Optional[MemoryState] = None
+    state: MemoryState | None = None
     user_id: str
 
 
@@ -650,14 +663,14 @@ class FilterMemoriesRequest(BaseModel):
     user_id: str
     page: int = 1
     size: int = 10
-    search_query: Optional[str] = None
-    app_ids: Optional[List[UUID]] = None
-    category_ids: Optional[List[UUID]] = None
-    sort_column: Optional[str] = None
-    sort_direction: Optional[str] = None
-    from_date: Optional[int] = None
-    to_date: Optional[int] = None
-    show_archived: Optional[bool] = False
+    search_query: str | None = None
+    app_ids: list[UUID] | None = None
+    category_ids: list[UUID] | None = None
+    sort_column: str | None = None
+    sort_direction: str | None = None
+    from_date: int | None = None
+    to_date: int | None = None
+    show_archived: bool | None = False
 
 
 @router.post("/filter", response_model=Page[MemoryResponse])

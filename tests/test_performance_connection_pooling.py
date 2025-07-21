@@ -377,7 +377,7 @@ class TestConnectionPoolPerformance:
             nonlocal acquisition_count
             acquisition_count += 1
             if acquisition_count > pool_config.postgres_max_size:
-                raise asyncio.TimeoutError("Connection pool exhausted")
+                raise TimeoutError("Connection pool exhausted")
 
             mock_acquire_cm = AsyncMock()
             mock_acquire_cm.__aenter__ = AsyncMock(return_value=mock_conn)

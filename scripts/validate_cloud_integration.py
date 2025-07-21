@@ -16,16 +16,17 @@ Usage:
     python scripts/validate_cloud_integration.py [--duration MINUTES] [--verbose]
 """
 
+import argparse
 import asyncio
-import time
 import json
 import logging
-import argparse
-import psutil
-import docker
+import sys
+import time
 from datetime import datetime
 from pathlib import Path
-import sys
+
+import docker
+import psutil
 
 # Setup logging
 logging.basicConfig(
@@ -368,7 +369,7 @@ class CloudIntegrationValidator:
         try:
             work_done = await asyncio.wait_for(task, timeout=10)
             return work_done > 0
-        except asyncio.TimeoutError:
+        except TimeoutError:
             task.cancel()
             return False
 

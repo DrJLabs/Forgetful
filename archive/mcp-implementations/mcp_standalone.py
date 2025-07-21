@@ -10,7 +10,7 @@ import logging
 import os
 import subprocess
 import sys
-from typing import Any, Dict, Optional
+from typing import Any
 
 # Import OpenMemory dependencies
 from app.utils.memory import get_memory_client
@@ -61,7 +61,7 @@ class ProjectDetector:
         # Fallback to directory name
         return os.path.basename(os.getcwd())
 
-    def _detect_branch_name(self) -> Optional[str]:
+    def _detect_branch_name(self) -> str | None:
         """Detect current git branch (excluding main/master)"""
         try:
             result = subprocess.run(
@@ -106,7 +106,7 @@ class StandaloneMCPServer:
 
         self._setup_handlers()
 
-    def _get_memory_context(self) -> Dict[str, Any]:
+    def _get_memory_context(self) -> dict[str, Any]:
         """Get memory context with project parameters"""
         context = {
             "user_id": USER_ID,
@@ -234,7 +234,7 @@ class StandaloneMCPServer:
 
         @self.server.call_tool()
         async def handle_call_tool(
-            name: str, arguments: Dict[str, Any]
+            name: str, arguments: dict[str, Any]
         ) -> list[TextContent]:
             """Handle tool calls."""
             try:

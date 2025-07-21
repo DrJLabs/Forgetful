@@ -7,31 +7,30 @@ and the mem0 memory system. It handles request transformation, authentication,
 and proxying to the appropriate backend services.
 """
 
+import logging
 import os
 import secrets
-import httpx
-import json
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from fastapi import FastAPI, HTTPException, Depends, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Any
+
+import httpx
+import uvicorn
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
-import uvicorn
-import logging
-import asyncio
-from contextlib import asynccontextmanager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # Configuration
-OPENMEMORY_API_BASE = os.environ.get("OPENMEMORY_API_BASE", "http://openmemory-mcp:8765")
+OPENMEMORY_API_BASE = os.environ.get(
+    "OPENMEMORY_API_BASE", "http://openmemory-mcp:8765"
+)
 API_KEY_PREFIX = "gpt_"
 
 
@@ -42,9 +41,9 @@ class Message(BaseModel):
 
 
 class CreateMemoryRequest(BaseModel):
-    messages: List[Message] = Field(..., description="Messages to process into memory")
+    messages: list[Message] = Field(..., description="Messages to process into memory")
     user_id: str = Field(default="chatgpt_user", description="User identifier")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+    metadata: dict[str, Any] | None = Field(None, description="Additional metadata")
 
 
 class SearchMemoryRequest(BaseModel):
@@ -58,7 +57,7 @@ class SearchMemoryRequest(BaseModel):
 
 class UpdateMemoryRequest(BaseModel):
     text: str = Field(..., description="New memory content")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Updated metadata")
+    metadata: dict[str, Any] | None = Field(None, description="Updated metadata")
 
 
 # Initialize FastAPI app
@@ -137,16 +136,14 @@ class MemoryClient:
         # Configure timeout with fine-grained control
         timeout = httpx.Timeout(
             connect=10.0,  # Time to establish connection
-            read=30.0,     # Time to read response
-            write=10.0,    # Time to send request
-            pool=5.0       # Time to get connection from pool
+            read=30.0,  # Time to read response
+            write=10.0,  # Time to send request
+            pool=5.0,  # Time to get connection from pool
         )
 
         # Configure connection limits
         limits = httpx.Limits(
-            max_keepalive_connections=5,
-            max_connections=10,
-            keepalive_expiry=30.0
+            max_keepalive_connections=5, max_connections=10, keepalive_expiry=30.0
         )
 
         # Enhanced headers for better compatibility
@@ -161,12 +158,12 @@ class MemoryClient:
             timeout=timeout,
             limits=limits,
             headers=headers,
-            follow_redirects=True
+            follow_redirects=True,
         )
 
         logger.info(f"Initialized MemoryClient with base URL: {OPENMEMORY_API_BASE}")
 
-    async def create_memory(self, request: CreateMemoryRequest) -> Dict[str, Any]:
+    async def create_memory(self, request: CreateMemoryRequest) -> dict[str, Any]:
         """Create new memories via OpenMemory API with automatic user creation"""
         # Convert messages to text format that OpenMemory expects
         text_content = "\n".join(
@@ -176,7 +173,7 @@ class MemoryClient:
         payload = {
             "text": text_content,
             "user_id": request.user_id,
-            "app": "chatgpt_actions"
+            "app": "chatgpt_actions",
         }
         if request.metadata:
             payload["metadata"] = request.metadata
@@ -186,44 +183,74 @@ class MemoryClient:
 
             # First, ensure user exists by calling stats endpoint
             try:
-                stats_response = await self.openmemory_client.get(f"/api/v1/stats/?user_id={request.user_id}")
+                stats_response = await self.openmemory_client.get(
+                    f"/api/v1/stats/?user_id={request.user_id}"
+                )
                 if stats_response.status_code == 200:
-                    logger.info(f"User '{request.user_id}' verified/created successfully")
+                    logger.info(
+                        f"User '{request.user_id}' verified/created successfully"
+                    )
                 else:
-                    logger.info(f"User '{request.user_id}' not found. Creating user via stats endpoint...")
+                    logger.info(
+                        f"User '{request.user_id}' not found. Creating user via stats endpoint..."
+                    )
                     try:
                         # Call stats endpoint to trigger user creation (fixed URL - with trailing slash)
-                        stats_response = await self.openmemory_client.get(f"/api/v1/stats/?user_id={request.user_id}")
+                        stats_response = await self.openmemory_client.get(
+                            f"/api/v1/stats/?user_id={request.user_id}"
+                        )
                         if stats_response.status_code == 200:
-                            logger.info(f"User '{request.user_id}' created successfully. Retrying memory creation...")
+                            logger.info(
+                                f"User '{request.user_id}' created successfully. Retrying memory creation..."
+                            )
                             # Retry memory creation
-                            response = await self.openmemory_client.post("/api/v1/memories/", json=payload)
-                            logger.info(f"Retry memory creation status: {response.status_code}")
+                            response = await self.openmemory_client.post(
+                                "/api/v1/memories/", json=payload
+                            )
+                            logger.info(
+                                f"Retry memory creation status: {response.status_code}"
+                            )
                         else:
-                            logger.warning(f"User creation via stats failed with status: {stats_response.status_code}")
+                            logger.warning(
+                                f"User creation via stats failed with status: {stats_response.status_code}"
+                            )
                     except Exception as stats_error:
                         logger.warning(f"Stats endpoint call failed: {stats_error}")
             except Exception as e:
                 logger.warning(f"User verification/creation failed: {e}")
 
             # Now attempt memory creation
-            response = await self.openmemory_client.post("/api/v1/memories/", json=payload)
+            response = await self.openmemory_client.post(
+                "/api/v1/memories/", json=payload
+            )
 
             # Handle 404 User Not Found - Try user creation via stats endpoint
             if response.status_code == 404:
                 error_text = response.text
                 if "User not found" in error_text:
-                    logger.info(f"User '{request.user_id}' not found. Creating user via stats endpoint...")
+                    logger.info(
+                        f"User '{request.user_id}' not found. Creating user via stats endpoint..."
+                    )
                     try:
                         # Call stats endpoint to trigger user creation (fixed URL - no trailing slash in query)
-                        stats_response = await self.openmemory_client.get(f"/api/v1/stats?user_id={request.user_id}")
+                        stats_response = await self.openmemory_client.get(
+                            f"/api/v1/stats?user_id={request.user_id}"
+                        )
                         if stats_response.status_code == 200:
-                            logger.info(f"User '{request.user_id}' created successfully. Retrying memory creation...")
+                            logger.info(
+                                f"User '{request.user_id}' created successfully. Retrying memory creation..."
+                            )
                             # Retry memory creation
-                            response = await self.openmemory_client.post("/api/v1/memories/", json=payload)
-                            logger.info(f"Retry response status: {response.status_code}")
+                            response = await self.openmemory_client.post(
+                                "/api/v1/memories/", json=payload
+                            )
+                            logger.info(
+                                f"Retry response status: {response.status_code}"
+                            )
                         else:
-                            logger.warning(f"Stats endpoint returned {stats_response.status_code}")
+                            logger.warning(
+                                f"Stats endpoint returned {stats_response.status_code}"
+                            )
                     except Exception as user_creation_error:
                         logger.error(f"Failed to create user: {user_creation_error}")
 
@@ -261,7 +288,7 @@ class MemoryClient:
                     "message": data.get("message", "Memories created successfully"),
                     "memory_ids": memory_ids,
                     "relations": data.get("relations", {}),
-                    "debug_response": data  # Include full response for debugging
+                    "debug_response": data,  # Include full response for debugging
                 }
 
             # If no memory IDs but operation was successful, check for error
@@ -271,7 +298,9 @@ class MemoryClient:
 
             # If no memory IDs and no error, something is wrong
             else:
-                logger.error("Memory creation succeeded but no memory IDs returned and no error reported")
+                logger.error(
+                    "Memory creation succeeded but no memory IDs returned and no error reported"
+                )
                 logger.error(f"Full response: {data}")
                 raise Exception("Memory creation failed: No memory IDs returned")
 
@@ -286,7 +315,7 @@ class MemoryClient:
             logger.error(f"Unexpected error in create_memory: {e}")
             raise
 
-    async def search_memories(self, request: SearchMemoryRequest) -> Dict[str, Any]:
+    async def search_memories(self, request: SearchMemoryRequest) -> dict[str, Any]:
         """Search memories via OpenMemory MCP API with enhanced error handling"""
         payload = {
             "query": request.query,
@@ -306,7 +335,7 @@ class MemoryClient:
 
             if response.status_code == 404:
                 # Log detailed information for 404 debugging
-                logger.error(f"404 Error Details for search:")
+                logger.error("404 Error Details for search:")
                 logger.error(f"  Request URL: {response.url}")
                 logger.error(f"  Request method: {response.request.method}")
                 logger.error(f"  Base URL: {self.openmemory_client.base_url}")
@@ -316,9 +345,13 @@ class MemoryClient:
                 for alt_path in alternative_paths:
                     try:
                         logger.info(f"Attempting alternative search path: {alt_path}")
-                        alt_response = await self.openmemory_client.post(alt_path, json=payload)
+                        alt_response = await self.openmemory_client.post(
+                            alt_path, json=payload
+                        )
                         if alt_response.status_code != 404:
-                            logger.info(f"Alternative search path {alt_path} worked with status {alt_response.status_code}")
+                            logger.info(
+                                f"Alternative search path {alt_path} worked with status {alt_response.status_code}"
+                            )
                             response = alt_response
                             break
                     except Exception as e:
@@ -335,7 +368,9 @@ class MemoryClient:
 
             # Ensure results is a list (should already be from OpenMemory MCP)
             if not isinstance(results, list):
-                logger.warning(f"Expected results to be a list, got {type(results)}: {results}")
+                logger.warning(
+                    f"Expected results to be a list, got {type(results)}: {results}"
+                )
                 results = []
 
             logger.info(f"Search completed, found {len(results)} results")
@@ -356,7 +391,7 @@ class MemoryClient:
             logger.error(f"Unexpected error in search_memories: {e}")
             raise
 
-    async def list_memories(self, user_id: str) -> Dict[str, Any]:
+    async def list_memories(self, user_id: str) -> dict[str, Any]:
         """List memories for user with enhanced error handling"""
         url_path = f"/api/v1/memories/?user_id={user_id}"
 
@@ -372,14 +407,16 @@ class MemoryClient:
                 alternative_paths = [
                     f"/api/v1/memories?user_id={user_id}",
                     f"/memories/?user_id={user_id}",
-                    f"/memories?user_id={user_id}"
+                    f"/memories?user_id={user_id}",
                 ]
                 for alt_path in alternative_paths:
                     try:
                         logger.info(f"Attempting alternative list path: {alt_path}")
                         alt_response = await self.openmemory_client.get(alt_path)
                         if alt_response.status_code != 404:
-                            logger.info(f"Alternative list path {alt_path} worked with status {alt_response.status_code}")
+                            logger.info(
+                                f"Alternative list path {alt_path} worked with status {alt_response.status_code}"
+                            )
                             response = alt_response
                             break
                     except Exception as e:
@@ -411,7 +448,7 @@ class MemoryClient:
             logger.error(f"Unexpected error in list_memories: {e}")
             raise
 
-    async def get_memory(self, memory_id: str) -> Dict[str, Any]:
+    async def get_memory(self, memory_id: str) -> dict[str, Any]:
         """Get specific memory via OpenMemory API"""
         try:
             response = await self.openmemory_client.get(f"/api/v1/memories/{memory_id}")
@@ -424,15 +461,17 @@ class MemoryClient:
                 "success": True,
                 "memory": {
                     "id": str(data.get("id", memory_id)),
-                    "text": data.get("text", data.get("content")),  # Handle both possible field names
+                    "text": data.get(
+                        "text", data.get("content")
+                    ),  # Handle both possible field names
                     "content": data.get("text", data.get("content")),
                     "created_at": data.get("created_at"),
                     "state": data.get("state"),
                     "app_id": data.get("app_id"),
                     "app_name": data.get("app_name"),
                     "categories": data.get("categories", []),
-                    "metadata": data.get("metadata_", {})
-                }
+                    "metadata": data.get("metadata_", {}),
+                },
             }
 
         except httpx.HTTPStatusError as e:
@@ -448,16 +487,18 @@ class MemoryClient:
 
     async def update_memory(
         self, memory_id: str, request: UpdateMemoryRequest
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update memory via OpenMemory API"""
         payload = {
             "memory_content": request.text,
-            "user_id": "chatgpt_user"  # Default user_id for GPT Actions
+            "user_id": "chatgpt_user",  # Default user_id for GPT Actions
         }
         # Note: OpenMemory API doesn't currently support metadata updates in the same call
 
         try:
-            response = await self.openmemory_client.put(f"/api/v1/memories/{memory_id}", json=payload)
+            response = await self.openmemory_client.put(
+                f"/api/v1/memories/{memory_id}", json=payload
+            )
             response.raise_for_status()
 
             data = response.json()
@@ -467,8 +508,8 @@ class MemoryClient:
                 "memory": {
                     "id": str(data.get("id", memory_id)),
                     "content": data.get("content", request.text),
-                    "updated_at": data.get("updated_at")
-                }
+                    "updated_at": data.get("updated_at"),
+                },
             }
 
         except httpx.HTTPStatusError as e:
@@ -482,14 +523,19 @@ class MemoryClient:
             logger.error(f"Unexpected error in update_memory: {e}")
             raise
 
-    async def delete_memory(self, memory_id: str) -> Dict[str, Any]:
+    async def delete_memory(self, memory_id: str) -> dict[str, Any]:
         """Delete memory via OpenMemory API"""
         try:
-            response = await self.openmemory_client.delete(f"/api/v1/memories/{memory_id}")
+            response = await self.openmemory_client.delete(
+                f"/api/v1/memories/{memory_id}"
+            )
             response.raise_for_status()
 
             logger.info(f"Deleted memory {memory_id} successfully")
-            return {"success": True, "message": f"Memory {memory_id} deleted successfully"}
+            return {
+                "success": True,
+                "message": f"Memory {memory_id} deleted successfully",
+            }
 
         except httpx.HTTPStatusError as e:
             logger.error(f"HTTP Status Error in delete_memory: {e}")
@@ -502,21 +548,27 @@ class MemoryClient:
             logger.error(f"Unexpected error in delete_memory: {e}")
             raise
 
-    async def get_stats(self, user_id: str) -> Dict[str, Any]:
+    async def get_stats(self, user_id: str) -> dict[str, Any]:
         """Get memory statistics via OpenMemory API with robust error handling and user auto-creation"""
         try:
             logger.info(f"Getting stats for user: {user_id}")
             # Use correct URL format with trailing slash as required by OpenMemory MCP
-            response = await self.openmemory_client.get(f"/api/v1/stats/?user_id={user_id}")
+            response = await self.openmemory_client.get(
+                f"/api/v1/stats/?user_id={user_id}"
+            )
 
             logger.info(f"Stats response status: {response.status_code}")
             logger.info(f"Stats response body: {response.text}")
 
             if response.status_code == 404:
                 # User doesn't exist, the stats endpoint should auto-create them
-                logger.info(f"User '{user_id}' not found for stats. Should be auto-created by stats endpoint...")
+                logger.info(
+                    f"User '{user_id}' not found for stats. Should be auto-created by stats endpoint..."
+                )
                 # The stats endpoint in OpenMemory auto-creates users, so try again
-                response = await self.openmemory_client.get(f"/api/v1/stats/?user_id={user_id}")
+                response = await self.openmemory_client.get(
+                    f"/api/v1/stats/?user_id={user_id}"
+                )
                 logger.info(f"Retry stats response status: {response.status_code}")
 
             response.raise_for_status()
@@ -534,9 +586,9 @@ class MemoryClient:
                         "last_created": datetime.now().isoformat(),
                         "last_accessed": datetime.now().isoformat(),
                     },
-                    "apps": data.get("apps", [])
+                    "apps": data.get("apps", []),
                 },
-                "debug_response": data  # Include full response for debugging
+                "debug_response": data,  # Include full response for debugging
             }
 
         except httpx.HTTPStatusError as e:
@@ -573,7 +625,7 @@ class MemoryClient:
                 },
             }
 
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """Check health of backend services"""
         services = {}
 
@@ -586,7 +638,9 @@ class MemoryClient:
             services["openmemory_mcp"] = "unhealthy"
 
         # Neo4j would need separate check - for now assume healthy if OpenMemory is healthy
-        services["neo4j"] = "healthy" if services["openmemory_mcp"] == "healthy" else "unknown"
+        services["neo4j"] = (
+            "healthy" if services["openmemory_mcp"] == "healthy" else "unknown"
+        )
 
         return {
             "status": "healthy"
@@ -629,7 +683,7 @@ async def health_check():
 async def list_memories(
     user_id: str = "chatgpt_user",
     limit: int = 20,
-    category: Optional[str] = None,
+    category: str | None = None,
     api_key: str = Depends(verify_api_key),
 ):
     """List all memories for a user"""

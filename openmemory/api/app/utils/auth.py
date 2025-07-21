@@ -2,20 +2,27 @@
 JWT Authentication utilities for validating tokens from OIDC server
 """
 
-import os
-import jwt
-import httpx
-from typing import Optional, Dict, Any
-from fastapi import HTTPException, Request, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
+import os
+from typing import Any
+
+import httpx
+import jwt
+from fastapi import Depends, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # OIDC Configuration
 OIDC_JWKS_URL = os.getenv("OIDC_JWKS_URL", "https://oidc.drjlabs.com/auth/jwks")
 OIDC_ISSUER = os.getenv("OIDC_ISSUER", "https://oidc.drjlabs.com")
-OIDC_EXPECTED_AUD = os.getenv("OIDC_EXPECTED_AUD", "https://api.openmemory.io")  # Expected audience for JWT validation
-OIDC_AUDIENCE = os.getenv("OIDC_AUDIENCE")  # Legacy: Set to your Google client_id for audience validation
-ALLOW_OLD_AUD = os.getenv("ALLOW_OLD_AUD", "false").lower() == "true"  # Migration toggle for backward compatibility
+OIDC_EXPECTED_AUD = os.getenv(
+    "OIDC_EXPECTED_AUD", "https://api.openmemory.io"
+)  # Expected audience for JWT validation
+OIDC_AUDIENCE = os.getenv(
+    "OIDC_AUDIENCE"
+)  # Legacy: Set to your Google client_id for audience validation
+ALLOW_OLD_AUD = (
+    os.getenv("ALLOW_OLD_AUD", "false").lower() == "true"
+)  # Migration toggle for backward compatibility
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +32,10 @@ _jwks_cache_expiry = None
 
 security = HTTPBearer(auto_error=False)
 
+
 class JWTPayload:
     """JWT token payload structure"""
+
     def __init__(self, payload: dict):
         self.sub = payload.get("sub")  # Google user ID
         self.email = payload.get("email")
@@ -37,11 +46,13 @@ class JWTPayload:
         self.exp = payload.get("exp")
         self.scope = payload.get("scope", "")
 
-async def fetch_jwks() -> Dict[str, Any]:
+
+async def fetch_jwks() -> dict[str, Any]:
     """Fetch JWKS from OIDC server with caching"""
     global _jwks_cache, _jwks_cache_expiry
 
     from datetime import datetime, timedelta
+
     now = datetime.utcnow()
 
     # Check cache validity (10 minute TTL)
@@ -59,26 +70,28 @@ async def fetch_jwks() -> Dict[str, Any]:
 
         return jwks
 
-def jwk_to_rsa_key(jwk: Dict[str, Any]):
+
+def jwk_to_rsa_key(jwk: dict[str, Any]):
     """Convert JWK to RSA public key"""
-    from cryptography.hazmat.primitives.asymmetric import rsa
-    from cryptography.hazmat.primitives import serialization
     import base64
+
+    from cryptography.hazmat.primitives.asymmetric import rsa
 
     # Decode base64url-encoded values
     def base64url_decode(data):
         missing_padding = len(data) % 4
         if missing_padding:
-            data += '=' * (4 - missing_padding)
+            data += "=" * (4 - missing_padding)
         return base64.urlsafe_b64decode(data)
 
-    n = int.from_bytes(base64url_decode(jwk['n']), 'big')
-    e = int.from_bytes(base64url_decode(jwk['e']), 'big')
+    n = int.from_bytes(base64url_decode(jwk["n"]), "big")
+    e = int.from_bytes(base64url_decode(jwk["e"]), "big")
 
     public_numbers = rsa.RSAPublicNumbers(e, n)
     return public_numbers.public_key()
 
-async def validate_jwt_token(token: str) -> Optional[JWTPayload]:
+
+async def validate_jwt_token(token: str) -> JWTPayload | None:
     """
     Validate JWT token from OIDC server using RSA public key
     Returns None if token is invalid
@@ -89,12 +102,12 @@ async def validate_jwt_token(token: str) -> Optional[JWTPayload]:
 
         # Get key ID from token header
         unverified_header = jwt.get_unverified_header(token)
-        kid = unverified_header.get('kid')
+        kid = unverified_header.get("kid")
 
         # Find matching key in JWKS (RSA keys only for security)
         public_key = None
-        for key in jwks['keys']:
-            if key.get('kid') == kid and key.get('kty') == 'RSA':
+        for key in jwks["keys"]:
+            if key.get("kid") == kid and key.get("kty") == "RSA":
                 public_key = jwk_to_rsa_key(key)
                 break
 
@@ -118,11 +131,15 @@ async def validate_jwt_token(token: str) -> Optional[JWTPayload]:
             except jwt.InvalidAudienceError:
                 # If migration toggle is enabled, try with legacy audience
                 if ALLOW_OLD_AUD and OIDC_AUDIENCE:
-                    logger.warning(f"Token validation failed with expected audience {OIDC_EXPECTED_AUD}, trying legacy audience {OIDC_AUDIENCE}")
+                    logger.warning(
+                        f"Token validation failed with expected audience {OIDC_EXPECTED_AUD}, trying legacy audience {OIDC_AUDIENCE}"
+                    )
                     decode_kwargs["audience"] = OIDC_AUDIENCE
                     payload = jwt.decode(token, **decode_kwargs)
                 else:
-                    logger.warning(f"Token validation failed: invalid audience, expected {OIDC_EXPECTED_AUD}")
+                    logger.warning(
+                        f"Token validation failed: invalid audience, expected {OIDC_EXPECTED_AUD}"
+                    )
                     raise
         elif OIDC_AUDIENCE:
             # Fallback to legacy audience validation
@@ -142,7 +159,10 @@ async def validate_jwt_token(token: str) -> Optional[JWTPayload]:
         logger.error(f"Error validating JWT token: {e}")
         return None
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Optional[JWTPayload]:
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> JWTPayload | None:
     """
     Dependency to get current user from JWT token
     Returns None if no valid token provided (allows optional auth)
@@ -152,7 +172,10 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
     return await validate_jwt_token(credentials.credentials)
 
-async def require_authentication(current_user: JWTPayload = Depends(get_current_user)) -> JWTPayload:
+
+async def require_authentication(
+    current_user: JWTPayload = Depends(get_current_user),
+) -> JWTPayload:
     """
     Dependency that requires valid authentication
     Raises HTTPException if no valid token provided
@@ -165,7 +188,10 @@ async def require_authentication(current_user: JWTPayload = Depends(get_current_
         )
     return current_user
 
-async def get_user_id_from_auth(current_user: Optional[JWTPayload] = Depends(get_current_user)) -> str:
+
+async def get_user_id_from_auth(
+    current_user: JWTPayload | None = Depends(get_current_user),
+) -> str:
     """
     Get user_id from JWT token or fall back to default for backward compatibility
     """
@@ -175,4 +201,5 @@ async def get_user_id_from_auth(current_user: Optional[JWTPayload] = Depends(get
     else:
         # Fall back to default user ID for existing usage
         from app.config import USER_ID
+
         return USER_ID

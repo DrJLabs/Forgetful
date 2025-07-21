@@ -1,11 +1,12 @@
-from typing import Any, Dict, Optional
+from typing import Any
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Config as ConfigModel
 from app.utils.memory import reset_memory_client
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/api/v1/config", tags=["config"])
 
@@ -14,10 +15,10 @@ class LLMConfig(BaseModel):
     model: str = Field(..., description="LLM model name")
     temperature: float = Field(..., description="Temperature setting for the model")
     max_tokens: int = Field(..., description="Maximum tokens to generate")
-    api_key: Optional[str] = Field(
+    api_key: str | None = Field(
         None, description="API key or 'env:API_KEY' to use environment variable"
     )
-    ollama_base_url: Optional[str] = Field(
+    ollama_base_url: str | None = Field(
         None,
         description="Base URL for Ollama server (e.g., http://host.docker.internal:11434)",
     )
@@ -30,10 +31,10 @@ class LLMProvider(BaseModel):
 
 class EmbedderConfig(BaseModel):
     model: str = Field(..., description="Embedder model name")
-    api_key: Optional[str] = Field(
+    api_key: str | None = Field(
         None, description="API key or 'env:API_KEY' to use environment variable"
     )
-    ollama_base_url: Optional[str] = Field(
+    ollama_base_url: str | None = Field(
         None,
         description="Base URL for Ollama server (e.g., http://host.docker.internal:11434)",
     )
@@ -45,19 +46,19 @@ class EmbedderProvider(BaseModel):
 
 
 class OpenMemoryConfig(BaseModel):
-    custom_instructions: Optional[str] = Field(
+    custom_instructions: str | None = Field(
         None,
         description="Custom instructions for memory management and fact extraction",
     )
 
 
 class Mem0Config(BaseModel):
-    llm: Optional[LLMProvider] = None
-    embedder: Optional[EmbedderProvider] = None
+    llm: LLMProvider | None = None
+    embedder: EmbedderProvider | None = None
 
 
 class ConfigSchema(BaseModel):
-    openmemory: Optional[OpenMemoryConfig] = None
+    openmemory: OpenMemoryConfig | None = None
     mem0: Mem0Config
 
 
@@ -130,7 +131,7 @@ def get_config_from_db(db: Session, key: str = "main"):
     return config_value
 
 
-def save_config_to_db(db: Session, config: Dict[str, Any], key: str = "main"):
+def save_config_to_db(db: Session, config: dict[str, Any], key: str = "main"):
     """Save configuration to database."""
     db_config = db.query(ConfigModel).filter(ConfigModel.key == key).first()
 
