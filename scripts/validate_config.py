@@ -67,8 +67,13 @@ class ValidationResult:
 
     def add_success(self, message: str):
         """Add a success message."""
-        self.success.append(message)
-        logger.info(f"✅ {message}")
+        sanitized_message = message
+        sensitive_keywords = ["DATABASE_PASSWORD", "NEO4J_PASSWORD", "OPENAI_API_KEY"]
+        for keyword in sensitive_keywords:
+            if keyword in message:
+                sanitized_message = sanitized_message.replace(message, f"{keyword} is configured (value hidden for security)")
+        self.success.append(sanitized_message)
+        logger.info(f"✅ {sanitized_message}")
 
     def has_errors(self) -> bool:
         """Check if there are any errors."""
@@ -98,7 +103,10 @@ def validate_basic_config(config: Config) -> ValidationResult:
         if not var_value or var_value.strip() == "":
             result.add_error(f"Required variable {var_name} is not set")
         else:
-            result.add_success(f"{var_name} is configured")
+            if var_name in ["DATABASE_PASSWORD", "NEO4J_PASSWORD", "OPENAI_API_KEY"]:
+                result.add_success(f"{var_name} is configured (value hidden for security)")
+            else:
+                result.add_success(f"{var_name} is configured")
 
     # Validate specific formats
     if config.OPENAI_API_KEY and not config.OPENAI_API_KEY.startswith("sk-"):
@@ -395,7 +403,10 @@ def generate_validation_report(results: list[ValidationResult], level: str) -> N
             if level == "verbose" and result.success:
                 print("\n✅ Success:")
                 for success in result.success:
-                    print(f"   • {success}")
+                    if any(keyword in success for keyword in ["DATABASE_PASSWORD", "NEO4J_PASSWORD", "OPENAI_API_KEY"]):
+                        print(f"   • Sensitive information (value hidden for security)")
+                    else:
+                        print(f"   • {success}")
 
     # Overall status
     print(f"\n{'=' * 60}")
