@@ -20,19 +20,19 @@ repos:
       - id: check-yaml
       - id: check-json
 
-  # Modern Python tooling - use local system installs for speed
+  # Modern Python tooling - use python3 -m ruff for reliability
   - repo: local
     hooks:
       # Ruff: Modern replacement for black, isort, flake8, pyupgrade, bandit
       - id: ruff-format
         name: "Format with Ruff"
-        entry: ruff format
+        entry: python3 -m ruff format
         language: system
         types: [python]
 
       - id: ruff-check
         name: "Lint with Ruff"
-        entry: ruff check --fix
+        entry: python3 -m ruff check --fix
         language: system
         types: [python]
 
@@ -48,7 +48,7 @@ repos:
   #   hooks:
   #     - id: mypy
   #       name: "Type check with MyPy"
-  #       entry: mypy
+  #       entry: python3 -m mypy
   #       language: system
   #       types: [python]
   #       # Only run if there are actual changes
