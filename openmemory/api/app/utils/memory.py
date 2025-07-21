@@ -52,7 +52,7 @@ _config_hash = None
 def _get_config_hash(config_dict):
     """Generate a hash of the config to detect changes."""
     config_str = json.dumps(config_dict, sort_keys=True)
-    return hashlib.md5(config_str.encode()).hexdigest()
+    return hashlib.md5(config_str.encode()).hexdigest()  # noqa: S324
 
 
 def _get_docker_host_url():
@@ -205,8 +205,9 @@ def _parse_environment_variables(config_dict):
                 if env_value:
                     parsed_config[key] = env_value
                     if key.lower() in {"password", "api_key"}:
-                        logger.info(f"Loaded {env_var} from environment for {key}, but sensitive value is masked")
-                        parsed_config[key] = "*****"  # Mask sensitive data
+                        logger.info(
+                            f"Loaded {env_var} from environment for {key}, but value is masked in logs"
+                        )
                     else:
                         logger.info(f"Loaded {env_var} from environment for {key}")
                 else:
@@ -320,9 +321,9 @@ def get_memory_client(custom_instructions: str = None):
             logger.info(
                 f"Final vector_store configuration: provider={config['vector_store']['provider']}"
             )
-            sanitized_config = config['vector_store']['config'].copy()
+            sanitized_config = config["vector_store"]["config"].copy()
             if "password" in sanitized_config:
-                sanitized_config["password"] = "*****"  # Mask sensitive data
+                sanitized_config["password"] = "*****"  # noqa: S105
             logger.info(f"Vector store config details: {sanitized_config}")
 
             # Check if config has changed by comparing hashes
@@ -361,7 +362,7 @@ def get_memory_client(custom_instructions: str = None):
         )
         raise ExternalServiceError(
             "Memory service unavailable", service_name="mem0_client"
-        )
+        ) from e
 
 
 def get_default_user_id():

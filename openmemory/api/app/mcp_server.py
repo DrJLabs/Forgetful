@@ -168,44 +168,50 @@ async def add_memories(
             # Process the response and update database
             if isinstance(response, dict) and "results" in response:
                 for result in response["results"]:
-                    memory_id = uuid.UUID(result["id"])
-                    memory = db.query(Memory).filter(Memory.id == memory_id).first()
+                    try:
+                        memory_id = uuid.UUID(result["id"])
+                        memory = db.query(Memory).filter(Memory.id == memory_id).first()
 
-                    if result["event"] == "ADD":
-                        if not memory:
-                            memory = Memory(
-                                id=memory_id,
-                                user_id=user.id,
-                                app_id=app.id,
-                                content=result["memory"],
-                                state=MemoryState.active,
-                            )
-                            db.add(memory)
-                        else:
-                            memory.state = MemoryState.active
-                            memory.content = result["memory"]
+                        if result["event"] == "ADD":
+                            if not memory:
+                                memory = Memory(
+                                    id=memory_id,
+                                    user_id=user.id,
+                                    app_id=app.id,
+                                    content=result["memory"],
+                                    state=MemoryState.active,
+                                )
+                                db.add(memory)
+                            else:
+                                memory.state = MemoryState.active
+                                memory.content = result["memory"]
 
-                        # Create history entry
-                        history = MemoryStatusHistory(
-                            memory_id=memory_id,
-                            changed_by=user.id,
-                            old_state=MemoryState.deleted if memory else None,
-                            new_state=MemoryState.active,
-                        )
-                        db.add(history)
-
-                    elif result["event"] == "DELETE":
-                        if memory:
-                            memory.state = MemoryState.deleted
-                            memory.deleted_at = datetime.datetime.now(datetime.UTC)
                             # Create history entry
                             history = MemoryStatusHistory(
                                 memory_id=memory_id,
                                 changed_by=user.id,
-                                old_state=MemoryState.active,
-                                new_state=MemoryState.deleted,
+                                old_state=MemoryState.deleted if memory else None,
+                                new_state=MemoryState.active,
                             )
                             db.add(history)
+
+                        elif result["event"] == "DELETE":
+                            if memory:
+                                memory.state = MemoryState.deleted
+                                memory.deleted_at = datetime.datetime.now(datetime.UTC)
+                                # Create history entry
+                                history = MemoryStatusHistory(
+                                    memory_id=memory_id,
+                                    changed_by=user.id,
+                                    old_state=MemoryState.active,
+                                    new_state=MemoryState.deleted,
+                                )
+                                db.add(history)
+                    except Exception as result_error:
+                        logger.warning(
+                            f"Failed to process result {result}: {result_error}"
+                        )
+                        continue
 
                 db.commit()
 
@@ -217,7 +223,52 @@ async def add_memories(
                     "response_type": type(response).__name__,
                 },
             )
-            return json.dumps(response, indent=2, default=str)
+
+            # Create a simplified response for JSON serialization
+            try:
+                # Convert response to a serializable format
+                if isinstance(response, dict):
+                    serializable_response = {}
+                    for key, value in response.items():
+                        if key == "results" and isinstance(value, list):
+                            serializable_response[key] = []
+                            for item in value:
+                                if isinstance(item, dict):
+                                    clean_item = {}
+                                    for k, v in item.items():
+                                        # Convert complex objects to strings
+                                        if (
+                                            isinstance(v, str | int | float | bool)
+                                            or v is None
+                                        ):
+                                            clean_item[k] = v
+                                        else:
+                                            clean_item[k] = str(v)
+                                    serializable_response[key].append(clean_item)
+                                else:
+                                    serializable_response[key].append(str(item))
+                        else:
+                            # Convert complex objects to strings
+                            if (
+                                isinstance(value, str | int | float | bool)
+                                or value is None
+                            ):
+                                serializable_response[key] = value
+                            else:
+                                serializable_response[key] = str(value)
+                    return json.dumps(serializable_response, indent=2)
+                else:
+                    return json.dumps(
+                        {"status": "success", "data": str(response)}, indent=2
+                    )
+            except Exception as json_error:
+                logger.warning(f"JSON serialization failed: {json_error}")
+                return f"Memory added successfully. Response: {str(response)[:500]}..."
+
+        except Exception as db_error:
+            logger.error(f"Database operation failed: {db_error}")
+            db.rollback()
+            return f"Memory may have been added to vector store but database update failed: {db_error}"
         finally:
             db.close()
     except ValueError as e:
