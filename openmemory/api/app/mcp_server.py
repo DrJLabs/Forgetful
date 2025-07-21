@@ -19,8 +19,11 @@ from app.utils.db import get_user_and_app
 from app.utils.memory import get_memory_client
 from app.utils.permissions import check_memory_access_permissions
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+# NEW IMPORTS
+from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.routing import APIRouter
+from pydantic import BaseModel, Field
+from typing import List
 from mcp.server.fastmcp import FastMCP
 from mcp.server.sse import SseServerTransport
 
@@ -68,12 +71,49 @@ def get_memory_client_safe():
 user_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("user_id")
 client_name_var: contextvars.ContextVar[str] = contextvars.ContextVar("client_name")
 
-# Create a router for MCP endpoints
-mcp_router = APIRouter(prefix="/mcp")
+# Router
+router = APIRouter(prefix="/mcp", tags=["mcp"])
 
 # Initialize SSE transport
 sse = SseServerTransport("/mcp/messages/")
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Models
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class MessagesRequest(BaseModel):
+    """Schema for /mcp/messages payload."""
+
+    user_id: str = Field(..., description="User identifier")
+    messages: List[str] = Field(..., description="List of message strings")
+
+    @property
+    def content(self) -> str:
+        """Return messages concatenated for storage."""
+        return "\n".join(self.messages)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Unified helper – shared by both GET & POST routes
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def _process_mcp_messages(req: MessagesRequest):
+    """Persist the messages and return memory metadata."""
+    # Use the existing add_memories MCP tool
+    result = await add_memories(
+        text=req.content,
+        user_id=req.user_id,
+        agent_id="mcp-client"
+    )
+
+    return {"status": "ok", "result": result}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MCP Tools
+# ─────────────────────────────────────────────────────────────────────────────
 
 @mcp.tool(
     description="Add a new memory. This method is called everytime the user informs anything about themselves, their preferences, or anything that has any relevant information which can be useful in the future conversation. This can also be called when the user asks you to remember something."
@@ -523,7 +563,7 @@ async def delete_all_memories(user_id: str = "drj", agent_id: str = "default") -
 
 
 # Legacy endpoint handlers (keep for backward compatibility)
-@mcp_router.get("/{client_name}/sse/{user_id}")
+@router.get("/{client_name}/sse/{user_id}")
 async def handle_sse(request: Request):
     """Handle SSE connections for a specific user and client - LEGACY"""
     # Extract user_id and client_name from path parameters
@@ -551,7 +591,7 @@ async def handle_sse(request: Request):
 
 
 # Standard MCP SSE endpoint following MCP protocol specifications
-@mcp_router.get("/sse")
+@router.get("/sse")
 async def handle_mcp_sse(request: Request):
     """Standard MCP SSE endpoint following protocol specifications"""
     try:
@@ -566,7 +606,7 @@ async def handle_mcp_sse(request: Request):
 
 
 # MCP Health and Debugging Endpoints
-@mcp_router.get("/health")
+@router.get("/health")
 async def mcp_health_check():
     """Health check endpoint for MCP server debugging"""
     try:
@@ -616,7 +656,7 @@ async def mcp_health_check():
         }
 
 
-@mcp_router.get("/tools")
+@router.get("/tools")
 async def list_mcp_tools():
     """List available MCP tools for debugging"""
     try:
@@ -710,18 +750,24 @@ def validate_query_input(query: str) -> str:
     return sanitized
 
 
-@mcp_router.post("/messages/")
-async def handle_get_message(request: Request):
-    return await handle_post_message(request)
+# ─────────────────────────────────────────────────────────────────────────────
+# Routes
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/messages/", status_code=status.HTTP_201_CREATED)
+async def post_messages(payload: MessagesRequest):
+    """Create a memory from a list of messages."""
+    return await _process_mcp_messages(payload)
 
 
-@mcp_router.post("/{client_name}/sse/{user_id}/messages/")
-async def handle_post_message(request: Request):
-    return await handle_post_message(request)
+@router.get("/messages/")
+async def get_messages(payload: MessagesRequest):
+    """Alias to POST so agent callers can use GET if easier."""
+    return await _process_mcp_messages(payload)
 
 
 # Standard MCP POST endpoint for SSE messages
-@mcp_router.post("/sse")
+@router.post("/sse")
 async def handle_mcp_sse_post(request: Request):
     """Standard MCP POST endpoint for SSE messages"""
     try:
@@ -758,7 +804,7 @@ async def handle_sse_post_message(request: Request):
 
 
 # MCP Memory Operation Endpoints
-@mcp_router.post("/memories")
+@router.post("/memories")
 async def mcp_add_memories(request: Request):
     """MCP endpoint for adding memories"""
     try:
@@ -781,7 +827,7 @@ async def mcp_add_memories(request: Request):
         return {"error": "add_memories failed", "detail": str(e)}
 
 
-@mcp_router.post("/search")
+@router.post("/search")
 async def mcp_search_memory(request: Request):
     """MCP endpoint for searching memories"""
     try:
@@ -804,7 +850,7 @@ async def mcp_search_memory(request: Request):
         return {"error": "search_memory failed", "detail": str(e)}
 
 
-@mcp_router.get("/memories")
+@router.get("/memories")
 async def mcp_list_memories(request: Request):
     """MCP endpoint for listing memories"""
     try:
@@ -826,7 +872,7 @@ async def mcp_list_memories(request: Request):
         return {"error": "list_memories failed", "detail": str(e)}
 
 
-@mcp_router.delete("/memories")
+@router.delete("/memories")
 async def mcp_delete_all_memories(request: Request):
     """MCP endpoint for deleting all memories"""
     try:
@@ -848,9 +894,11 @@ async def mcp_delete_all_memories(request: Request):
         return {"error": "delete_all_memories failed", "detail": str(e)}
 
 
+
+
 def setup_mcp_server(app: FastAPI):
     """Setup MCP server with the FastAPI application"""
     mcp._mcp_server.name = "mem0-mcp-server"
 
     # Include MCP router in the FastAPI app
-    app.include_router(mcp_router)
+    app.include_router(router)

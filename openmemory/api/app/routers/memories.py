@@ -159,14 +159,16 @@ async def list_memories(
         to_datetime = datetime.fromtimestamp(to_date, tz=UTC)
         query = query.filter(Memory.created_at <= to_datetime)
 
-    # Add joins for app and categories after filtering
-    query = query.outerjoin(App, Memory.app_id == App.id)
-    query = query.outerjoin(Memory.categories)
+    # Join App so we can display app_name
+    query = query.join(App, Memory.app_id == App.id)
 
-    # Apply category filter if provided
+    # Join categories only if filtering by them
     if categories:
         category_list = [c.strip() for c in categories.split(",")]
-        query = query.filter(Category.name.in_(category_list))
+        query = (
+            query.join(Memory.categories)
+            .filter(Category.name.in_(category_list))
+        )
 
     # Apply sorting if specified
     if sort_column:
@@ -178,10 +180,11 @@ async def list_memories(
                 else query.order_by(sort_field.asc())
             )
 
-    # Add eager loading for categories and app
+    # Eager‑load relations (no distinct needed now)
     query = query.options(
-        joinedload(Memory.categories), joinedload(Memory.app)
-    ).distinct(Memory.id)
+        joinedload(Memory.categories),
+        joinedload(Memory.app),
+    )
 
     # Get paginated results
     paginated_results = sqlalchemy_paginate(
