@@ -204,7 +204,11 @@ def _parse_environment_variables(config_dict):
                 env_value = os.environ.get(env_var)
                 if env_value:
                     parsed_config[key] = env_value
-                    print(f"Loaded {env_var} from environment for {key}")
+                    if key.lower() in {"password", "api_key"}:
+                        print(f"Loaded {env_var} from environment for {key}, but sensitive value is masked")
+                        parsed_config[key] = "*****"  # Mask sensitive data
+                    else:
+                        print(f"Loaded {env_var} from environment for {key}")
                 else:
                     print(
                         f"Warning: Environment variable {env_var} not found, keeping original value"
@@ -316,7 +320,10 @@ def get_memory_client(custom_instructions: str = None):
             print(
                 f"Final vector_store configuration: provider={config['vector_store']['provider']}"
             )
-            print(f"Vector store config details: {config['vector_store']['config']}")
+            sanitized_config = config['vector_store']['config'].copy()
+            if "password" in sanitized_config:
+                sanitized_config["password"] = "*****"  # Mask sensitive data
+            print(f"Vector store config details: {sanitized_config}")
 
             # Check if config has changed by comparing hashes
             current_config_hash = _get_config_hash(config)
