@@ -66,12 +66,14 @@ class ValidationResult:
         logger.info(message)
 
     def add_success(self, message: str):
-        """Add a success message."""
-        sanitized_message = message
+        """Add a success message with sensitive data masked."""
         sensitive_keywords = ["DATABASE_PASSWORD", "NEO4J_PASSWORD", "OPENAI_API_KEY"]
+        sanitized_message = message
         for keyword in sensitive_keywords:
             if keyword in message:
-                sanitized_message = sanitized_message.replace(message, f"{keyword} is configured (value hidden for security)")
+                sanitized_message = sanitized_message.replace(
+                    f"{keyword}={os.getenv(keyword, '')}", f"{keyword}=***"
+                )
         self.success.append(sanitized_message)
         logger.info(f"✅ {sanitized_message}")
 
@@ -403,10 +405,7 @@ def generate_validation_report(results: list[ValidationResult], level: str) -> N
             if level == "verbose" and result.success:
                 print("\n✅ Success:")
                 for success in result.success:
-                    if any(keyword in success for keyword in ["DATABASE_PASSWORD", "NEO4J_PASSWORD", "OPENAI_API_KEY"]):
-                        print(f"   • Sensitive information (value hidden for security)")
-                    else:
-                        print(f"   • {success}")
+                    print(f"   • {success}")
 
     # Overall status
     print(f"\n{'=' * 60}")
