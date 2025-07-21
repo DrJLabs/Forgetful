@@ -100,9 +100,7 @@ async def get_current_user_id(
     return current_user.sub
 
 
-async def fetch_by_ids(
-    db: Session, ids: list[str], app_id: UUID | None
-) -> list[dict]:
+async def fetch_by_ids(db: Session, ids: list[str], app_id: UUID | None) -> list[dict]:
     """
     Helper function to fetch memories by IDs with access control
     """
