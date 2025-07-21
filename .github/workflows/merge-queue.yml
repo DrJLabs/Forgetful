@@ -3,6 +3,11 @@
 # Based on: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-a-merge-queue
 
 name: '🔄 Merge Queue Coordination'
+
+concurrency:
+  group: merge-queue-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -47,19 +52,19 @@ env:
   DATABASE_PORT: 5432
   DATABASE_NAME: test_db
   DATABASE_USER: postgres
-  DATABASE_PASSWORD: testpass
-  DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+  DATABASE_URL: postgresql://postgres:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/test_db
 
   # Neo4j Configuration
   NEO4J_HOST: localhost
   NEO4J_PORT: 7687
   NEO4J_USERNAME: neo4j
-  NEO4J_PASSWORD: testpass
+  NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
   NEO4J_URI: bolt://localhost:7687
-  NEO4J_AUTH: neo4j/testpass
+  NEO4J_AUTH: neo4j/${{ secrets.NEO4J_PASSWORD }}
 
   # OpenAI Configuration
-  OPENAI_API_KEY: sk-test-key-for-mocking-only
+  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
   OPENAI_MODEL: gpt-4o-mini
   OPENAI_EMBEDDING_MODEL: text-embedding-3-small
 
@@ -73,14 +78,14 @@ env:
   POSTGRES_HOST: localhost
   POSTGRES_DB: test_db
   POSTGRES_USER: postgres
-  POSTGRES_PASSWORD: testpass
+  POSTGRES_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
   USER: test_user
-  API_KEY: sk-test-key-for-mocking-only
+  API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
   # Merge Queue Configuration
   MERGE_QUEUE_ENABLED: true
   PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/openmemory/api
-  CI_DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
+  CI_DATABASE_URL: postgresql://postgres:${{ secrets.DATABASE_PASSWORD }}@localhost:5432/test_db
   CI_NEO4J_URI: bolt://localhost:7687
   CI_COVERAGE_THRESHOLD: 80
 
@@ -91,6 +96,7 @@ jobs:
   merge-queue-validation:
     name: '🧪 Merge Queue Quality Gates'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'merge_group'
 
     strategy:
@@ -102,7 +108,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_PASSWORD: testpass
+          POSTGRES_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           POSTGRES_DB: test_db
           POSTGRES_USER: postgres
         options: >-
@@ -116,7 +122,7 @@ jobs:
       neo4j:
         image: neo4j:5.15
         env:
-          NEO4J_AUTH: neo4j/testpass
+          NEO4J_AUTH: neo4j/${{ secrets.NEO4J_PASSWORD }}
           NEO4J_PLUGINS: '["apoc"]'
         options: >-
           --health-cmd "cypher-shell -u neo4j -p testpass 'RETURN 1'"
@@ -128,19 +134,19 @@ jobs:
 
     steps:
       - name: Checkout Merge Group
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
         with:
           # For merge groups, we need to checkout the merge commit
           ref: ${{ github.event.merge_group.head_sha }}
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v5.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
       # Multi-level Python caching strategy
       - name: Cache Python Dependencies (pip cache)
-        uses: actions/cache@v4
+        uses: actions/cache@v4.1.0
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ env.CACHE_VERSION }}-${{ hashFiles('**/requirements*.txt') }}
@@ -149,7 +155,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Cache Virtual Environment
-        uses: actions/cache@v4
+        uses: actions/cache@v4.1.0
         with:
           path: |
             venv/
@@ -202,7 +208,7 @@ jobs:
           echo "✅ Merge queue validation completed"
 
       - name: Upload Merge Queue Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         if: always()
         with:
           name: merge-queue-test-results-${{ matrix.python-version }}
@@ -217,14 +223,15 @@ jobs:
   pr-labeling:
     name: '🏷️ PR Labeling and Queue Management'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
 
       - name: Auto-label PRs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const { context } = github;
@@ -273,7 +280,7 @@ jobs:
             }
 
       - name: Check PR Readiness for Merge Queue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const { context } = github;
@@ -312,14 +319,15 @@ jobs:
   merge-queue-status:
     name: '📊 Merge Queue Status'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'status'
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
 
       - name: Check Merge Queue Status
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const { context } = github;
@@ -385,7 +393,7 @@ jobs:
           cat merge-queue-report.md
 
       - name: Upload Merge Queue Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         if: always()
         with:
           name: merge-queue-status-report
@@ -398,6 +406,7 @@ jobs:
   clear-merge-queue:
     name: '🧹 Clear Merge Queue'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'clear-queue'
     permissions:
       contents: read
@@ -406,10 +415,10 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
 
       - name: Clear Merge Queue Labels
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           script: |
             const { context } = github;
@@ -484,7 +493,7 @@ jobs:
           cat clear-queue-report.md
 
       - name: Upload Clear Queue Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.4.0
         if: always()
         with:
           name: clear-queue-report

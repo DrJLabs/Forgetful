@@ -74,8 +74,12 @@ jobs:
   unit-tests:
     name: '🧪 Unit Tests (Quality Gate 1)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: unit-tests-${{ github.ref }}-${{ matrix.python-version }}
+      cancel-in-progress: false
     strategy:
-      fail-fast: true # Fail fast for unit tests
+      fail-fast: false # Allow all Python versions to complete
       matrix:
         python-version: ['3.11', '3.12']
 
@@ -236,6 +240,7 @@ jobs:
   contract-tests:
     name: '📋 API Contract Tests (Quality Gate 2)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [unit-tests]
 
     services:
@@ -308,6 +313,7 @@ jobs:
   security-tests:
     name: '🔒 Security Tests (Quality Gate 3)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [unit-tests]
 
     steps:
@@ -351,6 +357,7 @@ jobs:
   database-tests:
     name: '🗄️ Database Tests (Quality Gate 4)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [unit-tests]
 
     services:
@@ -477,6 +484,10 @@ jobs:
   integration-tests:
     name: '🔗 Integration Tests (Quality Gate 5)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: integration-tests-${{ github.ref }}
+      cancel-in-progress: false
     needs: [contract-tests, security-tests, database-tests]
 
     services:
@@ -571,6 +582,10 @@ jobs:
   performance-tests:
     name: '⚡ Performance Tests (Quality Gate 6)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: performance-tests-${{ github.ref }}
+      cancel-in-progress: false
     needs: [integration-tests]
 
     services:
@@ -658,6 +673,7 @@ jobs:
   code-quality:
     name: '🔍 Code Quality (Quality Gate 7)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [unit-tests]
 
     steps:
@@ -701,6 +717,7 @@ jobs:
   merge-decision:
     name: '🚦 Merge Decision (Final Quality Gate)'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     # CRITICAL: All quality gates must pass before merge is allowed
     needs:
       [
