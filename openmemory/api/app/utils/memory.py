@@ -52,7 +52,7 @@ _config_hash = None
 def _get_config_hash(config_dict):
     """Generate a hash of the config to detect changes."""
     config_str = json.dumps(config_dict, sort_keys=True)
-    return hashlib.md5(config_str.encode()).hexdigest()  # noqa: S324
+    return hashlib.sha256(config_str.encode()).hexdigest()
 
 
 def _get_docker_host_url():
