@@ -65,6 +65,7 @@ def _sanitize_config_for_hash(config_dict):
     else:
         return config_dict
 
+
 def _get_config_hash(config_dict):
     """Generate a hash of the config to detect changes, excluding sensitive fields."""
     sanitized_dict = _sanitize_config_for_hash(config_dict)
