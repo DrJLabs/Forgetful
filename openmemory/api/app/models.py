@@ -124,6 +124,18 @@ class Memory(Base):
         # Index('idx_memory_vector_cosine', 'vector', postgresql_using='ivfflat', postgresql_ops={'vector': 'vector_cosine_ops'}) if PGVECTOR_AVAILABLE else None,
     )
 
+    def to_mem0_metadata(self) -> dict:
+        """Convert PostgreSQL state to mem0 metadata format"""
+        return {
+            "state": self.state.value,
+            "app_id": str(self.app_id),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+            "archived_at": self.archived_at.isoformat() if self.archived_at else None,
+            "deleted_at": self.deleted_at.isoformat() if self.deleted_at else None,
+            **self.metadata_,
+        }
+
 
 class Category(Base):
     __tablename__ = "categories"

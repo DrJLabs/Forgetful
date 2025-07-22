@@ -157,7 +157,9 @@ async def add_memories(
                 return f"Error: App {app.name} is currently paused on OpenMemory. Cannot create new memories."
 
             response = memory_client.add(
-                text,
+                [
+                    {"role": "user", "content": text}
+                ],  # Fix: Convert text to proper message format
                 user_id=uid,
                 metadata={
                     "source_app": "openmemory",
