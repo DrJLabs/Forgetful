@@ -1,0 +1,41 @@
+# Custom Gitleaks Configuration for mem0-stack
+# This file allows us to customize secret detection rules
+# Updated for gitleaks v8.28.0 syntax
+
+version = "8.0"
+
+# Allowlist patterns for known false positives or example data
+[[allowlists]]
+description = "PostHog API keys used in examples and documentation"
+regexes = ['''phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX''']
+paths = [
+    '''mem0/docs/docs\.json''',
+    '''docs/obsolete/CODEQL_FIXES_SUMMARY\.md''',
+    '''mem0/mem0/memory/telemetry\.py''',
+    '''mem0/mem0-ts/src/client/telemetry\.ts''',
+    '''mem0/mem0-ts/src/oss/src/utils/telemetry\.ts'''
+]
+
+# Exclude lock files and other false positives
+[[allowlists]]
+description = "Exclude lock files and dependency files"
+paths = [
+    '''.*\.lock$''',
+    '''.*/poetry\.lock$''',
+    '''.*/package-lock\.json$''',
+    '''.*/yarn\.lock$''',
+    '''.*/pnpm-lock\.yaml$'''
+]
+
+# Custom rules for project-specific patterns
+[[rules]]
+id = "mem0-api-key"
+description = "Mem0 API key pattern"
+regex = '''mem0_[a-zA-Z0-9]{32}'''
+tags = ["key", "mem0"]
+
+[[rules]]
+id = "openmemory-secret"
+description = "OpenMemory secret pattern"
+regex = '''om_[a-zA-Z0-9]{32}'''
+tags = ["key", "openmemory"]
