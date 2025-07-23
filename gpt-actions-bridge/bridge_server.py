@@ -562,8 +562,9 @@ class MemoryClient:
 
             if response.status_code == 404:
                 # User doesn't exist, the stats endpoint should auto-create them
+                sanitized_user_id = user_id.replace('\n', '').replace('\r', '')
                 logger.info(
-                    f"User '{user_id}' not found for stats. Should be auto-created by stats endpoint..."
+                    f"User '{sanitized_user_id}' not found for stats. Should be auto-created by stats endpoint..."
                 )
                 # The stats endpoint in OpenMemory auto-creates users, so try again
                 response = await self.openmemory_client.get(
