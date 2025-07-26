@@ -797,7 +797,7 @@ async def get_related_memories(
     return await perform_memory_search_with_fallback(
         db=db,
         user=user,
-        search_query=memory.content,
+        search_query=memory.content[:200],
         app_id=memory.app_id,
         categories=categories,
         exclude_ids=[memory_id],

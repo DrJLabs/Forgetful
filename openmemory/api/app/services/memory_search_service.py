@@ -60,6 +60,7 @@ async def perform_memory_search_with_fallback(
     """Perform mem0 search with PostgreSQL fallback and return paginated results."""
 
     memory_ids: Optional[List[str]] = None
+    memory_client = None
     try:
         memory_client = get_memory_client()
         if memory_client and search_query is not None:
@@ -81,6 +82,10 @@ async def perform_memory_search_with_fallback(
             error=str(mem0_error),
         )
         memory_ids = None
+
+    if memory_client is None and is_related_search and not categories:
+        params = Params(page=params.page, size=min(params.size, MAX_MEMORY_PAGE_SIZE))
+        return Page.create([], total=0, params=params)
 
     if memory_ids:
         query = db.query(Memory).filter(Memory.id.in_([UUID(mid) for mid in memory_ids]))
