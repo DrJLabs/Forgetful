@@ -106,7 +106,9 @@ def validate_basic_config(config: Config) -> ValidationResult:
             result.add_error(f"Required variable {var_name} is not set")
         else:
             if var_name in ["DATABASE_PASSWORD", "NEO4J_PASSWORD", "OPENAI_API_KEY"]:
-                result.add_success(f"{var_name} is configured (value hidden for security)")
+                result.add_success(
+                    f"{var_name} is configured (value hidden for security)"
+                )
             else:
                 result.add_success(f"{var_name} is configured")
 
@@ -388,7 +390,7 @@ def generate_validation_report(results: list[ValidationResult], level: str) -> N
     print(f"   ❌ Errors: {total_errors}")
 
     # Show detailed results
-    for i, result in enumerate(results):
+    for _i, result in enumerate(results):
         if result.errors or result.warnings or (level == "verbose" and result.success):
             print(f"\n{'─' * 40}")
 
@@ -464,7 +466,7 @@ def fix_common_issues(config: Config) -> None:
         for dir_path in data_dirs:
             full_path = project_root / dir_path
             if full_path.exists():
-                os.chmod(full_path, 0o755)
+                os.chmod(full_path, 0o700)  # noqa: S103
 
         fixes_applied.append("Set correct directory permissions")
     except Exception as e:
