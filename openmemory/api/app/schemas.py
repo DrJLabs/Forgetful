@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
@@ -46,7 +46,7 @@ class MemoryUpdate(BaseModel):
 class MemoryResponse(BaseModel):
     id: UUID
     content: str
-    created_at: int
+    created_at: str | None
     state: str
     app_id: UUID
     app_name: str
@@ -54,9 +54,13 @@ class MemoryResponse(BaseModel):
     metadata_: dict | None = None
 
     @validator("created_at", pre=True)
-    def convert_to_epoch(cls, v):
+    def convert_to_iso(cls, v):
+        if v is None:
+            return None
+        if isinstance(v, int | float):
+            return datetime.fromtimestamp(v, tz=UTC).isoformat()
         if isinstance(v, datetime):
-            return int(v.timestamp())
+            return v.isoformat()
         return v
 
 

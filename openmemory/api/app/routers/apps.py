@@ -164,7 +164,9 @@ async def list_app_memories(
             {
                 "id": memory.id,
                 "content": memory.content,
-                "created_at": memory.created_at,
+                "created_at": (
+                    memory.created_at.isoformat() if memory.created_at else None
+                ),
                 "state": memory.state.value,
                 "app_id": memory.app_id,
                 "categories": [category.name for category in memory.categories],
@@ -207,7 +209,9 @@ async def list_app_accessed_memories(
                 "memory": {
                     "id": memory.id,
                     "content": memory.content,
-                    "created_at": memory.created_at,
+                    "created_at": (
+                        memory.created_at.isoformat() if memory.created_at else None
+                    ),
                     "state": memory.state.value,
                     "app_id": memory.app_id,
                     "app_name": memory.app.name if memory.app else None,
