@@ -1,12 +1,13 @@
 import logging
-from datetime import UTC, datetime
+from datetime import datetime, UTC
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_pagination import Page, Params
-from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 from pydantic import BaseModel, validator
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func
 
 from app.database import get_db
 from app.models import (
@@ -22,6 +23,14 @@ from app.models import (
 from app.schemas import MemoryResponse
 from app.utils.memory import get_memory_client
 from app.utils.permissions import check_memory_access_permissions
+from app.services.memory_search_service import perform_memory_search_with_fallback
+from app.services.query_builders import (
+    build_base_memory_query,
+    apply_common_memory_filters,
+    apply_related_memory_filters_and_sort,
+    apply_general_sorting,
+)
+from app.config import MAX_MEMORY_PAGE_SIZE
 from shared.errors import (
     NotFoundError,
 )
@@ -145,124 +154,22 @@ async def list_memories(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Use mem0 search as source of truth for intelligent memory retrieval
-    try:
-        memory_client = get_memory_client()
-        if memory_client:
-            # Use mem0's semantic search with minimal filtering for better results
-            # Let PostgreSQL handle detailed filtering after mem0 provides the semantic matches
-            mem0_results = memory_client.search(
-                query=search_query or "",
-                user_id=user_id,
-                limit=100,  # Get more results to apply additional filtering
-            )
+    categories_list = [c.strip() for c in categories.split(",")] if categories else None
 
-            # Extract memory IDs from mem0 results
-            memory_ids = [result["id"] for result in mem0_results.get("results", [])]
-            api_logger.info(
-                "Retrieved memories from mem0", count=len(memory_ids), user_id=user_id
-            )
-
-        else:
-            api_logger.warning(
-                "Memory client unavailable, falling back to PostgreSQL", user_id=user_id
-            )
-            memory_ids = None
-
-    except Exception as mem0_error:
-        api_logger.error(
-            "mem0 search failed, falling back to PostgreSQL",
-            user_id=user_id,
-            error=str(mem0_error),
-        )
-        memory_ids = None
-
-    # Build PostgreSQL query for metadata enrichment or fallback
-    if memory_ids is not None:
-        # Use mem0 results as source of truth, query PostgreSQL for metadata only
-        query = db.query(Memory).filter(
-            Memory.id.in_(memory_ids), Memory.user_id == user.id
-        )
-    else:
-        # Fallback to direct PostgreSQL query if mem0 unavailable
-        query = db.query(Memory).filter(
-            Memory.user_id == user.id,
-            Memory.state != MemoryState.deleted,
-            Memory.state != MemoryState.archived,
-            Memory.content.ilike(f"%{search_query}%") if search_query else True,
-        )
-
-    # Apply additional filters (when not using mem0 results or for PostgreSQL-specific filters)
-    if memory_ids is None and app_id:
-        query = query.filter(Memory.app_id == app_id)
-
-    if from_date:
-        from_datetime = datetime.fromtimestamp(from_date, tz=UTC)
-        query = query.filter(Memory.created_at >= from_datetime)
-
-    if to_date:
-        to_datetime = datetime.fromtimestamp(to_date, tz=UTC)
-        query = query.filter(Memory.created_at <= to_datetime)
-
-    # Preserve mem0's semantic relevance ranking when available
-    if memory_ids is not None and search_query:
-        # Create a case statement to preserve mem0's result order
-        from sqlalchemy import case
-
-        memory_order = case(
-            *[
-                (Memory.id == memory_id, index)
-                for index, memory_id in enumerate(memory_ids)
-            ],
-            else_=len(memory_ids),
-        )
-        query = query.order_by(memory_order)
-
-    # Join App so we can display app_name
-    query = query.join(App, Memory.app_id == App.id)
-
-    # Join categories only if filtering by them
-    if categories:
-        category_list = [c.strip() for c in categories.split(",")]
-        query = query.join(Memory.categories).filter(Category.name.in_(category_list))
-
-    # Apply sorting if specified
-    if sort_column:
-        sort_field = getattr(Memory, sort_column, None)
-        if sort_field:
-            query = (
-                query.order_by(sort_field.desc())
-                if sort_direction == "desc"
-                else query.order_by(sort_field.asc())
-            )
-
-    # Eager‑load relations (no distinct needed now)
-    query = query.options(
-        joinedload(Memory.categories),
-        joinedload(Memory.app),
+    return await perform_memory_search_with_fallback(
+        db=db,
+        user=user,
+        search_query=search_query,
+        app_id=app_id,
+        from_date=from_date,
+        to_date=to_date,
+        categories=categories_list,
+        params=params,
+        sort_column=sort_column,
+        sort_direction=sort_direction,
+        is_related_search=False,
+        access_control_app_id=app_id,
     )
-
-    # Get paginated results
-    paginated_results = sqlalchemy_paginate(
-        query,
-        params,
-        transformer=lambda items: [
-            MemoryResponse(
-                id=memory.id,
-                content=memory.content,
-                created_at=memory.created_at,
-                state=memory.state.value,
-                app_id=memory.app_id,
-                app_name=memory.app.name if memory.app else None,
-                categories=[category.name for category in memory.categories],
-                metadata_=memory.metadata_,
-            )
-            for memory in items
-            if check_memory_access_permissions(db, memory, app_id)
-        ],
-    )
-
-    return paginated_results
 
 
 # Get all categories
@@ -842,130 +749,29 @@ async def filter_memories(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Use mem0 search as source of truth for intelligent filtering
-    try:
-        memory_client = get_memory_client()
-        if memory_client:
-            # Use mem0's semantic search with minimal filtering for better results
-            # Let PostgreSQL handle detailed filtering after mem0 provides the semantic matches
-            mem0_results = memory_client.search(
-                query=request.search_query or "",
-                user_id=request.user_id,
-                limit=100,  # Get more results for additional filtering
-            )
-
-            # Extract memory IDs from mem0 results
-            memory_ids = [result["id"] for result in mem0_results.get("results", [])]
-            api_logger.info(
-                "Filtered memories from mem0",
-                count=len(memory_ids),
-                user_id=request.user_id,
-            )
-
-        else:
-            api_logger.warning(
-                "Memory client unavailable, falling back to PostgreSQL",
-                user_id=request.user_id,
-            )
-            memory_ids = None
-
-    except Exception as mem0_error:
-        api_logger.error(
-            "mem0 search failed, falling back to PostgreSQL",
-            user_id=request.user_id,
-            error=str(mem0_error),
-        )
-        memory_ids = None
-
-    # Build PostgreSQL query for metadata enrichment or fallback
-    if memory_ids is not None:
-        # Use mem0 results as source of truth, query PostgreSQL for metadata only
-        query = db.query(Memory).filter(
-            Memory.id.in_(memory_ids), Memory.user_id == user.id
-        )
-    else:
-        # Fallback to direct PostgreSQL query if mem0 unavailable
-        query = db.query(Memory).filter(
-            Memory.user_id == user.id,
-            Memory.state != MemoryState.deleted,
-        )
-
-        # Filter archived memories based on show_archived parameter (fallback only)
-        if not request.show_archived:
-            query = query.filter(Memory.state != MemoryState.archived)
-
-        # Apply search filter (fallback only)
-        if request.search_query:
-            query = query.filter(Memory.content.ilike(f"%{request.search_query}%"))
-
-    # Apply app filter (fallback only, handled in mem0 filters when available)
-    if memory_ids is None and request.app_ids:
-        query = query.filter(Memory.app_id.in_(request.app_ids))
-
-    # Add joins for app and categories
-    query = query.outerjoin(App, Memory.app_id == App.id)
-
-    # Apply category filter
+    category_names = []
     if request.category_ids:
-        query = query.join(Memory.categories).filter(
-            Category.id.in_(request.category_ids)
-        )
-    else:
-        query = query.outerjoin(Memory.categories)
+        categories_from_db = db.query(Category).filter(Category.id.in_(request.category_ids)).all()
+        category_names = [c.name for c in categories_from_db]
 
-    # Apply date filters
-    if request.from_date:
-        from_datetime = datetime.fromtimestamp(request.from_date, tz=UTC)
-        query = query.filter(Memory.created_at >= from_datetime)
+    page_results = await perform_memory_search_with_fallback(
+        db=db,
+        user=user,
+        search_query=request.search_query,
+        app_ids=request.app_ids,
+        categories=category_names,
+        params=Params(page=request.page, size=request.size),
+        is_filter_search=True,
+        show_archived=request.show_archived,
+        sort_column=request.sort_column,
+        sort_direction=request.sort_direction,
+        access_control_app_id=None,
+    )
 
-    if request.to_date:
-        to_datetime = datetime.fromtimestamp(request.to_date, tz=UTC)
-        query = query.filter(Memory.created_at <= to_datetime)
-
-    # Apply sorting with DISTINCT ON compatibility
-    if request.sort_column and request.sort_direction:
-        sort_direction = request.sort_direction.lower()
-        if sort_direction not in ["asc", "desc"]:
-            raise HTTPException(status_code=400, detail="Invalid sort direction")
-
-        sort_mapping = {
-            "memory": Memory.content,
-            "app_name": App.name,
-            "created_at": Memory.created_at,
-        }
-
-        if request.sort_column not in sort_mapping:
-            raise HTTPException(status_code=400, detail="Invalid sort column")
-
-        sort_field = sort_mapping[request.sort_column]
-        if sort_direction == "desc":
-            query = query.order_by(Memory.id, sort_field.desc())
-        else:
-            query = query.order_by(Memory.id, sort_field.asc())
-    else:
-        # Default sorting - Memory.id first for DISTINCT ON compatibility
-        query = query.order_by(Memory.id, Memory.created_at.desc())
-
-    # Add eager loading for categories and make the query distinct
-    query = query.options(joinedload(Memory.categories)).distinct(Memory.id)
-
-    # Use fastapi-pagination's paginate function
-    return sqlalchemy_paginate(
-        query,
-        Params(page=request.page, size=request.size),
-        transformer=lambda items: [
-            MemoryResponse(
-                id=memory.id,
-                content=memory.content,
-                created_at=memory.created_at,
-                state=memory.state.value,
-                app_id=memory.app_id,
-                app_name=memory.app.name if memory.app else None,
-                categories=[category.name for category in memory.categories],
-                metadata_=memory.metadata_,
-            )
-            for memory in items
-        ],
+    return Page.create(
+        page_results.items,
+        total=page_results.total,
+        params=Params(page=page_results.page, size=page_results.size),
     )
 
 
@@ -986,110 +792,17 @@ async def get_related_memories(
     # Get the source memory
     memory = get_memory_or_404(db, memory_id)
 
-    # Use mem0's intelligence to find related memories through semantic search
-    memory_ids = None
-    try:
-        memory_client = get_memory_client()
-        if memory_client:
-            # Use mem0's semantic search for relationship discovery
-            # Use the source memory's content as semantic query to find related memories
-            mem0_results = memory_client.search(
-                query=memory.content[:200],  # Use first 200 chars as semantic query
-                user_id=user_id,
-                limit=20,  # Get more results for filtering
-            )
+    categories = [c.name for c in memory.categories] if memory.categories else []
 
-            # Extract related memory IDs (excluding the source memory)
-            memory_ids = [
-                result["id"]
-                for result in mem0_results.get("results", [])
-                if result["id"] != str(memory_id)
-            ]
-
-            api_logger.info(
-                "Found related memories via mem0",
-                source_memory=str(memory_id),
-                related_count=len(memory_ids),
-                user_id=user_id,
-            )
-
-        else:
-            api_logger.warning(
-                "Memory client unavailable, using fallback",
-                memory_id=str(memory_id),
-                user_id=user_id,
-            )
-
-    except Exception as mem0_error:
-        api_logger.error(
-            "mem0 related search failed, using fallback",
-            memory_id=str(memory_id),
-            error=str(mem0_error),
-            user_id=user_id,
-        )
-
-    # Query PostgreSQL for metadata enrichment or fallback
-    try:
-        if memory_ids:
-            # Use mem0 results as source of truth
-            query = db.query(Memory).filter(
-                Memory.id.in_([UUID(mid) for mid in memory_ids]),
-                Memory.user_id == user.id,
-                Memory.state != MemoryState.deleted,
-            )
-        else:
-            # Fallback: Simple category-based matching with proper error handling
-            category_ids = (
-                [category.id for category in memory.categories]
-                if memory.categories
-                else []
-            )
-            if category_ids:
-                query = (
-                    db.query(Memory)
-                    .filter(
-                        Memory.user_id == user.id,
-                        Memory.id != memory_id,
-                        Memory.state != MemoryState.deleted,
-                    )
-                    .join(
-                        Memory.categories, isouter=True
-                    )  # Use LEFT JOIN to prevent failures
-                    .filter(Category.id.in_(category_ids))
-                )
-            else:
-                # No categories available - return empty result
-                return Page.create([], total=0, params=params)
-
-        # Add eager loading
-        query = query.options(joinedload(Memory.categories), joinedload(Memory.app))
-
-        # Force reasonable page size
-        params = Params(page=params.page, size=min(params.size, 10))
-
-        return sqlalchemy_paginate(
-            query,
-            params,
-            transformer=lambda items: [
-                MemoryResponse(
-                    id=memory.id,
-                    content=memory.content,
-                    created_at=memory.created_at,
-                    state=memory.state.value,
-                    app_id=memory.app_id,
-                    app_name=memory.app.name if memory.app else None,
-                    categories=[category.name for category in memory.categories],
-                    metadata_=memory.metadata_,
-                )
-                for memory in items
-            ],
-        )
-
-    except Exception as db_error:
-        api_logger.error(
-            "Database fallback failed",
-            memory_id=str(memory_id),
-            error=str(db_error),
-            user_id=user_id,
-        )
-        return Page.create([], total=0, params=params)
+    return await perform_memory_search_with_fallback(
+        db=db,
+        user=user,
+        search_query=memory.content,
+        app_id=memory.app_id,
+        categories=categories,
+        exclude_ids=[memory_id],
+        params=params,
+        is_related_search=True,
+        source_memory_id=memory_id,
+        access_control_app_id=memory.app_id,
+    )
