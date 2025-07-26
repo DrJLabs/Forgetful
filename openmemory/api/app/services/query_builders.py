@@ -23,6 +23,7 @@ def apply_common_memory_filters(
     from_date: Optional[int] = None,
     to_date: Optional[int] = None,
     categories: Optional[List[str]] = None,
+    category_ids: Optional[Iterable[UUID]] = None,
     search_query: Optional[str] = None,
     show_archived: bool = False,
     exclude_ids: Optional[Iterable[UUID]] = None,
@@ -43,7 +44,9 @@ def apply_common_memory_filters(
     if search_query:
         query = query.filter(Memory.content.ilike(f"%{search_query}%"))
 
-    if categories:
+    if category_ids:
+        query = query.join(Memory.categories).filter(Category.id.in_(category_ids))
+    elif categories:
         query = query.join(Memory.categories).filter(Category.name.in_(categories))
     else:
         query = query.outerjoin(Memory.categories)
@@ -83,9 +86,12 @@ def apply_related_memory_filters_and_sort(
     *,
     source_memory_id: UUID,
     categories: Optional[List[str]] = None,
+    category_ids: Optional[Iterable[UUID]] = None,
 ) -> Query:
     query = query.filter(Memory.id != source_memory_id)
-    if categories:
+    if category_ids:
+        query = query.join(Memory.categories).filter(Category.id.in_(category_ids))
+    elif categories:
         query = query.join(Memory.categories).filter(Category.name.in_(categories))
     else:
         query = query.outerjoin(Memory.categories)
