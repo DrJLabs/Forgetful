@@ -1,13 +1,11 @@
 import logging
-from datetime import datetime, UTC
-from typing import List, Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi_pagination import Page, Params
 from pydantic import BaseModel, validator
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import (
@@ -21,16 +19,8 @@ from app.models import (
     User,
 )
 from app.schemas import MemoryResponse
-from app.utils.memory import get_memory_client
-from app.utils.permissions import check_memory_access_permissions
 from app.services.memory_search_service import perform_memory_search_with_fallback
-from app.services.query_builders import (
-    build_base_memory_query,
-    apply_common_memory_filters,
-    apply_related_memory_filters_and_sort,
-    apply_general_sorting,
-)
-from app.config import MAX_MEMORY_PAGE_SIZE
+from app.utils.memory import get_memory_client
 from shared.errors import (
     NotFoundError,
 )
@@ -340,9 +330,11 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
                     history = MemoryStatusHistory(
                         memory_id=memory_id,
                         changed_by=user.id,
-                        old_state=MemoryState.deleted
-                        if existing_memory
-                        else MemoryState.deleted,
+                        old_state=(
+                            MemoryState.deleted
+                            if existing_memory
+                            else MemoryState.deleted
+                        ),
                         new_state=MemoryState.active,
                     )
                     db.add(history)
@@ -360,9 +352,11 @@ async def create_memory(request: CreateMemoryRequest, db: Session = Depends(get_
                             {
                                 "id": str(memory.id),
                                 "memory": memory.content,
-                                "created_at": memory.created_at.isoformat()
-                                if memory.created_at
-                                else None,
+                                "created_at": (
+                                    memory.created_at.isoformat()
+                                    if memory.created_at
+                                    else None
+                                ),
                                 "user_id": request.user_id,
                                 "metadata": memory.metadata_,
                             }
@@ -429,7 +423,7 @@ async def get_memory(memory_id: str, db: Session = Depends(get_db)):
     return {
         "id": memory.id,
         "text": memory.content,
-        "created_at": int(memory.created_at.timestamp()),
+        "created_at": memory.created_at.isoformat() if memory.created_at else None,
         "state": memory.state.value,
         "app_id": memory.app_id,
         "app_name": memory.app.name if memory.app else None,
@@ -751,7 +745,9 @@ async def filter_memories(
 
     category_names = []
     if request.category_ids:
-        categories_from_db = db.query(Category).filter(Category.id.in_(request.category_ids)).all()
+        categories_from_db = (
+            db.query(Category).filter(Category.id.in_(request.category_ids)).all()
+        )
         category_names = [c.name for c in categories_from_db]
 
     page_results = await perform_memory_search_with_fallback(
