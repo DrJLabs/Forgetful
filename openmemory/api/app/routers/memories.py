@@ -164,6 +164,7 @@ async def list_memories(
         from_date=from_date,
         to_date=to_date,
         categories=categories_list,
+        category_ids=None,
         params=params,
         sort_column=sort_column,
         sort_direction=sort_direction,
@@ -749,17 +750,21 @@ async def filter_memories(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    category_names = []
+    if request.sort_direction not in (None, "asc", "desc"):
+        raise HTTPException(status_code=400, detail="Invalid sort_direction")
+
     if request.category_ids:
-        categories_from_db = db.query(Category).filter(Category.id.in_(request.category_ids)).all()
-        category_names = [c.name for c in categories_from_db]
+        categories_from_db = db.query(Category.id).filter(Category.id.in_(request.category_ids)).all()
+        if len(categories_from_db) != len(request.category_ids):
+            raise HTTPException(status_code=404, detail="Category not found")
 
     page_results = await perform_memory_search_with_fallback(
         db=db,
         user=user,
         search_query=request.search_query,
         app_ids=request.app_ids,
-        categories=category_names,
+        categories=None,
+        category_ids=request.category_ids,
         params=Params(page=request.page, size=request.size),
         is_filter_search=True,
         show_archived=request.show_archived,
@@ -792,14 +797,15 @@ async def get_related_memories(
     # Get the source memory
     memory = get_memory_or_404(db, memory_id)
 
-    categories = [c.name for c in memory.categories] if memory.categories else []
+    category_ids = [c.id for c in memory.categories] if memory.categories else []
 
     return await perform_memory_search_with_fallback(
         db=db,
         user=user,
         search_query=memory.content,
         app_id=memory.app_id,
-        categories=categories,
+        categories=None,
+        category_ids=category_ids,
         exclude_ids=[memory_id],
         params=params,
         is_related_search=True,
