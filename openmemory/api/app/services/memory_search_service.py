@@ -85,14 +85,8 @@ async def perform_memory_search_with_fallback(
     if memory_ids:
         query = db.query(Memory).filter(Memory.id.in_([UUID(mid) for mid in memory_ids]))
         query = build_base_memory_query(query, user.id)
-        order_case = case(
-            *[(Memory.id == UUID(mid), idx) for idx, mid in enumerate(memory_ids)],
-            else_=len(memory_ids),
-        )
-        query = query.order_by(order_case)
-    else:
-        query = db.query(Memory)
-        query = build_base_memory_query(query, user.id)
+        
+        # Always apply common filters when mem0 returns results
         query = apply_common_memory_filters(
             query,
             app_id=app_id,
@@ -104,10 +98,20 @@ async def perform_memory_search_with_fallback(
             show_archived=show_archived,
             exclude_ids=exclude_ids,
         )
-        query = apply_general_sorting(query, sort_column=sort_column, sort_direction=sort_direction)
-
-    if memory_ids and not is_filter_search:
-        # Apply additional filters even when mem0 returns IDs
+        
+        # Preserve mem0 relevance ordering when not doing filter search
+        if not is_filter_search:
+            order_case = case(
+                *[(Memory.id == UUID(mid), idx) for idx, mid in enumerate(memory_ids)],
+                else_=len(memory_ids),
+            )
+            query = query.order_by(order_case)
+        else:
+            # Apply general sorting for filter searches
+            query = apply_general_sorting(query, sort_column=sort_column, sort_direction=sort_direction)
+    else:
+        query = db.query(Memory)
+        query = build_base_memory_query(query, user.id)
         query = apply_common_memory_filters(
             query,
             app_id=app_id,
@@ -115,6 +119,7 @@ async def perform_memory_search_with_fallback(
             from_date=from_date,
             to_date=to_date,
             categories=categories,
+            search_query=search_query,
             show_archived=show_archived,
             exclude_ids=exclude_ids,
         )
