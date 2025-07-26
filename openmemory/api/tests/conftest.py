@@ -100,10 +100,12 @@ def mock_memory_client():
 
     with patch("app.utils.memory.get_memory_client", return_value=mock_client):
         with patch("app.mem0_client.get_memory_client", return_value=mock_client):
-            with patch(
-                "app.routers.memories.get_memory_client", return_value=mock_client
-            ):
-                yield mock_client
+            with patch("app.routers.memories.get_memory_client", return_value=mock_client):
+                with patch(
+                    "app.services.memory_search_service.get_memory_client",
+                    return_value=mock_client,
+                ):
+                    yield mock_client
 
 
 @pytest.fixture

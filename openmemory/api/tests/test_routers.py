@@ -31,6 +31,12 @@ class TestMemoriesRouter:
         assert "page" in data
         assert data["total"] >= 0
 
+        # Verify mem0 search called with empty query
+        mock_memory_client.search.assert_called_once()
+        args, kwargs = mock_memory_client.search.call_args
+        assert kwargs["query"] == ""
+        assert kwargs["user_id"] == test_user.user_id
+
     @pytest.mark.asyncio
     async def test_list_memories_with_search(
         self, test_client: AsyncClient, test_user, mock_memory_client
