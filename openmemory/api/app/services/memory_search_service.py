@@ -118,20 +118,15 @@ async def perform_memory_search_with_fallback(
             exclude_ids=exclude_ids,
         )
         query = apply_general_sorting(query, sort_column=sort_column, sort_direction=sort_direction)
-
-
     if is_related_search and source_memory_id is not None:
         query = apply_related_memory_filters_and_sort(
             query,
             source_memory_id=source_memory_id,
             categories=categories,
         )
-
     query = query.join(App, Memory.app_id == App.id)
     query = query.options(joinedload(Memory.categories), joinedload(Memory.app)).distinct(Memory.id)
-
     params = Params(page=params.page, size=min(params.size, MAX_MEMORY_PAGE_SIZE))
-
     page = sqlalchemy_paginate(
         query,
         params,
