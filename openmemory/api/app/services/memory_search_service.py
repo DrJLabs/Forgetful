@@ -48,6 +48,7 @@ async def perform_memory_search_with_fallback(
     from_date: Optional[int] = None,
     to_date: Optional[int] = None,
     categories: Optional[List[str]] = None,
+    category_ids: Optional[List[UUID]] = None,
     exclude_ids: Optional[List[UUID]] = None,
     is_related_search: bool = False,
     is_filter_search: bool = False,
@@ -100,6 +101,7 @@ async def perform_memory_search_with_fallback(
             from_date=from_date,
             to_date=to_date,
             categories=categories,
+            category_ids=category_ids,
             search_query=search_query,
             show_archived=show_archived,
             exclude_ids=exclude_ids,
@@ -115,6 +117,7 @@ async def perform_memory_search_with_fallback(
             from_date=from_date,
             to_date=to_date,
             categories=categories,
+            category_ids=category_ids,
             show_archived=show_archived,
             exclude_ids=exclude_ids,
         )
@@ -125,6 +128,7 @@ async def perform_memory_search_with_fallback(
             query,
             source_memory_id=source_memory_id,
             categories=categories,
+            category_ids=category_ids,
         )
 
     query = query.join(App, Memory.app_id == App.id)
