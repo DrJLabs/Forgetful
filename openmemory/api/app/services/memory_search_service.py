@@ -28,7 +28,11 @@ def _memory_to_response(memory: Memory) -> MemoryResponse:
     return MemoryResponse(
         id=memory.id,
         content=memory.content,
-        created_at=int(memory.created_at.timestamp()) if isinstance(memory.created_at, datetime) else memory.created_at,
+        created_at=(
+            int(memory.created_at.timestamp())
+            if isinstance(memory.created_at, datetime)
+            else memory.created_at
+        ),
         state=memory.state.value,
         app_id=memory.app_id,
         app_name=memory.app.name if memory.app else None,
@@ -83,7 +87,9 @@ async def perform_memory_search_with_fallback(
         memory_ids = None
 
     if memory_ids:
-        query = db.query(Memory).filter(Memory.id.in_([UUID(mid) for mid in memory_ids]))
+        query = db.query(Memory).filter(
+            Memory.id.in_([UUID(mid) for mid in memory_ids])
+        )
         query = build_base_memory_query(query, user.id)
         query = apply_common_memory_filters(
             query,
@@ -96,7 +102,9 @@ async def perform_memory_search_with_fallback(
             exclude_ids=exclude_ids,
         )
         if is_filter_search:
-            query = apply_general_sorting(query, sort_column=sort_column, sort_direction=sort_direction)
+            query = apply_general_sorting(
+                query, sort_column=sort_column, sort_direction=sort_direction
+            )
         else:
             order_case = case(
                 *[(Memory.id == UUID(mid), idx) for idx, mid in enumerate(memory_ids)],
@@ -117,7 +125,9 @@ async def perform_memory_search_with_fallback(
             show_archived=show_archived,
             exclude_ids=exclude_ids,
         )
-        query = apply_general_sorting(query, sort_column=sort_column, sort_direction=sort_direction)
+        query = apply_general_sorting(
+            query, sort_column=sort_column, sort_direction=sort_direction
+        )
     if is_related_search and source_memory_id is not None:
         query = apply_related_memory_filters_and_sort(
             query,
@@ -125,7 +135,9 @@ async def perform_memory_search_with_fallback(
             categories=categories,
         )
     query = query.join(App, Memory.app_id == App.id)
-    query = query.options(joinedload(Memory.categories), joinedload(Memory.app)).distinct(Memory.id)
+    query = query.options(
+        joinedload(Memory.categories), joinedload(Memory.app)
+    ).distinct(Memory.id)
     params = Params(page=params.page, size=min(params.size, MAX_MEMORY_PAGE_SIZE))
     page = sqlalchemy_paginate(
         query,
