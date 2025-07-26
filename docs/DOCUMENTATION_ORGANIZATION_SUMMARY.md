@@ -17,7 +17,7 @@ Files that are relevant to the current working system based on analysis of:
 - `requirements.txt` - Python dependencies
 - `requirements-test.txt` - Test dependencies
 - `standard_mcp_requirements.txt` - MCP requirements
-- `mcp_sse_requirements.txt` - MCP SSE requirements
+- `mcp_sse_requirements.txt` - MCP SSE requirements (REMOVED - integrated into main API requirements)
 
 ### `/docs/recent/` - Recently Created Files (Last 2 Days)
 Files created between July 21-22, 2025, representing recent work and analysis.

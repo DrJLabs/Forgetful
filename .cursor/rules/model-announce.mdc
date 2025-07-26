@@ -1,0 +1,6 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+**MANDATORY**: At the beginning of **every task or step**, you **MUST** clearly state the **model name, model size, model type, and its revision (updated date)** of AI being used for the task at hand. This requirement is **non-negotiable** and must be followed **without exception**.
