@@ -65,7 +65,7 @@ async def perform_memory_search_with_fallback(
     memory_ids: list[str] | None = None
     try:
         memory_client = get_memory_client()
-        if memory_client and search_query is not None:
+        if memory_client:
             mem0_results = memory_client.search(
                 query=search_query or "",
                 user_id=user.user_id,
